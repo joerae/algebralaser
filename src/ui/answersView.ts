@@ -3,17 +3,17 @@ import { PendingArithmetic } from '../math/types';
 export class AnswersView {
   private container: HTMLElement;
   private onSelectCallback: (choice: number) => void;
+  private cardElements: Map<string, { cardEl: HTMLElement; fillCircle: SVGCircleElement | null }> = new Map();
+  private readonly circumference: number = 2 * Math.PI * 18; // ~113.1
 
   constructor(container: HTMLElement, onSelect: (choice: number) => void) {
     this.container = container;
     this.onSelectCallback = onSelect;
   }
 
-  public render(
-    arithmetic: PendingArithmetic | null,
-    activeTargetId: string | null = null,
-    dwellProgress: number = 0
-  ) {
+  public render(arithmetic: PendingArithmetic | null) {
+    this.cardElements.clear();
+
     if (!arithmetic) {
       this.container.innerHTML = '';
       this.container.style.display = 'none';
@@ -25,18 +25,12 @@ export class AnswersView {
       ? `What is ${arithmetic.operand1} ÷ ${arithmetic.operand2}?`
       : `What is ${arithmetic.operand1} ${arithmetic.operator === '+' ? '+' : '−'} ${arithmetic.operand2}?`;
 
-    const circumference = 2 * Math.PI * 18; // ~113.1
-
     const cardsHtml = arithmetic.choices.map((choice) => {
       const cardId = `answer-choice-${choice}`;
-      const isHovered = activeTargetId === cardId;
-      const progress = isHovered ? dwellProgress : 0;
-      const strokeOffset = circumference * (1 - progress);
-
       return `
         <div 
           id="${cardId}" 
-          class="answer-card ${isHovered ? 'hovered' : ''}" 
+          class="answer-card" 
           data-choice="${choice}"
         >
           <span class="answer-val">${choice}</span>
@@ -47,8 +41,8 @@ export class AnswersView {
               cx="22" 
               cy="22" 
               r="18"
-              stroke-dasharray="${circumference}"
-              stroke-dashoffset="${strokeOffset}"
+              stroke-dasharray="${this.circumference}"
+              stroke-dashoffset="${this.circumference}"
             ></circle>
           </svg>
         </div>
@@ -65,23 +59,42 @@ export class AnswersView {
       </div>
     `;
 
-    // Attach click listeners for mouse/touch
+    // Cache card elements and attach listeners
     this.container.querySelectorAll<HTMLElement>('.answer-card').forEach(card => {
       const choice = Number(card.getAttribute('data-choice'));
+      const circle = card.querySelector<SVGCircleElement>('.dwell-fill');
+      this.cardElements.set(card.id, {
+        cardEl: card,
+        fillCircle: circle
+      });
+
       card.addEventListener('click', () => {
         this.onSelectCallback(choice);
       });
     });
   }
 
-  public getInteractiveElements(): Array<{ id: string; type: 'answer'; element: HTMLElement }> {
-    const cards = this.container.querySelectorAll<HTMLElement>('.answer-card');
-    const result: Array<{ id: string; type: 'answer'; element: HTMLElement }> = [];
-    cards.forEach(c => {
-      if (c.id) {
-        result.push({ id: c.id, type: 'answer', element: c });
+  /**
+   * Ultra-fast 60 FPS update of dwell progress without destroying/recreating DOM!
+   */
+  public updateDwell(activeTargetId: string | null, dwellProgress: number) {
+    for (const [cardId, { cardEl, fillCircle }] of this.cardElements) {
+      const isHovered = activeTargetId === cardId;
+      cardEl.classList.toggle('hovered', isHovered);
+
+      if (fillCircle) {
+        const progress = isHovered ? Math.max(0, Math.min(1, dwellProgress)) : 0;
+        const offset = this.circumference * (1 - progress);
+        fillCircle.style.strokeDashoffset = `${offset}`;
       }
-    });
+    }
+  }
+
+  public getInteractiveElements(): Array<{ id: string; type: 'answer'; element: HTMLElement }> {
+    const result: Array<{ id: string; type: 'answer'; element: HTMLElement }> = [];
+    for (const [cardId, { cardEl }] of this.cardElements) {
+      result.push({ id: cardId, type: 'answer', element: cardEl });
+    }
     return result;
   }
 }

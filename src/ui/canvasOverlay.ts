@@ -84,9 +84,12 @@ export class CanvasOverlay {
     ];
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-    ctx.lineWidth = 2.5;
+    // Luminous Bones
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+    ctx.lineWidth = 3.5;
     ctx.lineCap = 'round';
+    ctx.shadowColor = '#06b6d4';
+    ctx.shadowBlur = 12;
 
     for (const [fromIdx, toIdx] of connections) {
       const from = transformLandmarkToViewport(landmarks[fromIdx], viewport, true);
@@ -97,16 +100,38 @@ export class CanvasOverlay {
       ctx.stroke();
     }
 
-    // Joints
+    // Glowing Joints & Finger Point Trackers
+    const tipIndices = [4, 8, 12, 16, 20];
     for (let i = 0; i < landmarks.length; i++) {
       const pt = transformLandmarkToViewport(landmarks[i], viewport, true);
+      const isIndexTip = i === 8;
+      const isOtherTip = tipIndices.includes(i) && !isIndexTip;
+
+      // Draw Joint Dot
       ctx.beginPath();
-      const isTip = i === 8;
-      ctx.arc(pt.x, pt.y, isTip ? 6 : 3, 0, Math.PI * 2);
-      ctx.fillStyle = isTip ? '#fbbf24' : 'rgba(56, 189, 248, 0.8)';
-      ctx.shadowColor = isTip ? '#f59e0b' : '#38bdf8';
-      ctx.shadowBlur = isTip ? 15 : 6;
+      const radius = isIndexTip ? 6.5 : (isOtherTip ? 5 : 4);
+      ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = isIndexTip ? '#fbbf24' : '#38bdf8';
+      ctx.shadowColor = isIndexTip ? '#f59e0b' : '#06b6d4';
+      ctx.shadowBlur = isIndexTip ? 20 : 10;
       ctx.fill();
+
+      // Outer rings on fingertips
+      if (isIndexTip) {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 12, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.85)';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 15;
+        ctx.stroke();
+      } else if (isOtherTip) {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
     ctx.restore();
   }

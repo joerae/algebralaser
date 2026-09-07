@@ -10,6 +10,7 @@ import { classifyHandPose } from './vision/poseClassifier';
 import { computeLaserRay } from './vision/coordinateTransform';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
 import { LaserRay } from './vision/types';
+import { soundManager } from './audio/soundEffects';
 
 class App {
   private game: GameController;
@@ -23,12 +24,28 @@ class App {
   private raySmoother: RaySmoother;
 
   private videoEl: HTMLVideoElement;
+  private bubbleEl: HTMLElement | null = null;
+  private arrowSvgEl: SVGSVGElement | null = null;
+  private arrowPathEl: SVGPathElement | null = null;
+  private cameraBoxEl: HTMLElement | null = null;
+  private answersColumnEl: HTMLElement | null = null;
   private isCameraRunning: boolean = false;
+  private wasSnapped: boolean = false;
+  private wasCrossed: boolean = false;
+  private snapStartTime: number | null = null;
+  private isPopping: boolean = false;
+  private cachedTargets: InteractiveTarget[] = [];
+  private needTargetsRefresh: boolean = true;
 
   constructor() {
     // 1. Initialize DOM references
     const canvasEl = document.getElementById('canvas-overlay') as HTMLCanvasElement;
     this.videoEl = document.getElementById('webcam-video') as HTMLVideoElement;
+    this.bubbleEl = document.getElementById('carried-bubble');
+    this.arrowSvgEl = document.getElementById('equation-arrow-svg') as unknown as SVGSVGElement | null;
+    this.arrowPathEl = document.getElementById('connector-arrow-path') as unknown as SVGPathElement | null;
+    this.cameraBoxEl = document.getElementById('camera-box');
+    this.answersColumnEl = document.getElementById('answers-column');
     const equationArea = document.getElementById('equation-area') as HTMLElement;
     const answersColumn = document.getElementById('answers-column') as HTMLElement;
     const hudHeader = document.getElementById('hud-header') as HTMLElement;
@@ -45,10 +62,24 @@ class App {
     this.canvasOverlay = new CanvasOverlay(canvasEl);
     this.raySmoother = new RaySmoother(0.35);
 
+    // Wire arithmetic RHS collapse animation before advancing to next step
+    this.game.onBeforeCorrectAdvance = (correctVal, done) => {
+      this.equationView.triggerCollapse(correctVal, done);
+    };
+
+    // Wire index curl / hold drop to popping animation
+    this.interaction.onDropRequested = () => {
+      this.popBubbleAndDrop();
+    };
+
+    window.addEventListener('resize', () => {
+      this.needTargetsRefresh = true;
+    });
+
     // 3. UI Views
     this.equationView = new EquationView(equationArea, {
       onPickup: (term) => this.game.pickup(term),
-      onDrop: () => this.game.drop(),
+      onDrop: () => this.popBubbleAndDrop(),
       onNext: () => this.game.nextLevel(),
       onReplay: () => this.game.restartLevel()
     });
@@ -98,10 +129,10 @@ class App {
   }
 
   private updateView(state = this.game.getState(), extra = { currentLevel: this.game.getCurrentLevelNumber(), totalLevels: this.game.getTotalLevels() }) {
-    const interState = this.interaction.getState();
-    this.equationView.render(state, interState.isDestinationHovered, interState.carriedPosition);
-    this.answersView.render(state.pendingArithmetic, interState.hoveredTargetId, interState.dwellProgress);
+    this.equationView.render(state);
+    this.answersView.render(state.pendingArithmetic);
     this.hudView.updateProgress(extra.currentLevel, extra.totalLevels);
+    this.needTargetsRefresh = true;
 
     // Contextual instruction
     let instr = 'Get x on its own.';
@@ -113,13 +144,27 @@ class App {
         instr = `Point laser at ${state.currentA} or drag it beneath = to divide.`;
       }
     } else if (state.phase === 'carrying') {
-      instr = 'Aim across = to the target, then curl your index finger (or release mouse) to drop.';
+      instr = 'Drag across = to the drop zone and hold to pop the bubble!';
     } else if (state.phase === 'question') {
       instr = 'Aim laser at an answer card and hold to confirm, or click.';
     } else if (state.phase === 'solved') {
-      instr = 'Equation balanced! Click Next Puzzle to continue.';
+      instr = 'Equation balanced! Hold Open Palm 👋 or aim at Next Puzzle to continue.';
     }
     this.hudView.updateInstruction(instr);
+
+    // Contextual camera badge hint
+    const hintBadge = document.getElementById('camera-hint-badge');
+    if (hintBadge) {
+      if (state.phase === 'ready') {
+        hintBadge.textContent = 'Point up at equation ☝️';
+      } else if (state.phase === 'carrying') {
+        hintBadge.textContent = 'Drag term to drop slot 🧲';
+      } else if (state.phase === 'question') {
+        hintBadge.textContent = 'Aim laser at answer 👉';
+      } else if (state.phase === 'solved') {
+        hintBadge.textContent = 'Show Open Palm 👋 or Point Next';
+      }
+    }
   }
 
   private async toggleCamera() {
@@ -236,13 +281,168 @@ class App {
     // Update interaction controller with vision frame
     this.interaction.updateVisionFrame(laserRay, classifiedPose, hitResult, now);
 
-    // Re-render UI if carrying or dwelling
     const interState = this.interaction.getState();
     const gameState = this.game.getState();
 
-    if (gameState.phase === 'carrying' || gameState.phase === 'question') {
-      this.equationView.render(gameState, interState.isDestinationHovered, interState.carriedPosition);
-      this.answersView.render(gameState.pendingArithmetic, interState.hoveredTargetId, interState.dwellProgress);
+    // Process Carried Bubble Position & Magnetic Snapping
+    if (gameState.phase === 'carrying' && gameState.carriedTerm && !this.isPopping) {
+      const destEl = document.getElementById('drop-destination');
+      let targetX = interState.carriedPosition?.x || (window.innerWidth / 2);
+      let targetY = interState.carriedPosition?.y || 160;
+      let isSnapped = false;
+
+      if (destEl) {
+        const destRect = destEl.getBoundingClientRect();
+        const destCenter = {
+          x: destRect.left + destRect.width / 2,
+          y: destRect.top + destRect.height / 2
+        };
+
+        // If laser is active, project ray onto destination rail height
+        if (laserRay && laserRay.active) {
+          const t = (destCenter.y - laserRay.origin.y) / laserRay.direction.y;
+          if (t > 0) {
+            targetX = laserRay.origin.x + t * laserRay.direction.x;
+            targetY = destCenter.y;
+          }
+        }
+
+        // Check magnetic snapping distance
+        const dist = Math.hypot(targetX - destCenter.x, targetY - destCenter.y);
+        isSnapped = dist < 120;
+
+        if (isSnapped) {
+          targetX = destCenter.x;
+          targetY = destCenter.y;
+          interState.isDestinationHovered = true;
+          if (!this.wasSnapped) {
+            soundManager.playSnap();
+            this.wasSnapped = true;
+          }
+        } else {
+          interState.isDestinationHovered = false;
+          this.wasSnapped = false;
+        }
+      }
+
+      interState.carriedPosition = { x: targetX, y: targetY };
+
+      // Equals X coordinate check for dynamic sign flip
+      const equalsX = this.equationView.getEqualsX();
+      const isCrossed = targetX >= equalsX;
+
+      if (isCrossed && !this.wasCrossed) {
+        soundManager.playSnap();
+        this.wasCrossed = true;
+      } else if (!isCrossed && this.wasCrossed) {
+        soundManager.playSnap();
+        this.wasCrossed = false;
+      }
+
+      // Update DOM Floating Bubble
+      if (this.bubbleEl) {
+        this.bubbleEl.style.display = 'flex';
+        this.bubbleEl.style.left = `${targetX}px`;
+        this.bubbleEl.style.top = `${targetY}px`;
+        this.bubbleEl.classList.toggle('crossed', isCrossed);
+        this.bubbleEl.classList.toggle('snapped', isSnapped);
+
+        const caption = this.bubbleEl.querySelector('.bubble-caption');
+        const termEl = this.bubbleEl.querySelector('.bubble-term');
+
+        // Dynamic sign flip inside bubble
+        if (termEl) {
+          if (gameState.carriedTerm === 'constant') {
+            const isNeg = gameState.currentB < 0;
+            const absB = Math.abs(gameState.currentB);
+            if (isCrossed) {
+              // Inverted operation after crossing equals sign
+              const flippedSign = isNeg ? '+' : '−';
+              termEl.textContent = `${flippedSign}${absB}`;
+            } else {
+              // Original operation on LHS
+              const origSign = isNeg ? '−' : '+';
+              termEl.textContent = `${origSign}${absB}`;
+            }
+          } else if (gameState.carriedTerm === 'coefficient') {
+            if (isCrossed) {
+              termEl.textContent = `÷${gameState.currentA}`;
+            } else {
+              termEl.textContent = `${gameState.currentA}`;
+            }
+          }
+        }
+
+        // Hold-to-pop logic with physical progress ring (1 second hold)
+        const HOLD_DURATION_MS = 1000;
+        const ringFill = this.bubbleEl.querySelector<SVGCircleElement>('.bubble-ring-fill');
+        const circumference = 2 * Math.PI * 45; // ~283
+
+        if (isSnapped) {
+          if (!this.snapStartTime) {
+            this.snapStartTime = now;
+          }
+          const holdDuration = now - this.snapStartTime;
+          const progress = Math.min(1.0, holdDuration / HOLD_DURATION_MS);
+
+          // Update SVG progress ring
+          if (ringFill) {
+            const offset = circumference * (1 - progress);
+            ringFill.style.strokeDashoffset = `${offset}`;
+          }
+
+          // Ticking audio feedback at milestones
+          if (progress > 0.15 && holdDuration % 120 < 18) {
+            soundManager.playDwellTick(progress);
+          }
+
+          if (caption) {
+            if (progress < 0.5) {
+              caption.textContent = 'Hold...';
+            } else if (progress < 0.85) {
+              caption.textContent = 'Almost...';
+            } else {
+              caption.textContent = 'POP!';
+            }
+          }
+
+          if (progress >= 1.0) {
+            this.popBubbleAndDrop();
+          }
+        } else {
+          this.snapStartTime = null;
+          // Reset progress ring when leaving snap zone
+          if (ringFill) {
+            ringFill.style.strokeDashoffset = `${circumference}`;
+          }
+          if (caption) {
+            caption.textContent = isCrossed ? 'Drag to Landing Slot' : 'Move across =';
+          }
+        }
+      }
+    } else if (!this.isPopping) {
+      if (this.bubbleEl) {
+        this.bubbleEl.style.display = 'none';
+        // Reset ring when bubble hides
+        const ringFill = this.bubbleEl.querySelector<SVGCircleElement>('.bubble-ring-fill');
+        if (ringFill) ringFill.style.strokeDashoffset = `${2 * Math.PI * 45}`;
+      }
+      this.wasSnapped = false;
+      this.wasCrossed = false;
+      this.snapStartTime = null;
+    }
+
+    // 60 FPS lightweight updates (ZERO DOM innerHTML rebuilds!)
+    this.equationView.setDestinationHovered(interState.isDestinationHovered);
+    this.answersView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
+    this.updateArrowAndLayout(gameState.phase);
+
+    if (gameState.phase === 'solved') {
+      this.equationView.updateSolvedDwell(
+        interState.hoveredTargetId,
+        interState.dwellProgress,
+        interState.openPalmProgress
+      );
     }
 
     // Render Canvas Overlay (hand skeleton, laser, particles)
@@ -258,14 +458,102 @@ class App {
     requestAnimationFrame((t) => this.loop(t));
   }
 
+  private updateArrowAndLayout(phase: string) {
+    if (phase !== 'question') {
+      if (this.arrowSvgEl) this.arrowSvgEl.style.display = 'none';
+      return;
+    }
+
+    if (!this.cameraBoxEl || !this.answersColumnEl) return;
+
+    // 1. Position answers column snug next to the right edge of camera box
+    const cameraRect = this.cameraBoxEl.getBoundingClientRect();
+    const columnWidth = 260;
+
+    let left = cameraRect.right + 18;
+    // Clamp if window is narrower
+    if (left + columnWidth > window.innerWidth - 14) {
+      left = Math.max(14, window.innerWidth - columnWidth - 14);
+    }
+    const top = Math.max(65, cameraRect.top);
+
+    this.answersColumnEl.style.left = `${left}px`;
+    this.answersColumnEl.style.top = `${top}px`;
+    this.answersColumnEl.style.right = 'auto';
+
+    // 2. Compute curving arrow from equation term around camera corner to question
+    const termEl = document.getElementById('arithmetic-rhs');
+    const questionCard = this.answersColumnEl.querySelector<HTMLElement>('.arithmetic-question');
+
+    if (termEl && questionCard && this.arrowSvgEl && this.arrowPathEl) {
+      const termRect = termEl.getBoundingClientRect();
+      const qRect = questionCard.getBoundingClientRect();
+
+      // Start: right side of the unsimplified equation term
+      const startX = termRect.right + 6;
+      const startY = termRect.top + termRect.height / 2;
+
+      // End: left side of the arithmetic question card (with room for arrowhead)
+      const endX = qRect.left - 10;
+      const endY = qRect.top + 28;
+
+      // Corner control point around top-right of camera frame
+      const cornerX = Math.max(startX + 30, Math.min(cameraRect.right + 10, endX - 10));
+
+      // Cubic Bezier curve:
+      // Starts horizontal from equation -> sweeps past top of camera -> turns down & right into question
+      const cp1X = cornerX;
+      const cp1Y = startY;
+      const cp2X = cornerX;
+      const cp2Y = endY;
+
+      const d = `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      this.arrowPathEl.setAttribute('d', d);
+      this.arrowSvgEl.style.display = 'block';
+    } else if (this.arrowSvgEl) {
+      this.arrowSvgEl.style.display = 'none';
+    }
+  }
+
+  private popBubbleAndDrop() {
+    if (this.isPopping) return;
+    this.isPopping = true;
+    this.snapStartTime = null;
+    this.wasSnapped = false;
+    soundManager.playPop();
+
+    if (this.bubbleEl) {
+      this.bubbleEl.classList.add('popping');
+    }
+
+    // Match the bubbleBurst animation duration (350ms)
+    window.setTimeout(() => {
+      if (this.bubbleEl) {
+        this.bubbleEl.style.display = 'none';
+        this.bubbleEl.classList.remove('popping', 'snapped', 'crossed');
+        // Reset the ring
+        const ringFill = this.bubbleEl.querySelector<SVGCircleElement>('.bubble-ring-fill');
+        if (ringFill) ringFill.style.strokeDashoffset = `${2 * Math.PI * 45}`;
+      }
+      this.isPopping = false;
+      const interState = this.interaction.getState();
+      interState.carriedPosition = null;
+      interState.isDestinationHovered = false;
+      this.game.drop();
+    }, 350);
+  }
+
   private collectTargets(): InteractiveTarget[] {
+    if (!this.needTargetsRefresh && this.cachedTargets.length > 0) {
+      return this.cachedTargets;
+    }
+
     const targets: InteractiveTarget[] = [];
     const eqTargets = this.equationView.getInteractiveElements();
     const ansTargets = this.answersView.getInteractiveElements();
 
     eqTargets.forEach(t => {
       const rect = t.element.getBoundingClientRect();
-      // Add padding for friendly acquisition
       const pad = 12;
       targets.push({
         id: t.id,
@@ -306,21 +594,46 @@ class App {
     const nextBtn = document.getElementById('btn-next');
     if (nextBtn) {
       const rect = nextBtn.getBoundingClientRect();
+      const pad = 12;
       targets.push({
         id: 'btn-next',
         type: 'utility',
         rect: {
-          left: rect.left,
-          top: rect.top,
-          right: rect.right,
-          bottom: rect.bottom,
-          width: rect.width,
-          height: rect.height
+          left: rect.left - pad,
+          top: rect.top - pad,
+          right: rect.right + pad,
+          bottom: rect.bottom + pad,
+          width: rect.width + pad * 2,
+          height: rect.height + pad * 2
         },
-        enabled: true
+        enabled: true,
+        priority: 3
       });
     }
 
+    // Solved Replay button
+    const replayBtn = document.getElementById('btn-replay');
+    if (replayBtn) {
+      const rect = replayBtn.getBoundingClientRect();
+      const pad = 8;
+      targets.push({
+        id: 'btn-replay',
+        type: 'utility',
+        rect: {
+          left: rect.left - pad,
+          top: rect.top - pad,
+          right: rect.right + pad,
+          bottom: rect.bottom + pad,
+          width: rect.width + pad * 2,
+          height: rect.height + pad * 2
+        },
+        enabled: true,
+        priority: 3
+      });
+    }
+
+    this.cachedTargets = targets;
+    this.needTargetsRefresh = false;
     return targets;
   }
 
@@ -333,7 +646,7 @@ class App {
     // Mouse Dragging for Carried Term
     window.addEventListener('mousemove', (e) => {
       const gameState = this.game.getState();
-      if (gameState.phase === 'carrying') {
+      if (gameState.phase === 'carrying' && !this.isPopping) {
         const dest = document.getElementById('drop-destination');
         let isDestHovered = false;
         if (dest) {
@@ -348,21 +661,21 @@ class App {
         const interState = this.interaction.getState();
         interState.carriedPosition = { x: e.clientX, y: e.clientY };
         interState.isDestinationHovered = isDestHovered;
-        this.equationView.render(gameState, isDestHovered, interState.carriedPosition);
+        this.equationView.setDestinationHovered(isDestHovered);
       }
     });
 
     window.addEventListener('mouseup', () => {
       const gameState = this.game.getState();
-      if (gameState.phase === 'carrying') {
+      if (gameState.phase === 'carrying' && !this.isPopping) {
         const interState = this.interaction.getState();
         if (interState.isDestinationHovered) {
-          this.game.drop();
+          this.popBubbleAndDrop();
         } else {
           this.game.cancel();
+          interState.carriedPosition = null;
+          interState.isDestinationHovered = false;
         }
-        interState.carriedPosition = null;
-        interState.isDestinationHovered = false;
       }
     });
   }

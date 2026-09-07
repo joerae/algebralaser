@@ -41,53 +41,31 @@ export const BENCHMARK_PUZZLE: LinearEquationDef = {
 };
 
 export function generateArithmeticChoices(
-  op1: number,
-  op2: number,
-  operator: '+' | '-' | '×' | '÷',
+  _op1: number,
+  _op2: number,
+  _operator: '+' | '-' | '×' | '÷',
   correct: number,
   rng: () => number = Math.random
 ): number[] {
   const distractors = new Set<number>();
-  
-  // Plausible mistakes
-  if (operator === '+') {
-    // Subtraction instead
-    const sub = op1 - op2;
-    if (sub > 0 && sub !== correct) distractors.add(sub);
-    // Off by one
-    if (correct + 1 !== correct) distractors.add(correct + 1);
-    if (correct - 1 > 0 && correct - 1 !== correct) distractors.add(correct - 1);
-    // Off by two
-    distractors.add(correct + 2);
-  } else if (operator === '-') {
-    // Addition instead
-    const add = op1 + op2;
-    if (add !== correct) distractors.add(add);
-    if (correct + 1 !== correct) distractors.add(correct + 1);
-    if (correct - 1 > 0 && correct - 1 !== correct) distractors.add(correct - 1);
-  } else if (operator === '÷') {
-    // Subtraction instead of division (e.g. 12 - 3 = 9 instead of 12 / 3 = 4)
-    const sub = op1 - op2;
-    if (sub > 0 && sub !== correct) distractors.add(sub);
-    // Inverse factor or nearby factor
-    if (op2 !== correct && op2 > 0) distractors.add(op2);
-    if (correct + 1 !== correct) distractors.add(correct + 1);
-    if (correct - 1 > 0 && correct - 1 !== correct) distractors.add(correct - 1);
-    if (correct * 2 !== correct) distractors.add(correct * 2);
-  } else if (operator === '×') {
-    // Addition instead
-    distractors.add(op1 + op2);
-    distractors.add(correct + op2);
-    if (correct - op2 > 0) distractors.add(correct - op2);
+
+  // Candidates close to correct answer (e.g. +/- 1, +/- 2, +/- 3)
+  const deltas = [-1, 1, -2, 2, -3, 3];
+  const shuffledDeltas = shuffleArray(deltas, rng);
+
+  for (const delta of shuffledDeltas) {
+    const cand = correct + delta;
+    if (cand > 0 && cand !== correct) {
+      distractors.add(cand);
+      if (distractors.size >= 4) break;
+    }
   }
 
-  // Ensure we have at least 2 distinct distractors
-  let offset = 1;
+  // Ensure we have at least 2 distinct positive distractors
+  let offset = 4;
   while (distractors.size < 2) {
-    const cand1 = correct + offset;
-    if (cand1 !== correct && cand1 > 0) distractors.add(cand1);
-    const cand2 = correct - offset;
-    if (cand2 !== correct && cand2 > 0) distractors.add(cand2);
+    if (correct + offset > 0) distractors.add(correct + offset);
+    if (distractors.size < 2 && correct - offset > 0) distractors.add(correct - offset);
     offset++;
   }
 

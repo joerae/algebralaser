@@ -127,6 +127,10 @@ describe('Linear Equation Mathematics & State Machine', () => {
       expect(divChoices.length).toBe(3);
       expect(new Set(divChoices).size).toBe(3);
       expect(divChoices).toContain(4);
+      // Ensure distractors are close to 4 (e.g. 3, 5, 2, 6), not distant numbers like 9 or 8
+      for (const choice of divChoices) {
+        expect(Math.abs(choice - 4)).toBeLessThanOrEqual(3);
+      }
     }
   });
 

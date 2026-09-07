@@ -43,6 +43,35 @@
 
     <footer id="hud-footer" class="hud-footer"></footer>
 
+    <div id="carried-bubble" class="carried-bubble" style="display: none;">
+      <svg class="bubble-progress-ring" viewBox="0 0 100 100">
+        <circle class="bubble-ring-track" cx="50" cy="50" r="45"></circle>
+        <circle class="bubble-ring-fill" cx="50" cy="50" r="45"
+          stroke-dasharray="283"
+          stroke-dashoffset="283"></circle>
+      </svg>
+      <span class="bubble-term"></span>
+      <span class="bubble-caption"></span>
+    </div>
+    <svg id="equation-arrow-svg" class="equation-arrow-svg" style="display: none;">
+      <defs>
+        <linearGradient id="arrow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.95" />
+          <stop offset="100%" stop-color="#38bdf8" stop-opacity="1" />
+        </linearGradient>
+        <filter id="arrow-glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <marker id="arrow-head" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M 2 2 L 10 6 L 2 10 z" fill="#38bdf8" />
+        </marker>
+      </defs>
+      <path id="connector-arrow-path" class="connector-arrow-path" d="" marker-end="url(#arrow-head)" />
+    </svg>
     <div id="camera-banner" class="camera-prompt-banner" style="display: none;"></div>
     <div id="settings-modal" class="modal-backdrop" style="display: none;"></div>
     <div id="debug-overlay" class="debug-overlay" style="display: none;"></div>

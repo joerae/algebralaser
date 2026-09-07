@@ -11,6 +11,7 @@ export interface InteractionState {
   isDestinationHovered: boolean;
   activeHandId: number | null;
   trackingLostTimer: number | null;
+  openPalmProgress: number; // 0 to 1 for open palm advance
 }
 
 export class InteractionController {
@@ -23,12 +24,15 @@ export class InteractionController {
     carriedPosition: null,
     isDestinationHovered: false,
     activeHandId: null,
-    trackingLostTimer: null
+    trackingLostTimer: null,
+    openPalmProgress: 0
   };
 
   public dwellDurationMs: number = 450;
+  public onDropRequested?: () => void;
   private lastDwellTargetId: string | null = null;
   private lastDwellTime: number = 0;
+  private openPalmStartTime: number = 0;
   private questionEnterGuard: boolean = false; // prevents auto-submit upon new question appearing
 
   constructor(game: GameController) {
@@ -49,8 +53,8 @@ export class InteractionController {
     const gameState = this.game.getState();
     this.state.laserRay = ray;
 
-    // Guard: If tracking is completely missing
-    if (!ray || !pose || !ray.active) {
+    // Guard: If tracking is completely missing (no hand detected)
+    if (!pose) {
       if (gameState.phase === 'carrying') {
         if (!this.state.trackingLostTimer) {
           this.state.trackingLostTimer = now;
@@ -64,6 +68,8 @@ export class InteractionController {
       }
       this.resetDwell();
       this.state.hoveredTargetId = null;
+      this.openPalmStartTime = 0;
+      this.state.openPalmProgress = 0;
       return;
     }
 
@@ -81,6 +87,14 @@ export class InteractionController {
     // Phase: READY
     if (gameState.phase === 'ready') {
       this.resetDwell();
+      this.openPalmStartTime = 0;
+      this.state.openPalmProgress = 0;
+
+      if (!ray || !ray.active) {
+        this.state.hoveredTargetId = null;
+        return;
+      }
+
       if (hit && pose.isPointing) {
         this.state.hoveredTargetId = hit.targetId;
 
@@ -100,6 +114,9 @@ export class InteractionController {
     // Phase: CARRYING
     if (gameState.phase === 'carrying') {
       this.resetDwell();
+      this.openPalmStartTime = 0;
+      this.state.openPalmProgress = 0;
+
       // Track carried position following ray origin / projection
       if (hit) {
         this.state.carriedPosition = { ...hit.point };
@@ -108,15 +125,18 @@ export class InteractionController {
           hit.targetId === 'drop-destination'
         );
       } else {
-        this.state.carriedPosition = { ...ray.origin };
+        this.state.carriedPosition = ray ? { ...ray.origin } : null;
         this.state.isDestinationHovered = false;
       }
 
       // Drop on observed index curl
       if (pose.isIndexCurled) {
         if (this.state.isDestinationHovered) {
-          // Commit drop
-          this.game.drop();
+          if (this.onDropRequested) {
+            this.onDropRequested();
+          } else {
+            this.game.drop();
+          }
           this.questionEnterGuard = true; // require pointer to leave/re-enter before dwelling
         } else {
           // Curled elsewhere: cancel carry back to origin
@@ -132,6 +152,14 @@ export class InteractionController {
     if (gameState.phase === 'question') {
       this.state.carriedPosition = null;
       this.state.isDestinationHovered = false;
+      this.openPalmStartTime = 0;
+      this.state.openPalmProgress = 0;
+
+      if (!ray || !ray.active) {
+        this.state.hoveredTargetId = null;
+        this.resetDwell();
+        return;
+      }
 
       if (hit && hit.targetType === 'answer' && pose.isPointing) {
         this.state.hoveredTargetId = hit.targetId;
@@ -171,9 +199,36 @@ export class InteractionController {
       return;
     }
 
-    // Phase: SOLVED or other
+    // Phase: SOLVED
     if (gameState.phase === 'solved') {
-      if (hit && hit.targetType === 'utility' && pose.isPointing) {
+      // 1. Open palm gesture with dwell (500ms hold to advance)
+      if (pose.isOpenPalm) {
+        if (!this.openPalmStartTime) {
+          this.openPalmStartTime = now;
+        }
+        const elapsed = now - this.openPalmStartTime;
+        this.state.openPalmProgress = Math.min(1.0, elapsed / 500);
+
+        if (this.state.openPalmProgress > 0.2 && Math.random() < 0.2) {
+          soundManager.playDwellTick(this.state.openPalmProgress);
+        }
+
+        if (this.state.openPalmProgress >= 1.0) {
+          soundManager.playCorrect();
+          this.game.nextLevel();
+          this.openPalmStartTime = 0;
+          this.state.openPalmProgress = 0;
+          this.resetDwell();
+          this.state.hoveredTargetId = null;
+          return;
+        }
+      } else {
+        this.openPalmStartTime = 0;
+        this.state.openPalmProgress = 0;
+      }
+
+      // 2. Pointing with dwell on Next or Replay buttons
+      if (ray && ray.active && hit && hit.targetType === 'utility' && pose.isPointing) {
         this.state.hoveredTargetId = hit.targetId;
         if (this.lastDwellTargetId !== hit.targetId) {
           this.lastDwellTargetId = hit.targetId;
@@ -183,7 +238,13 @@ export class InteractionController {
         } else {
           const elapsed = now - this.lastDwellTime;
           this.state.dwellProgress = Math.min(1.0, elapsed / this.dwellDurationMs);
+
+          if (this.state.dwellProgress > 0.2 && Math.random() < 0.2) {
+            soundManager.playDwellTick(this.state.dwellProgress);
+          }
+
           if (this.state.dwellProgress >= 1.0) {
+            soundManager.playCorrect();
             if (hit.targetId === 'btn-next') {
               this.game.nextLevel();
             } else if (hit.targetId === 'btn-replay') {

@@ -83,46 +83,37 @@ export class GameController {
     const res = commitDrop(this.state);
     if (!res.success) return false;
 
-    soundManager.playDrop();
-
-    if (this.reducedMotion) {
-      // Instant transition without animation
-      this.state = res.state;
-      this.notify();
-    } else {
-      // Short cancellation animation (around 500ms)
-      this.state = {
-        ...res.state,
-        phase: 'cancelling'
-      };
-      this.notify();
-
-      if (this.cancellationTimeout) clearTimeout(this.cancellationTimeout);
-      this.cancellationTimeout = window.setTimeout(() => {
-        this.state = {
-          ...this.state,
-          phase: 'question'
-        };
-        this.notify();
-      }, 550);
-    }
-
+    this.state = res.state;
+    this.notify();
     return true;
   }
 
+  public onBeforeCorrectAdvance?: (correctVal: number, done: () => void) => void;
+
   public answer(choice: number): boolean {
-    if (this.state.phase !== 'question') return false;
+    if (this.state.phase !== 'question' || !this.state.pendingArithmetic) return false;
 
     const res = submitAnswer(this.state, choice);
-    this.state = res.state;
 
     if (res.correct) {
       soundManager.playCorrect();
+      if (this.onBeforeCorrectAdvance) {
+        this.onBeforeCorrectAdvance(choice, () => {
+          this.state = res.state;
+          if (this.state.stage === 'solved') {
+            setTimeout(() => soundManager.playCelebration(), 300);
+          }
+          this.notify();
+        });
+        return true;
+      }
+      this.state = res.state;
       if (this.state.stage === 'solved') {
         setTimeout(() => soundManager.playCelebration(), 300);
       }
     } else {
       soundManager.playIncorrect();
+      this.state = res.state;
     }
 
     this.notify();

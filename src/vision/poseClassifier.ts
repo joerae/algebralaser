@@ -81,10 +81,10 @@ export function classifyHandPose(landmarks: LandmarkPoint[], confidenceScore: nu
 
   // Classifications:
   // 1. Open palm: all four fingers reasonably straight
-  const isOpenPalm = indexStraightness > 0.82 && 
-                     middleStraightness > 0.80 && 
-                     ringStraightness > 0.80 && 
-                     pinkyStraightness > 0.78;
+  const isOpenPalm = indexStraightness > 0.80 && 
+                     middleStraightness > 0.76 && 
+                     ringStraightness > 0.76 && 
+                     pinkyStraightness > 0.72;
 
   // 2. Foreshortened: straight in 3D but projected 2D chord is short
   const isForeshortened = indexStraightness > 0.85 && index2dRatio < 0.40;
