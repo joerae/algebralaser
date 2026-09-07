@@ -60,7 +60,7 @@ class App {
     this.camera = new CameraManager();
     this.landmarker = new HandLandmarkerService();
     this.canvasOverlay = new CanvasOverlay(canvasEl);
-    this.raySmoother = new RaySmoother(0.35);
+    this.raySmoother = new RaySmoother(0.38, 0.85);
 
     // Wire arithmetic RHS collapse animation before advancing to next step
     this.game.onBeforeCorrectAdvance = (correctVal, done) => {
@@ -257,7 +257,8 @@ class App {
           primaryHand.landmarks[8], // index tip
           primaryHand.landmarks[6], // index pip
           cameraViewport,
-          true
+          true,
+          primaryHand.landmarks[5]  // index mcp knuckle for rock-solid stability
         );
 
         const smoothed = this.raySmoother.smooth(rawRay.origin, rawRay.direction);
@@ -356,7 +357,8 @@ class App {
         const caption = this.bubbleEl.querySelector('.bubble-caption');
         const termEl = this.bubbleEl.querySelector('.bubble-term');
 
-        // Dynamic sign flip inside bubble
+        // Dynamic sign and operation color flip inside bubble
+        this.bubbleEl.classList.remove('op-plus', 'op-minus', 'op-times', 'op-divide');
         if (termEl) {
           if (gameState.carriedTerm === 'constant') {
             const isNeg = gameState.currentB < 0;
@@ -365,16 +367,20 @@ class App {
               // Inverted operation after crossing equals sign
               const flippedSign = isNeg ? '+' : '−';
               termEl.textContent = `${flippedSign}${absB}`;
+              this.bubbleEl.classList.add(isNeg ? 'op-plus' : 'op-minus');
             } else {
               // Original operation on LHS
               const origSign = isNeg ? '−' : '+';
               termEl.textContent = `${origSign}${absB}`;
+              this.bubbleEl.classList.add(isNeg ? 'op-minus' : 'op-plus');
             }
           } else if (gameState.carriedTerm === 'coefficient') {
             if (isCrossed) {
               termEl.textContent = `÷ ${gameState.currentA}`;
+              this.bubbleEl.classList.add('op-divide');
             } else {
               termEl.textContent = `x ${gameState.currentA}`;
+              this.bubbleEl.classList.add('op-times');
             }
           }
         }
@@ -560,7 +566,7 @@ class App {
 
     eqTargets.forEach(t => {
       const rect = t.element.getBoundingClientRect();
-      const pad = 12;
+      const pad = 24;
       targets.push({
         id: t.id,
         type: t.type,
@@ -579,7 +585,7 @@ class App {
 
     ansTargets.forEach(t => {
       const rect = t.element.getBoundingClientRect();
-      const pad = 10;
+      const pad = 22;
       targets.push({
         id: t.id,
         type: t.type,
@@ -600,7 +606,7 @@ class App {
     const nextBtn = document.getElementById('btn-next');
     if (nextBtn) {
       const rect = nextBtn.getBoundingClientRect();
-      const pad = 12;
+      const pad = 22;
       targets.push({
         id: 'btn-next',
         type: 'utility',
@@ -621,7 +627,7 @@ class App {
     const replayBtn = document.getElementById('btn-replay');
     if (replayBtn) {
       const rect = replayBtn.getBoundingClientRect();
-      const pad = 8;
+      const pad = 16;
       targets.push({
         id: 'btn-replay',
         type: 'utility',
@@ -684,6 +690,43 @@ class App {
         }
       }
     });
+
+    // Camera View Size Toggle (2x Large vs 1x Standard)
+    const sizeBtn = document.getElementById('btn-camera-size');
+    if (sizeBtn && this.cameraBoxEl) {
+      const updateSizeUI = () => {
+        const isCompact = this.cameraBoxEl?.classList.contains('size-compact');
+        const label = document.getElementById('camera-size-label');
+        if (label) {
+          label.textContent = isCompact ? '1x View' : '2x View';
+        }
+        sizeBtn.setAttribute(
+          'title',
+          isCompact ? 'Click to expand to 2x Large View' : 'Click to shrink to 1x Standard View'
+        );
+      };
+
+      // Restore saved preference if exists
+      const savedPreference = localStorage.getItem('algebra_camera_size');
+      if (savedPreference === 'compact') {
+        this.cameraBoxEl.classList.add('size-compact');
+      }
+      updateSizeUI();
+
+      sizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.cameraBoxEl?.classList.toggle('size-compact');
+        const isNowCompact = this.cameraBoxEl?.classList.contains('size-compact');
+        try {
+          localStorage.setItem('algebra_camera_size', isNowCompact ? 'compact' : 'large');
+        } catch {
+          // localStorage may fail in private mode
+        }
+        updateSizeUI();
+        this.needTargetsRefresh = true;
+        this.updateArrowAndLayout(this.game.getState().phase);
+      });
+    }
   }
 }
 

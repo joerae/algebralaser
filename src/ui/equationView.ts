@@ -123,7 +123,7 @@ export class EquationView {
       let exprHtml = '';
       if (pendingArithmetic.operator === '÷') {
         exprHtml = `
-          <div class="fraction" style="font-size: 50px;">
+          <div class="fraction op-divide" style="font-size: 50px;">
             <div class="num">${pendingArithmetic.operand1}</div>
             <div class="fraction-bar"></div>
             <div class="denom">${pendingArithmetic.operand2}</div>
@@ -131,7 +131,8 @@ export class EquationView {
         `;
       } else {
         const opSymbol = pendingArithmetic.operator === '+' ? '+' : '−';
-        exprHtml = `<span class="math-symbol" style="font-size: 54px; color: #fbbf24;">${pendingArithmetic.operand1} ${opSymbol} ${pendingArithmetic.operand2}</span>`;
+        const opClass = pendingArithmetic.operator === '+' ? 'op-plus' : 'op-minus';
+        exprHtml = `<span class="math-symbol ${opClass}" style="font-size: 54px;">${pendingArithmetic.operand1} ${opSymbol} ${pendingArithmetic.operand2}</span>`;
       }
 
       this.container.innerHTML = `
@@ -153,14 +154,14 @@ export class EquationView {
         const isNeg = currentB < 0;
         const absB = Math.abs(currentB);
         const leftVar = currentA > 1 
-          ? `${currentA} <span class="term-times">x</span> <span class="term-variable">Y</span>` 
+          ? `${currentA} <span class="term-times op-times">x</span> <span class="term-variable">Y</span>` 
           : `<span class="term-variable">Y</span>`;
 
         this.container.innerHTML = `
           ${historyHtml}
           <div class="equation-rail">
             <div class="math-symbol">${leftVar}</div>
-            <div class="term-tile term-ghost">${isNeg ? '−' : '+'} ${absB}</div>
+            <div class="term-tile term-ghost ${isNeg ? 'op-minus' : 'op-plus'}">${isNeg ? '−' : '+'} ${absB}</div>
             <div class="math-symbol symbol-equals">=</div>
             <div class="math-symbol">${currentC}</div>
             <div id="drop-destination" class="drop-destination ${isDestinationHovered ? 'active' : ''}">
@@ -178,15 +179,15 @@ export class EquationView {
         this.container.innerHTML = `
           ${historyHtml}
           <div class="equation-rail">
-            <div class="term-tile term-ghost">${currentA}</div>
-            <div class="math-symbol term-times">x</div>
+            <div class="term-tile term-ghost op-times">${currentA}</div>
+            <div class="math-symbol term-times op-times">x</div>
             <div class="math-symbol term-variable">Y</div>
             <div class="math-symbol symbol-equals">=</div>
-            <div class="fraction">
+            <div class="fraction op-divide">
               <div class="num">${currentC}</div>
               <div class="fraction-bar"></div>
               <div id="drop-destination" class="drop-destination ${isDestinationHovered ? 'active' : ''}" style="min-height: 48px; padding: 2px 14px;">
-                <div class="denom" style="color: #38bdf8; font-size: 28px;">⇣</div>
+                <div class="denom" style="color: #c084fc; font-size: 28px;">⇣</div>
               </div>
             </div>
           </div>
@@ -204,10 +205,10 @@ export class EquationView {
     if (currentA > 1) {
       const isInteractiveCoeff = stage === 'undo_coefficient';
       leftHtml += `
-        <div id="term-coefficient" class="term-tile ${isInteractiveCoeff ? 'interactive' : ''}" data-term="coefficient">
+        <div id="term-coefficient" class="term-tile op-times ${isInteractiveCoeff ? 'interactive' : ''}" data-term="coefficient">
           ${currentA}
         </div>
-        <div class="math-symbol term-times">x</div>
+        <div class="math-symbol term-times op-times">x</div>
         <div class="math-symbol term-variable">Y</div>
       `;
     } else {
@@ -220,7 +221,7 @@ export class EquationView {
       const absB = Math.abs(currentB);
       const isInteractiveConst = stage === 'undo_constant';
       leftHtml += `
-        <div id="term-constant" class="term-tile ${isInteractiveConst ? 'interactive' : ''}" data-term="constant">
+        <div id="term-constant" class="term-tile ${isNeg ? 'op-minus' : 'op-plus'} ${isInteractiveConst ? 'interactive' : ''}" data-term="constant">
           ${isNeg ? '−' : '+'} ${absB}
         </div>
       `;

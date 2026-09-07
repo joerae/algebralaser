@@ -161,7 +161,7 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.1.0</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.3.0</button>
       </div>
     `;
 

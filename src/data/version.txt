@@ -1,11 +1,36 @@
-Version 1.1.0
+Version 1.3.0
 Date: 2026-09-08
 
 Release Notes:
+- Big-Screen Camera View Expansion (2x Size):
+  * Drastically enlarged camera viewport on desktop and ultrawide/high-res displays from 400px height (533px width) up to 780px-800px height (1040px-1066px width).
+  * Roughly doubles linear dimensions and quadruples usable tracking area for finger lasers and hand gestures.
+  * Preserves unclipped 4:3 aspect ratio and object-fit: contain so hands and finger tips are always 100% visible.
+- Instant Viewport Size Toggle:
+  * Added a sleek "2x View" / "1x View" toggle button in the camera box header.
+  * Allows switching instantly between 2x Large and 1x Compact modes on demand.
+  * Remembers camera size preference across sessions in localStorage.
+- Dynamic Responsive Clearance:
+  * Uses adaptive CSS clamp(420px, min(65vh, calc(100vh - 310px)), 780px) and max-width: min(92vw, calc(100vw - 580px), 1100px) so the answers column and connector arrow never collide with or overlap the camera frame.
+  * Chromebooks (1366x768) and compact screens remain automatically constrained to fit without page scrolling.
+- Centered Stage Widening:
+  * Expanded workspace-center container max-width to 1440px to give high-resolution monitors ample room.
+
+Version 1.2.0
+Date: 2026-09-08
+
+Release Notes:
+- Unclipped Camera Viewport: Switched camera view to a true 4:3 container with object-fit contain, eliminating cropping of the video feed so fingers and hand gestures remain completely in view.
+- Finger Laser Performance & Accuracy: Integrated adaptive velocity-responsive ray smoothing (high responsiveness during swift aiming, rock-solid stability during dwell) and lengthened skeletal baseline from MCP knuckle through tip to cut angular noise in half.
+- Expanded Target Hitboxes: Increased interactive target padding to 22-24px for reliable, effortless distance targeting.
+- Responsive Chromebook Layout: Added fluid scaling and responsive CSS rules for 1366x768 and smaller displays to eliminate vertical or horizontal scrolling.
+- Pedagogical Operation Colors: Introduced distinct visual duality for opposite operations:
+  * Addition (+): Radiant Glowing Ice-White
+  * Subtraction (−): Void Obsidian / Dark Black
+  * Multiplication (x): Solar Glowing Crimson-Red
+  * Division (÷): Cosmic Glowing Royal-Purple
+  Carried floating bubbles and rail tiles dynamically transform colors when crossing the equals sign.
 - Running Equation History: Displays ongoing algebraic derivation with Star Wars-style receding 3D perspective lines above the active equation.
-- Camera Viewport Adjustment: Lowered and optimized camera viewing box to provide generous vertical space for the equation workspace.
-- Variable Standardization: Standardized all linear equations to use variable 'Y' to prevent visual confusion with the multiplication symbol.
-- Multiplication Representation: Displayed multiplication as "a x Y" (e.g., "3 x Y") for clear visual transformation between multiplication and division.
-- Visible Next Button: Added a prominent, unclipped "Next Puzzle →" action button upon equation completion, selectable via mouse/touch or finger laser dwell, alongside the open-palm gesture.
-- Ray Target Calibration: Fixed first-question laser ray hit detection for arithmetic answer cards next to the camera box.
-- Version Inspector: Added clickable version tag in the footer with an interactive release notes modal.
+- Variable Standardization: Standardized all linear equations to use variable 'Y'.
+- Multiplication Representation: Displayed multiplication as "a x Y".
+- Next Action Button: Large, prominent "Next Puzzle →" button with dwell progress and open-palm advance.

@@ -115,14 +115,18 @@ export function castRayAgainstTargets(
   return bestHit;
 }
 
-// Light exponential smoothing filter for ray origin and direction
+// Velocity-adaptive smoothing filter:
+// High velocity (moving/aiming) -> high alpha (up to 0.85) for instant zero-lag response.
+// Low velocity (hovering/dwelling) -> low alpha (down to 0.38) for rock-solid stability.
 export class RaySmoother {
   private smoothedOrigin: { x: number; y: number } | null = null;
   private smoothedDirection: { x: number; y: number } | null = null;
-  private alpha: number;
+  private minAlpha: number;
+  private maxAlpha: number;
 
-  constructor(alpha: number = 0.35) {
-    this.alpha = alpha;
+  constructor(minAlpha: number = 0.38, maxAlpha?: number) {
+    this.minAlpha = minAlpha;
+    this.maxAlpha = maxAlpha !== undefined ? maxAlpha : (minAlpha === 0.38 ? 0.85 : minAlpha);
   }
 
   reset() {
@@ -140,12 +144,20 @@ export class RaySmoother {
       return { origin: { ...origin }, direction: { ...direction } };
     }
 
-    const oX = this.smoothedOrigin.x * (1 - this.alpha) + origin.x * this.alpha;
-    const oY = this.smoothedOrigin.y * (1 - this.alpha) + origin.y * this.alpha;
+    // Measure delta in position and direction to determine movement velocity
+    const deltaOriginDist = Math.hypot(origin.x - this.smoothedOrigin.x, origin.y - this.smoothedOrigin.y);
+    const deltaDirDist = Math.hypot(direction.x - this.smoothedDirection.x, direction.y - this.smoothedDirection.y);
+
+    // Compute dynamic alpha: fast movements get high alpha (instant), slow movements get low alpha (steady)
+    const speedScore = Math.min(1.0, (deltaOriginDist / 20) + (deltaDirDist * 3.5));
+    const dynamicAlpha = this.minAlpha + (this.maxAlpha - this.minAlpha) * speedScore;
+
+    const oX = this.smoothedOrigin.x * (1 - dynamicAlpha) + origin.x * dynamicAlpha;
+    const oY = this.smoothedOrigin.y * (1 - dynamicAlpha) + origin.y * dynamicAlpha;
     this.smoothedOrigin = { x: oX, y: oY };
 
-    const dX = this.smoothedDirection.x * (1 - this.alpha) + direction.x * this.alpha;
-    const dY = this.smoothedDirection.y * (1 - this.alpha) + direction.y * this.alpha;
+    const dX = this.smoothedDirection.x * (1 - dynamicAlpha) + direction.x * dynamicAlpha;
+    const dY = this.smoothedDirection.y * (1 - dynamicAlpha) + direction.y * dynamicAlpha;
     const len = Math.hypot(dX, dY);
     this.smoothedDirection = len > 0 ? { x: dX / len, y: dY / len } : { x: 0, y: -1 };
 
