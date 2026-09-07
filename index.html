@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magic Finger Algebra — Laser Hand Tracking</title>
+  <meta name="description" content="A magical browser game where you rearrange and solve linear equations using a laser beam from your index finger via webcam hand tracking." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles/index.css" />
+</head>
+<body>
+  <div id="app">
+    <video id="webcam-video" playsinline muted autoplay></video>
+    <canvas id="canvas-overlay"></canvas>
+
+    <header id="hud-header" class="hud-header"></header>
+
+    <main class="stage-container">
+      <section id="equation-area" class="equation-area" aria-label="Equation workspace"></section>
+      <aside id="answers-column" class="answers-column" aria-label="Arithmetic answers" style="display: none;"></aside>
+    </main>
+
+    <footer id="hud-footer" class="hud-footer"></footer>
+
+    <div id="camera-banner" class="camera-prompt-banner" style="display: none;"></div>
+    <div id="settings-modal" class="modal-backdrop" style="display: none;"></div>
+    <div id="debug-overlay" class="debug-overlay" style="display: none;"></div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
