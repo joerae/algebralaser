@@ -41,33 +41,37 @@ export class HandLandmarkerService {
         return { success: false, error: 'Cancelled' };
       }
 
-      // 2. Try GPU first, fallback to CPU
-      const modelPath = '/models/hand_landmarker.task';
+      // 2. Try loading model with robust fallbacks: Local GPU -> Local CPU -> CDN GPU -> CDN CPU
+      const localModel = '/models/hand_landmarker.task';
+      const cdnModel = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+      const createOptions = (modelAssetPath: string, delegate: 'GPU' | 'CPU') => ({
+        baseOptions: {
+          modelAssetPath,
+          delegate
+        },
+        runningMode: 'VIDEO' as const,
+        numHands: 2,
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
       try {
-        this.landmarker = await HandLandmarker.createFromOptions(visionWasm, {
-          baseOptions: {
-            modelAssetPath: modelPath,
-            delegate: 'GPU'
-          },
-          runningMode: 'VIDEO',
-          numHands: 2,
-          minHandDetectionConfidence: 0.5,
-          minHandPresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5
-        });
-      } catch (gpuErr) {
-        console.warn('GPU HandLandmarker creation failed, falling back to CPU:', gpuErr);
-        this.landmarker = await HandLandmarker.createFromOptions(visionWasm, {
-          baseOptions: {
-            modelAssetPath: modelPath,
-            delegate: 'CPU'
-          },
-          runningMode: 'VIDEO',
-          numHands: 2,
-          minHandDetectionConfidence: 0.5,
-          minHandPresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5
-        });
+        this.landmarker = await HandLandmarker.createFromOptions(visionWasm, createOptions(localModel, 'GPU'));
+      } catch (e1) {
+        console.warn('Local GPU model load failed, trying local CPU:', e1);
+        try {
+          this.landmarker = await HandLandmarker.createFromOptions(visionWasm, createOptions(localModel, 'CPU'));
+        } catch (e2) {
+          console.warn('Local CPU model load failed, trying CDN GPU:', e2);
+          try {
+            this.landmarker = await HandLandmarker.createFromOptions(visionWasm, createOptions(cdnModel, 'GPU'));
+          } catch (e3) {
+            console.warn('CDN GPU model load failed, trying CDN CPU:', e3);
+            this.landmarker = await HandLandmarker.createFromOptions(visionWasm, createOptions(cdnModel, 'CPU'));
+          }
+        }
       }
 
       this.isInitializing = false;

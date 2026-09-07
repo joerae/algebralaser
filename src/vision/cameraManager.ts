@@ -18,11 +18,10 @@ export class CameraManager {
   }
 
   public async startCamera(videoElement: HTMLVideoElement): Promise<{ success: boolean; error?: string }> {
+    this.stopCamera();
     this.videoElement = videoElement;
     this.startupToken++;
     const currentToken = this.startupToken;
-
-    this.stopCamera();
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return { success: false, error: 'Camera API not supported in this browser. You can still play with Mouse & Keyboard!' };
@@ -39,7 +38,13 @@ export class CameraManager {
         }
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (e) {
+        console.warn('Ideal camera constraints failed, attempting fallback:', e);
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
 
       // Guard against race conditions if stopped during request
       if (currentToken !== this.startupToken) {

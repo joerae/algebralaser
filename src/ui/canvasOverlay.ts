@@ -27,11 +27,11 @@ export class CanvasOverlay {
   }
 
   public render(
-    video: HTMLVideoElement | null,
     hands: HandLandmarks[] | null,
     ray: LaserRay | null,
     hit: RayHitResult | null,
     carriedPos: { x: number; y: number } | null,
+    cameraViewport: ViewportRect,
     debugTargets?: InteractiveTarget[]
   ) {
     const width = window.innerWidth;
@@ -40,23 +40,10 @@ export class CanvasOverlay {
 
     ctx.clearRect(0, 0, width, height);
 
-    const viewport: ViewportRect = { left: 0, top: 0, width, height };
-
-    // 1. Mirrored Camera Video (if active and not hands-only)
-    if (video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && !this.handsOnly) {
-      ctx.save();
-      // Draw mirrored video with subtle opacity
-      ctx.translate(width, 0);
-      ctx.scale(-1, 1);
-      ctx.globalAlpha = 0.25;
-      ctx.drawImage(video, 0, 0, width, height);
-      ctx.restore();
-    }
-
-    // 2. Draw Hand Skeletons
+    // 1. Draw Hand Skeletons over camera viewport
     if (hands && hands.length > 0) {
       for (const hand of hands) {
-        this.drawHandSkeleton(hand.landmarks, viewport);
+        this.drawHandSkeleton(hand.landmarks, cameraViewport);
       }
     }
 

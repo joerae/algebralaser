@@ -12,13 +12,32 @@
 </head>
 <body>
   <div id="app">
-    <video id="webcam-video" playsinline muted autoplay></video>
     <canvas id="canvas-overlay"></canvas>
-
     <header id="hud-header" class="hud-header"></header>
 
     <main class="stage-container">
-      <section id="equation-area" class="equation-area" aria-label="Equation workspace"></section>
+      <div class="workspace-center">
+        <section id="equation-area" class="equation-area" aria-label="Equation workspace"></section>
+
+        <div id="camera-box" class="camera-box">
+          <div class="camera-box-header">
+            <div class="camera-header-left">
+              <span id="camera-status-dot" class="camera-status-dot"></span>
+              <span class="camera-title">Laser Hand Tracker</span>
+            </div>
+            <span id="camera-hint-badge" class="camera-hint-badge">Point up at equation ☝️</span>
+          </div>
+          <div id="camera-feed-container" class="camera-feed-container">
+            <video id="webcam-video" playsinline muted autoplay></video>
+            <div id="camera-placeholder" class="camera-placeholder">
+              <div class="placeholder-icon">📷</div>
+              <div class="placeholder-title">Webcam Inactive</div>
+              <div class="placeholder-subtitle">Click "Enable Camera" above to shine your finger laser, or play with mouse.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <aside id="answers-column" class="answers-column" aria-label="Arithmetic answers" style="display: none;"></aside>
     </main>
 

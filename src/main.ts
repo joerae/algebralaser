@@ -58,13 +58,18 @@ class App {
     });
 
     this.hudView = new HudView(hudHeader, hudFooter, modalEl, debugEl, bannerEl, {
-      onEnableCamera: () => this.startCamera(),
+      onEnableCamera: () => this.toggleCamera(),
       onToggleMute: () => {},
       onToggleDebug: () => {
         this.canvasOverlay.showDebug = !this.canvasOverlay.showDebug;
       },
       onToggleHandsOnly: () => {
         this.canvasOverlay.handsOnly = !this.canvasOverlay.handsOnly;
+        if (this.canvasOverlay.handsOnly) {
+          this.videoEl.classList.add('hands-only');
+        } else {
+          this.videoEl.classList.remove('hands-only');
+        }
       },
       onToggleReducedMotion: () => {
         this.game.reducedMotion = !this.game.reducedMotion;
@@ -117,22 +122,48 @@ class App {
     this.hudView.updateInstruction(instr);
   }
 
+  private async toggleCamera() {
+    if (this.isCameraRunning) {
+      this.camera.stopCamera();
+      this.isCameraRunning = false;
+      this.hudView.setCameraState(false);
+      this.videoEl.classList.remove('active');
+      document.getElementById('camera-box')?.classList.remove('active');
+      document.getElementById('camera-status-dot')?.classList.remove('active');
+      const placeholder = document.getElementById('camera-placeholder');
+      if (placeholder) placeholder.style.display = 'flex';
+      this.hudView.updateInstruction('Camera stopped. Mouse & keyboard active.');
+      return;
+    }
+    await this.startCamera();
+  }
+
   private async startCamera() {
+    this.hudView.updateInstruction('Requesting camera access...');
     const startRes = await this.camera.startCamera(this.videoEl);
     if (!startRes.success) {
       alert(startRes.error || 'Unable to access camera.');
+      this.hudView.updateInstruction('Camera unavailable. Playing with mouse & keyboard.');
       return;
     }
 
+    this.hudView.updateInstruction('Loading hand tracking model...');
     const landmarkerRes = await this.landmarker.initialize();
     if (!landmarkerRes.success) {
       alert(landmarkerRes.error || 'Unable to load hand landmarker.');
       this.camera.stopCamera();
+      this.hudView.updateInstruction('Hand tracking model failed to load. Playing with mouse.');
       return;
     }
 
     this.isCameraRunning = true;
     this.hudView.setCameraState(true);
+    this.videoEl.classList.add('active');
+    document.getElementById('camera-box')?.classList.add('active');
+    document.getElementById('camera-status-dot')?.classList.add('active');
+    const placeholder = document.getElementById('camera-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+    this.hudView.updateInstruction('Camera & finger laser active! Point your index finger.');
   }
 
   private loop(timestamp: number) {
@@ -148,6 +179,21 @@ class App {
     // Collect interactive targets from DOM
     interactiveTargets = this.collectTargets();
 
+    // Determine camera viewport bounds (1/3 screen box)
+    const cameraFeedEl = document.getElementById('camera-feed-container');
+    const cameraRect = cameraFeedEl ? cameraFeedEl.getBoundingClientRect() : {
+      left: window.innerWidth * 0.35,
+      top: window.innerHeight * 0.6,
+      width: window.innerWidth * 0.3,
+      height: window.innerHeight * 0.35
+    };
+    const cameraViewport = {
+      left: cameraRect.left,
+      top: cameraRect.top,
+      width: cameraRect.width,
+      height: cameraRect.height
+    };
+
     if (this.isCameraRunning && this.videoEl.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       hands = this.landmarker.detect(this.videoEl, nowSec);
 
@@ -156,11 +202,10 @@ class App {
         const primaryHand = hands[0];
         classifiedPose = classifyHandPose(primaryHand.landmarks, primaryHand.score);
 
-        const viewport = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
         const rawRay = computeLaserRay(
           primaryHand.landmarks[8], // index tip
           primaryHand.landmarks[6], // index pip
-          viewport,
+          cameraViewport,
           true
         );
 
@@ -200,13 +245,13 @@ class App {
       this.answersView.render(gameState.pendingArithmetic, interState.hoveredTargetId, interState.dwellProgress);
     }
 
-    // Render Canvas Overlay (camera video, hand skeleton, laser, particles)
+    // Render Canvas Overlay (hand skeleton, laser, particles)
     this.canvasOverlay.render(
-      this.videoEl,
       hands,
       laserRay,
       hitResult,
       interState.carriedPosition,
+      cameraViewport,
       interactiveTargets
     );
 
