@@ -1,17 +1,17 @@
 export type EquationFamily = 
-  | 'x_plus_b'    // x + b = c
-  | 'x_minus_b'   // x - b = c
-  | 'ax'          // ax = c
-  | 'ax_plus_b'   // ax + b = c
-  | 'ax_minus_b'; // ax - b = c
+  | 'x_plus_b'    // Y + b = c
+  | 'x_minus_b'   // Y - b = c
+  | 'ax'          // a x Y = c
+  | 'ax_plus_b'   // a x Y + b = c
+  | 'ax_minus_b'; // a x Y - b = c
 
 export interface LinearEquationDef {
   id: string;
   family: EquationFamily;
-  a: number;         // coefficient of x (>= 1)
+  a: number;         // coefficient of Y (>= 1)
   b: number;         // constant term (can be positive, negative, or 0)
   c: number;         // right-hand side constant
-  solution: number;  // x value
+  solution: number;  // Y value
   description?: string;
 }
 
@@ -40,7 +40,7 @@ export interface PendingArithmetic {
 }
 
 export interface CancellationDisplay {
-  leftExpr: string;       // e.g. "3x - 1 + 1" or "(3x)/3"
+  leftExpr: string;       // e.g. "3 x Y - 1 + 1" or "(3 x Y)/3"
   rightExpr: string;      // e.g. "11 + 1" or "12/3"
   cancellingPart: string; // e.g. "- 1 + 1" or "/3"
   caption: string;        // e.g. "Add 1 to both sides" or "Divide both sides by 3"
@@ -57,6 +57,7 @@ export interface EquationState {
   pendingArithmetic: PendingArithmetic | null;
   cancellation: CancellationDisplay | null;
   errorMessage: string | null;
+  equationHistory: string[]; // Running list of previous equation lines
   history: HistorySnapshot[];
 }
 
@@ -68,4 +69,5 @@ export interface HistorySnapshot {
   phase: GamePhase;
   carriedTerm: 'constant' | 'coefficient' | null;
   pendingArithmetic: PendingArithmetic | null;
+  equationHistory: string[];
 }

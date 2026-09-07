@@ -7,6 +7,23 @@ import {
 } from './types';
 import { createPendingArithmetic } from './puzzleGenerator';
 
+export function formatEquationLine(a: number, b: number, c: number): string {
+  let left = '';
+  if (a === 1) {
+    left = 'Y';
+  } else {
+    left = `${a} x Y`;
+  }
+
+  if (b > 0) {
+    left += ` + ${b}`;
+  } else if (b < 0) {
+    left += ` − ${Math.abs(b)}`;
+  }
+
+  return `${left} = ${c}`;
+}
+
 export function createInitialState(problem: LinearEquationDef): EquationState {
   const stage = problem.b !== 0 
     ? 'undo_constant' 
@@ -23,6 +40,7 @@ export function createInitialState(problem: LinearEquationDef): EquationState {
     pendingArithmetic: null,
     cancellation: null,
     errorMessage: null,
+    equationHistory: [],
     history: []
   };
 }
@@ -35,7 +53,8 @@ function saveSnapshot(state: EquationState): HistorySnapshot {
     stage: state.stage,
     phase: state.phase,
     carriedTerm: state.carriedTerm,
-    pendingArithmetic: state.pendingArithmetic ? { ...state.pendingArithmetic } : null
+    pendingArithmetic: state.pendingArithmetic ? { ...state.pendingArithmetic } : null,
+    equationHistory: [...state.equationHistory]
   };
 }
 
@@ -110,7 +129,7 @@ export function commitDrop(
     
     // Caption & cancellation
     const caption = isNegative ? `Add ${absB} to both sides.` : `Subtract ${absB} from both sides.`;
-    const leftSymbol = state.currentA === 1 ? 'x' : `${state.currentA}x`;
+    const leftSymbol = state.currentA === 1 ? 'Y' : `${state.currentA} x Y`;
     const origSign = isNegative ? '−' : '+';
     const balanceSign = isNegative ? '+' : '−';
 
@@ -147,7 +166,7 @@ export function commitDrop(
     const caption = `Divide both sides by ${a}.`;
 
     const cancellation: CancellationDisplay = {
-      leftExpr: `(${a}x) / ${a}`,
+      leftExpr: `(${a} x Y) / ${a}`,
       rightExpr: `${state.currentC}/${a}`,
       cancellingPart: `${a}/`,
       caption
@@ -198,6 +217,10 @@ export function submitAnswer(
     };
   }
 
+  // Record completed line before simplifying state
+  const completedLine = formatEquationLine(state.currentA, state.currentB, state.currentC);
+  const updatedEquationHistory = [...state.equationHistory, completedLine];
+
   // Correct answer! Advance equation
   const history = [...state.history, saveSnapshot(state)];
   const newC = state.pendingArithmetic.correctAnswer;
@@ -219,6 +242,7 @@ export function submitAnswer(
     state: {
       ...state,
       history,
+      equationHistory: updatedEquationHistory,
       currentA: newA,
       currentB: newB,
       currentC: newC,
@@ -251,6 +275,7 @@ export function undo(state: EquationState): { state: EquationState; success: boo
       phase: last.phase,
       carriedTerm: last.carriedTerm,
       pendingArithmetic: last.pendingArithmetic,
+      equationHistory: last.equationHistory || [],
       cancellation: null,
       errorMessage: null
     },
@@ -268,7 +293,7 @@ export function formatVerification(problem: LinearEquationDef): {
   if (a === 1) {
     subStep = b === 0 ? `${solution} = ${c}` : `${solution} ${b < 0 ? '−' : '+'} ${Math.abs(b)} = ${c}`;
   } else {
-    subStep = b === 0 ? `${a} × ${solution} = ${c}` : `${a} × ${solution} ${b < 0 ? '−' : '+'} ${Math.abs(b)} = ${c}`;
+    subStep = b === 0 ? `${a} x ${solution} = ${c}` : `${a} x ${solution} ${b < 0 ? '−' : '+'} ${Math.abs(b)} = ${c}`;
   }
 
   const evalStep = b === 0 

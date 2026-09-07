@@ -1,5 +1,4 @@
 import { EquationState } from '../math/types';
-import { formatVerification } from '../math/linearEquation';
 
 export class EquationView {
   private container: HTMLElement;
@@ -24,6 +23,17 @@ export class EquationView {
     this.onReplayCallback = callbacks.onReplay;
   }
 
+  private renderHistory(historyLines: string[]): string {
+    if (!historyLines || historyLines.length === 0) return '';
+    const n = historyLines.length;
+    const linesHtml = historyLines.map((line, idx) => {
+      const depth = n - idx; // depth 1 is most recent
+      return `<div class="history-line" data-depth="${depth}">${line}</div>`;
+    }).join('');
+
+    return `<div class="equation-history-container">${linesHtml}</div>`;
+  }
+
   public render(
     state: EquationState, 
     isDestinationHovered: boolean = false, 
@@ -38,42 +48,43 @@ export class EquationView {
       carriedTerm, 
       cancellation, 
       pendingArithmetic, 
-      problem 
+      equationHistory 
     } = state;
 
-    // 1. Solved State: Final Equation + Verification
+    const historyHtml = this.renderHistory(equationHistory);
+
+    // 1. Solved State: Full Derivation History + Active Solution Line + Unclipped Prominent Next Button
     if (phase === 'solved') {
-      const verif = formatVerification(problem);
       this.container.innerHTML = `
-        <div class="equation-rail" style="flex-direction: column; gap: 14px;">
-          <div style="font-size: 58px; font-weight: 700; color: #38bdf8;">
-            x = ${currentC}
+        <div class="solved-panel">
+          ${historyHtml}
+          <div class="equation-rail" style="padding: 6px 36px; min-height: 76px;">
+            <div class="solved-line-wrap">
+              <span class="math-symbol term-variable">Y</span>
+              <span class="math-symbol symbol-equals">=</span>
+              <span class="math-symbol" style="color: #38bdf8;">${currentC}</span>
+              <span class="solved-check">✓</span>
+            </div>
           </div>
-          <div class="verification-panel">
-            <div class="verif-title">Balance Verification</div>
-            <div class="verif-step">${verif.subStep}</div>
-            <div class="verif-step">${verif.evalStep}</div>
-            <div class="verif-step final">${verif.finalStep} ✓</div>
-            <div class="verif-actions">
-              <button id="btn-replay" class="icon-btn">Replay</button>
-              <button id="btn-next" class="action-btn-primary action-btn-dwell">
-                <span class="btn-text">Next Puzzle →</span>
-                <svg class="dwell-svg btn-dwell-svg" viewBox="0 0 44 44">
-                  <circle class="dwell-track" cx="22" cy="22" r="18"></circle>
-                  <circle class="dwell-fill" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"></circle>
-                </svg>
-              </button>
+          <div class="solved-actions">
+            <button id="btn-replay" class="icon-btn">Replay</button>
+            <button id="btn-next" class="action-btn-primary action-btn-dwell">
+              <span class="btn-text">Next Puzzle →</span>
+              <svg class="dwell-svg btn-dwell-svg" viewBox="0 0 44 44">
+                <circle class="dwell-track" cx="22" cy="22" r="18"></circle>
+                <circle class="dwell-fill" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"></circle>
+              </svg>
+            </button>
+          </div>
+          <div id="open-palm-advance" class="open-palm-advance-badge">
+            <div class="palm-ring-wrap">
+              <span class="palm-emoji">👋</span>
+              <svg class="palm-ring-svg" viewBox="0 0 48 48">
+                <circle class="palm-track" cx="24" cy="24" r="20"></circle>
+                <circle class="palm-fill" cx="24" cy="24" r="20" stroke-dasharray="125.66" stroke-dashoffset="125.66"></circle>
+              </svg>
             </div>
-            <div id="open-palm-advance" class="open-palm-advance-badge">
-              <div class="palm-ring-wrap">
-                <span class="palm-emoji">👋</span>
-                <svg class="palm-ring-svg" viewBox="0 0 48 48">
-                  <circle class="palm-track" cx="24" cy="24" r="20"></circle>
-                  <circle class="palm-fill" cx="24" cy="24" r="20" stroke-dasharray="125.66" stroke-dashoffset="125.66"></circle>
-                </svg>
-              </div>
-              <span class="palm-text">Hold Open Palm 👋 or Aim laser at Next to continue</span>
-            </div>
+            <span class="palm-text">Aim laser at Next Puzzle → or show Open Palm 👋 to continue</span>
           </div>
         </div>
       `;
@@ -86,6 +97,7 @@ export class EquationView {
     // 2. Cancellation Animation Phase
     if (phase === 'cancelling' && cancellation) {
       this.container.innerHTML = `
+        ${historyHtml}
         <div class="equation-rail">
           <div class="cancellation-step">
             <span class="cancelling-term">${cancellation.leftExpr}</span>
@@ -99,13 +111,19 @@ export class EquationView {
 
     // 3. Question Phase (Unsimplified intermediate expression, ready to collapse)
     if (phase === 'question' && pendingArithmetic) {
-      // When dividing by coefficient, the LHS is just x (the coefficient cancels)
-      const leftSide = pendingArithmetic.operator === '÷' ? 'x' : (currentA === 1 ? 'x' : `${currentA}x`);
-      let exprHtml = '';
+      let leftSide = '';
+      if (pendingArithmetic.operator === '÷') {
+        leftSide = `<span class="term-variable">Y</span>`;
+      } else {
+        leftSide = currentA > 1 
+          ? `${currentA} <span class="term-times">x</span> <span class="term-variable">Y</span>` 
+          : `<span class="term-variable">Y</span>`;
+      }
 
+      let exprHtml = '';
       if (pendingArithmetic.operator === '÷') {
         exprHtml = `
-          <div class="fraction" style="font-size: 54px;">
+          <div class="fraction" style="font-size: 50px;">
             <div class="num">${pendingArithmetic.operand1}</div>
             <div class="fraction-bar"></div>
             <div class="denom">${pendingArithmetic.operand2}</div>
@@ -113,10 +131,11 @@ export class EquationView {
         `;
       } else {
         const opSymbol = pendingArithmetic.operator === '+' ? '+' : '−';
-        exprHtml = `<span class="math-symbol" style="font-size: 58px; color: #fbbf24;">${pendingArithmetic.operand1} ${opSymbol} ${pendingArithmetic.operand2}</span>`;
+        exprHtml = `<span class="math-symbol" style="font-size: 54px; color: #fbbf24;">${pendingArithmetic.operand1} ${opSymbol} ${pendingArithmetic.operand2}</span>`;
       }
 
       this.container.innerHTML = `
+        ${historyHtml}
         <div class="equation-rail">
           <div class="math-symbol">${leftSide}</div>
           <div class="math-symbol symbol-equals">=</div>
@@ -133,9 +152,12 @@ export class EquationView {
       if (carriedTerm === 'constant') {
         const isNeg = currentB < 0;
         const absB = Math.abs(currentB);
-        const leftVar = currentA === 1 ? 'x' : `${currentA}x`;
+        const leftVar = currentA > 1 
+          ? `${currentA} <span class="term-times">x</span> <span class="term-variable">Y</span>` 
+          : `<span class="term-variable">Y</span>`;
 
         this.container.innerHTML = `
+          ${historyHtml}
           <div class="equation-rail">
             <div class="math-symbol">${leftVar}</div>
             <div class="term-tile term-ghost">${isNeg ? '−' : '+'} ${absB}</div>
@@ -154,9 +176,11 @@ export class EquationView {
 
       if (carriedTerm === 'coefficient') {
         this.container.innerHTML = `
+          ${historyHtml}
           <div class="equation-rail">
             <div class="term-tile term-ghost">${currentA}</div>
-            <div class="math-symbol term-x">x</div>
+            <div class="math-symbol term-times">x</div>
+            <div class="math-symbol term-variable">Y</div>
             <div class="math-symbol symbol-equals">=</div>
             <div class="fraction">
               <div class="num">${currentC}</div>
@@ -176,17 +200,18 @@ export class EquationView {
     // 5. Ready Phase (Standard equation with interactive tiles)
     let leftHtml = '';
 
-    // Coefficient + x
+    // Coefficient + multiplication + Y
     if (currentA > 1) {
       const isInteractiveCoeff = stage === 'undo_coefficient';
       leftHtml += `
         <div id="term-coefficient" class="term-tile ${isInteractiveCoeff ? 'interactive' : ''}" data-term="coefficient">
           ${currentA}
         </div>
-        <div class="math-symbol term-x">x</div>
+        <div class="math-symbol term-times">x</div>
+        <div class="math-symbol term-variable">Y</div>
       `;
     } else {
-      leftHtml += `<div class="math-symbol term-x">x</div>`;
+      leftHtml += `<div class="math-symbol term-variable">Y</div>`;
     }
 
     // Constant term
@@ -202,6 +227,7 @@ export class EquationView {
     }
 
     this.container.innerHTML = `
+      ${historyHtml}
       <div class="equation-rail">
         ${leftHtml}
         <div class="math-symbol symbol-equals">=</div>

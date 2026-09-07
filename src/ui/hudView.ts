@@ -1,4 +1,5 @@
 import { soundManager } from '../audio/soundEffects';
+import versionText from '../data/version.txt?raw';
 
 export interface HudCallbacks {
   onEnableCamera: () => void;
@@ -43,7 +44,7 @@ export class HudView {
     this.bannerEl = banner;
     this.callbacks = callbacks;
     this.renderHeader(1, 5);
-    this.renderFooter('Get x on its own.');
+    this.renderFooter('Get Y on its own.');
   }
 
   public setCameraState(active: boolean) {
@@ -160,12 +161,31 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.1.0</button>
       </div>
     `;
 
     this.footerEl.querySelector('#btn-hint')?.addEventListener('click', () => this.callbacks.onHint());
     this.footerEl.querySelector('#btn-undo')?.addEventListener('click', () => this.callbacks.onUndo());
     this.footerEl.querySelector('#btn-restart')?.addEventListener('click', () => this.callbacks.onRestart());
+    this.footerEl.querySelector('#btn-version')?.addEventListener('click', () => this.showVersionModal());
+  }
+
+  private showVersionModal() {
+    this.modalEl.style.display = 'flex';
+    this.modalEl.innerHTML = `
+      <div class="modal-content" style="max-width: 580px;">
+        <div class="modal-header">
+          <div class="modal-title">Release Notes</div>
+          <button id="modal-close" class="icon-btn" style="padding: 4px 10px;">✕</button>
+        </div>
+        <pre class="version-notes-pre">${versionText}</pre>
+      </div>
+    `;
+
+    this.modalEl.querySelector('#modal-close')?.addEventListener('click', () => {
+      this.modalEl.style.display = 'none';
+    });
   }
 
   private toggleSettingsModal() {

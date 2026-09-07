@@ -1,0 +1,11 @@
+Version 1.1.0
+Date: 2026-09-08
+
+Release Notes:
+- Running Equation History: Displays ongoing algebraic derivation with Star Wars-style receding 3D perspective lines above the active equation.
+- Camera Viewport Adjustment: Lowered and optimized camera viewing box to provide generous vertical space for the equation workspace.
+- Variable Standardization: Standardized all linear equations to use variable 'Y' to prevent visual confusion with the multiplication symbol.
+- Multiplication Representation: Displayed multiplication as "a x Y" (e.g., "3 x Y") for clear visual transformation between multiplication and division.
+- Visible Next Button: Added a prominent, unclipped "Next Puzzle →" action button upon equation completion, selectable via mouse/touch or finger laser dwell, alongside the open-palm gesture.
+- Ray Target Calibration: Fixed first-question laser ray hit detection for arithmetic answer cards next to the camera box.
+- Version Inspector: Added clickable version tag in the footer with an interactive release notes modal.

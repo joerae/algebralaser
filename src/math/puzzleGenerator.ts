@@ -27,7 +27,7 @@ export const TUTORIAL_PUZZLE: LinearEquationDef = {
   b: 1,
   c: 3,
   solution: 2,
-  description: 'Warm up: Get x on its own by undoing +1'
+  description: 'Warm up: Get Y on its own by undoing +1'
 };
 
 export const BENCHMARK_PUZZLE: LinearEquationDef = {
@@ -37,7 +37,7 @@ export const BENCHMARK_PUZZLE: LinearEquationDef = {
   b: -1,
   c: 11,
   solution: 4,
-  description: 'The Classic: Solve 3x − 1 = 11'
+  description: 'The Classic: Solve 3 x Y − 1 = 11'
 };
 
 export function generateArithmeticChoices(
@@ -195,9 +195,9 @@ export function generatePuzzle(
 export function formatEquationString(a: number, b: number, c: number): string {
   let left = '';
   if (a === 1) {
-    left = 'x';
+    left = 'Y';
   } else {
-    left = `${a}x`;
+    left = `${a} x Y`;
   }
 
   if (b > 0) {

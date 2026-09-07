@@ -135,7 +135,7 @@ class App {
     this.needTargetsRefresh = true;
 
     // Contextual instruction
-    let instr = 'Get x on its own.';
+    let instr = 'Get Y on its own.';
     if (state.phase === 'ready') {
       if (state.stage === 'undo_constant') {
         const sign = state.currentB < 0 ? '−' : '+';
@@ -147,8 +147,10 @@ class App {
       instr = 'Drag across = to the drop zone and hold to pop the bubble!';
     } else if (state.phase === 'question') {
       instr = 'Aim laser at an answer card and hold to confirm, or click.';
+      // Position answer column immediately so it is rendered in place
+      this.updateArrowAndLayout(state.phase);
     } else if (state.phase === 'solved') {
-      instr = 'Equation balanced! Hold Open Palm 👋 or aim at Next Puzzle to continue.';
+      instr = 'Equation balanced! Aim at Next Puzzle → or hold Open Palm 👋 to continue.';
     }
     this.hudView.updateInstruction(instr);
 
@@ -220,6 +222,10 @@ class App {
     let hitResult = null;
     let classifiedPose = null;
     let interactiveTargets: InteractiveTarget[] = [];
+
+    // Position answers column and arrow FIRST before gathering bounding boxes
+    const currentPhase = this.game.getState().phase;
+    this.updateArrowAndLayout(currentPhase);
 
     // Collect interactive targets from DOM
     interactiveTargets = this.collectTargets();
@@ -366,9 +372,9 @@ class App {
             }
           } else if (gameState.carriedTerm === 'coefficient') {
             if (isCrossed) {
-              termEl.textContent = `÷${gameState.currentA}`;
+              termEl.textContent = `÷ ${gameState.currentA}`;
             } else {
-              termEl.textContent = `${gameState.currentA}`;
+              termEl.textContent = `x ${gameState.currentA}`;
             }
           }
         }
@@ -435,7 +441,6 @@ class App {
     // 60 FPS lightweight updates (ZERO DOM innerHTML rebuilds!)
     this.equationView.setDestinationHovered(interState.isDestinationHovered);
     this.answersView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
-    this.updateArrowAndLayout(gameState.phase);
 
     if (gameState.phase === 'solved') {
       this.equationView.updateSolvedDwell(
@@ -544,7 +549,8 @@ class App {
   }
 
   private collectTargets(): InteractiveTarget[] {
-    if (!this.needTargetsRefresh && this.cachedTargets.length > 0) {
+    const isDynamicPhase = this.game.getState().phase === 'question' || this.game.getState().phase === 'solved';
+    if (!this.needTargetsRefresh && this.cachedTargets.length > 0 && !isDynamicPhase) {
       return this.cachedTargets;
     }
 

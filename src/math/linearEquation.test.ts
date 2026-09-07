@@ -6,7 +6,8 @@ import {
   commitDrop, 
   submitAnswer, 
   undo, 
-  formatVerification 
+  formatVerification,
+  formatEquationLine
 } from './linearEquation';
 import { 
   BENCHMARK_PUZZLE, 
@@ -16,10 +17,11 @@ import {
 } from './puzzleGenerator';
 
 describe('Linear Equation Mathematics & State Machine', () => {
-  it('solves benchmark 3x − 1 = 11 step by step', () => {
+  it('solves benchmark 3 x Y − 1 = 11 step by step and tracks equationHistory', () => {
     let state = createInitialState(BENCHMARK_PUZZLE);
     expect(state.phase).toBe('ready');
     expect(state.stage).toBe('undo_constant');
+    expect(state.equationHistory).toEqual([]);
 
     // Rule: Attempting to pick up coefficient 3 before undoing -1 is guided
     const invalidCoeff = pickUpTerm(state, 'coefficient');
@@ -63,6 +65,7 @@ describe('Linear Equation Mathematics & State Machine', () => {
     expect(state.currentC).toBe(12);
     expect(state.stage).toBe('undo_coefficient');
     expect(state.phase).toBe('ready');
+    expect(state.equationHistory).toEqual(['3 x Y − 1 = 11']);
 
     // Step 2: Pick up coefficient 3
     const pick2 = pickUpTerm(state, 'coefficient');
@@ -90,16 +93,17 @@ describe('Linear Equation Mathematics & State Machine', () => {
     expect(state.currentC).toBe(4);
     expect(state.stage).toBe('solved');
     expect(state.phase).toBe('solved');
+    expect(state.equationHistory).toEqual(['3 x Y − 1 = 11', '3 x Y = 12']);
 
     // Final verification check
     const verif = formatVerification(BENCHMARK_PUZZLE);
-    expect(verif.subStep).toBe('3 × 4 − 1 = 11');
+    expect(verif.subStep).toBe('3 x 4 − 1 = 11');
     expect(verif.evalStep).toBe('12 − 1 = 11');
     expect(verif.finalStep).toBe('11 = 11');
   });
 
   it('handles undo correctly during question and after step completion', () => {
-    let state = createInitialState(TUTORIAL_PUZZLE); // x + 1 = 3
+    let state = createInitialState(TUTORIAL_PUZZLE); // Y + 1 = 3
     state = pickUpTerm(state, 'constant').state;
     state = commitDrop(state).state;
     expect(state.phase).toBe('question');
@@ -114,6 +118,28 @@ describe('Linear Equation Mathematics & State Machine', () => {
     state = cancelCarry(state);
     expect(state.phase).toBe('ready');
     expect(state.carriedTerm).toBe(null);
+
+    // Complete step 1
+    state = pickUpTerm(state, 'constant').state;
+    state = commitDrop(state).state;
+    state = submitAnswer(state, 2).state;
+    expect(state.phase).toBe('solved');
+    expect(state.equationHistory).toEqual(['Y + 1 = 3']);
+
+    // Undo from solved step restores previous state and equationHistory
+    const undoSolved = undo(state);
+    expect(undoSolved.success).toBe(true);
+    expect(undoSolved.state.phase).toBe('question');
+    expect(undoSolved.state.equationHistory).toEqual([]);
+  });
+
+  it('formats equation lines correctly with Y and a x Y format', () => {
+    expect(formatEquationLine(1, 1, 3)).toBe('Y + 1 = 3');
+    expect(formatEquationLine(1, -4, 5)).toBe('Y − 4 = 5');
+    expect(formatEquationLine(3, 0, 12)).toBe('3 x Y = 12');
+    expect(formatEquationLine(3, -1, 11)).toBe('3 x Y − 1 = 11');
+    expect(formatEquationLine(4, 2, 10)).toBe('4 x Y + 2 = 10');
+    expect(formatEquationLine(1, 0, 7)).toBe('Y = 7');
   });
 
   it('generates 3 unique choices with exactly one correct answer across 100 seeds', () => {

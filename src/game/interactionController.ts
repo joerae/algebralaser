@@ -34,6 +34,7 @@ export class InteractionController {
   private lastDwellTime: number = 0;
   private openPalmStartTime: number = 0;
   private questionEnterGuard: boolean = false; // prevents auto-submit upon new question appearing
+  private lastPhase: string = 'ready';
 
   constructor(game: GameController) {
     this.game = game;
@@ -52,6 +53,14 @@ export class InteractionController {
   ) {
     const gameState = this.game.getState();
     this.state.laserRay = ray;
+
+    // Reset dwell cleanly on phase transitions
+    if (this.lastPhase !== gameState.phase) {
+      this.resetDwell();
+      this.lastDwellTargetId = null;
+      this.questionEnterGuard = false;
+      this.lastPhase = gameState.phase;
+    }
 
     // Guard: If tracking is completely missing (no hand detected)
     if (!pose) {
