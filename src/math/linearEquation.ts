@@ -3,12 +3,16 @@ import {
   EquationState, 
   HistorySnapshot, 
   PendingArithmetic, 
-  CancellationDisplay,
-  SolverMode,
-  ForgedOperation,
-  BalancedDisplay,
-  OperationSign,
-  SolverStage
+  CancellationDisplay, 
+  SolverMode, 
+  ForgedOperation, 
+  BalancedDisplay, 
+  OperationSign, 
+  SolverStage,
+  BlasterType,
+  BlasterState,
+  ScaleTilt,
+  UnsimplifiedExpression
 } from './types';
 import { createPendingArithmetic } from './puzzleGenerator';
 
@@ -42,6 +46,15 @@ export function formatUnsimplifiedEquationLine(
   return `${left} = ${pending.operand1} ${opDisplay} ${pending.operand2}`;
 }
 
+export function createInitialBlasterState(): BlasterState {
+  return {
+    equipped: null,
+    scaleTilt: 'balanced',
+    carriedOperand: null,
+    rhsUnsimplified: null
+  };
+}
+
 export function createInitialState(problem: LinearEquationDef, mode: SolverMode = 'mode_a'): EquationState {
   const stage = problem.b !== 0 
     ? 'undo_constant' 
@@ -58,6 +71,7 @@ export function createInitialState(problem: LinearEquationDef, mode: SolverMode 
     carriedTerm: null,
     forgedOperation: null,
     balancedDisplay: null,
+    blasterState: mode === 'mode_c' ? createInitialBlasterState() : undefined,
     pendingArithmetic: null,
     cancellation: null,
     errorMessage: null,
@@ -77,6 +91,7 @@ function saveSnapshot(state: EquationState): HistorySnapshot {
     carriedTerm: state.carriedTerm,
     forgedOperation: state.forgedOperation ? { ...state.forgedOperation } : null,
     balancedDisplay: state.balancedDisplay ? { ...state.balancedDisplay } : null,
+    blasterState: state.blasterState ? { ...state.blasterState } : undefined,
     pendingArithmetic: state.pendingArithmetic ? { ...state.pendingArithmetic } : null,
     equationHistory: [...state.equationHistory]
   };
@@ -290,6 +305,214 @@ export function cancelLhsInverse(state: EquationState): EquationState {
   };
 }
 
+export function equipBlaster(state: EquationState, blaster: BlasterType): EquationState {
+  const blasterState = state.blasterState ? { ...state.blasterState } : createInitialBlasterState();
+  return {
+    ...state,
+    blasterState: {
+      ...blasterState,
+      equipped: blaster
+    },
+    errorMessage: null
+  };
+}
+
+export function blastLhs(
+  state: EquationState,
+  blaster?: BlasterType
+): { state: EquationState; success: boolean; notYet?: boolean; guideMessage?: string } {
+  if (state.phase !== 'ready') {
+    return { state, success: false };
+  }
+
+  const activeBlaster = blaster || state.blasterState?.equipped;
+  if (!activeBlaster) {
+    const msg = 'Equip a blaster on the left first!';
+    return {
+      state: {
+        ...state,
+        errorMessage: msg
+      },
+      success: false,
+      notYet: true,
+      guideMessage: msg
+    };
+  }
+
+  // 1. Constant Stage
+  if (state.stage === 'undo_constant') {
+    const isNeg = state.currentB < 0;
+    const requiredOp: OperationSign = isNeg ? '+' : '−';
+    const isCorrectBlaster = activeBlaster === '+' ? isNeg : (!isNeg && (activeBlaster === '-' || activeBlaster === '−'));
+
+    if (!isCorrectBlaster) {
+      const msg = `Wrong blaster! Use the ${requiredOp} blaster to neutralize ${isNeg ? '−' : '+'}${Math.abs(state.currentB)}.`;
+      return {
+        state: {
+          ...state,
+          errorMessage: msg
+        },
+        success: false,
+        notYet: true,
+        guideMessage: msg
+      };
+    }
+
+    // Correct blaster: pop LHS constant
+    const history = [...state.history, saveSnapshot(state)];
+    const operandVal = Math.abs(state.currentB);
+    const operandSign: OperationSign = isNeg ? '+' : '−';
+    // Neutralizing a negative number adds weight (LHS tilts down: heavier)
+    // Neutralizing a positive number removes weight (LHS tilts up: lighter)
+    const scaleTilt: ScaleTilt = isNeg ? 'lhs_heavy' : 'lhs_light';
+
+    return {
+      state: {
+        ...state,
+        history,
+        phase: 'blasting_rhs',
+        errorMessage: null,
+        blasterState: {
+          ...(state.blasterState || createInitialBlasterState()),
+          equipped: activeBlaster,
+          scaleTilt,
+          carriedOperand: {
+            operator: operandSign,
+            value: operandVal
+          },
+          rhsUnsimplified: null
+        }
+      },
+      success: true
+    };
+  }
+
+  // 2. Coefficient Stage
+  if (state.stage === 'undo_coefficient') {
+    if (state.currentB !== 0) {
+      const msg = 'NOT YET — Undo the constant term first!';
+      return {
+        state: { ...state, errorMessage: msg },
+        success: false,
+        notYet: true,
+        guideMessage: msg
+      };
+    }
+
+    if (activeBlaster !== '÷') {
+      const msg = `Wrong blaster! Use the ÷ blaster to divide both sides by ${state.currentA}.`;
+      return {
+        state: { ...state, errorMessage: msg },
+        success: false,
+        notYet: true,
+        guideMessage: msg
+      };
+    }
+
+    // Correct blaster: pop coefficient, dividing makes LHS lighter
+    const history = [...state.history, saveSnapshot(state)];
+    const scaleTilt: ScaleTilt = 'lhs_light';
+
+    return {
+      state: {
+        ...state,
+        history,
+        phase: 'blasting_rhs',
+        errorMessage: null,
+        blasterState: {
+          ...(state.blasterState || createInitialBlasterState()),
+          equipped: activeBlaster,
+          scaleTilt,
+          carriedOperand: {
+            operator: '÷',
+            value: state.currentA
+          },
+          rhsUnsimplified: null
+        }
+      },
+      success: true
+    };
+  }
+
+  return { state, success: false };
+}
+
+export function blastRhs(
+  state: EquationState
+): { state: EquationState; success: boolean } {
+  if (state.phase !== 'blasting_rhs' || !state.blasterState?.carriedOperand) {
+    return { state, success: false };
+  }
+
+  const history = [...state.history, saveSnapshot(state)];
+  const { operator, value } = state.blasterState.carriedOperand;
+
+  const rhsUnsimplified: UnsimplifiedExpression = {
+    leftNum: state.currentC,
+    op: operator,
+    rightNum: value,
+    displayText: `${state.currentC} ${operator === '-' ? '−' : operator} ${value}`
+  };
+
+  return {
+    state: {
+      ...state,
+      history,
+      phase: 'awaiting_simplify',
+      errorMessage: null,
+      blasterState: {
+        ...state.blasterState,
+        scaleTilt: 'balanced',
+        carriedOperand: null,
+        rhsUnsimplified
+      }
+    },
+    success: true
+  };
+}
+
+export function blastSimplify(
+  state: EquationState,
+  blaster?: BlasterType,
+  rng: () => number = Math.random
+): { state: EquationState; success: boolean; notYet?: boolean; guideMessage?: string } {
+  if (state.phase !== 'awaiting_simplify' || !state.blasterState?.rhsUnsimplified) {
+    return { state, success: false };
+  }
+
+  const activeBlaster = blaster || state.blasterState?.equipped;
+  if (activeBlaster !== 'calc') {
+    const msg = 'Equip the Calculator blaster on the left to simplify!';
+    return {
+      state: { ...state, errorMessage: msg },
+      success: false,
+      notYet: true,
+      guideMessage: msg
+    };
+  }
+
+  const { leftNum, op, rightNum } = state.blasterState.rhsUnsimplified;
+  const pendingArithmetic = createPendingArithmetic(
+    leftNum,
+    rightNum,
+    op,
+    rng
+  );
+
+  const history = [...state.history, saveSnapshot(state)];
+
+  return {
+    state: {
+      ...state,
+      history,
+      phase: 'question',
+      pendingArithmetic,
+      errorMessage: null
+    },
+    success: true
+  };
+}
+
 export function cancelCarry(state: EquationState): EquationState {
   if (state.phase !== 'carrying' && state.phase !== 'forging') return state;
   return {
@@ -411,7 +634,7 @@ export function submitAnswer(
 
   // Record completed line before simplifying state
   let completedLine: string;
-  if (state.mode === 'mode_b' && state.pendingArithmetic) {
+  if ((state.mode === 'mode_b' || state.mode === 'mode_c') && state.pendingArithmetic) {
     completedLine = formatUnsimplifiedEquationLine(
       state.currentA,
       state.stage,
@@ -442,6 +665,15 @@ export function submitAnswer(
     ? 'undo_constant'
     : (newA > 1 ? 'undo_coefficient' : 'solved');
 
+  const nextBlasterState = state.mode === 'mode_c'
+    ? {
+        equipped: state.blasterState?.equipped || null,
+        scaleTilt: 'balanced' as ScaleTilt,
+        carriedOperand: null,
+        rhsUnsimplified: null
+      }
+    : undefined;
+
   return {
     state: {
       ...state,
@@ -455,6 +687,7 @@ export function submitAnswer(
       carriedTerm: null,
       forgedOperation: null,
       balancedDisplay: null,
+      blasterState: nextBlasterState,
       cancellation: null,
       pendingArithmetic: null,
       errorMessage: null
@@ -484,6 +717,7 @@ export function undo(state: EquationState): { state: EquationState; success: boo
       carriedTerm: last.carriedTerm,
       forgedOperation: last.forgedOperation,
       balancedDisplay: last.balancedDisplay,
+      blasterState: last.blasterState ? { ...last.blasterState } : (state.mode === 'mode_c' ? createInitialBlasterState() : undefined),
       pendingArithmetic: last.pendingArithmetic,
       equationHistory: last.equationHistory || [],
       cancellation: null,

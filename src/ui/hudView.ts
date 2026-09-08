@@ -56,8 +56,10 @@ export class HudView {
     this.currentMode = mode;
     const btnA = this.headerEl.querySelector('#btn-mode-a');
     const btnB = this.headerEl.querySelector('#btn-mode-b');
+    const btnC = this.headerEl.querySelector('#btn-mode-c');
     btnA?.classList.toggle('active', mode === 'mode_a');
     btnB?.classList.toggle('active', mode === 'mode_b');
+    btnC?.classList.toggle('active', mode === 'mode_c');
   }
 
 
@@ -150,6 +152,10 @@ export class HudView {
           <span class="mode-icon">⚖️</span>
           <span class="mode-label">Mode B: Balance Both Sides</span>
         </button>
+        <button id="btn-mode-c" class="mode-toggle-btn ${this.currentMode === 'mode_c' ? 'active' : ''}" title="Mode C: Blast Balance (Shoot inverse blasters & balance the scale)">
+          <span class="mode-icon">💥</span>
+          <span class="mode-label">Mode C: Blast Balance</span>
+        </button>
       </div>
       <div class="header-controls">
         <div class="level-indicator">Level ${level} of ${total}</div>
@@ -170,6 +176,13 @@ export class HudView {
       if (this.currentMode !== 'mode_b') {
         this.setMode('mode_b');
         this.callbacks.onModeChange('mode_b');
+      }
+    });
+
+    this.headerEl.querySelector('#btn-mode-c')?.addEventListener('click', () => {
+      if (this.currentMode !== 'mode_c') {
+        this.setMode('mode_c');
+        this.callbacks.onModeChange('mode_c');
       }
     });
 
@@ -199,7 +212,7 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.4.0</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.5.0</button>
       </div>
     `;
 

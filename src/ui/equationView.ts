@@ -1,4 +1,4 @@
-import { EquationState } from '../math/types';
+import { EquationState, ScaleTilt } from '../math/types';
 
 export interface EquationViewCallbacks {
   onPickup: (term: 'constant' | 'coefficient') => void;
@@ -7,6 +7,8 @@ export interface EquationViewCallbacks {
   onReplay: () => void;
   onNotYet?: (term: 'coefficient') => void;
   onApplyEquals?: () => void;
+  onBlastRhs?: () => void;
+  onBlastSimplify?: () => void;
 }
 
 export class EquationView {
@@ -17,6 +19,8 @@ export class EquationView {
   private onReplayCallback: () => void;
   private onNotYetCallback?: (term: 'coefficient') => void;
   private onApplyEqualsCallback?: () => void;
+  private onBlastRhsCallback?: () => void;
+  private onBlastSimplifyCallback?: () => void;
 
   constructor(
     container: HTMLElement,
@@ -29,6 +33,8 @@ export class EquationView {
     this.onReplayCallback = callbacks.onReplay;
     this.onNotYetCallback = callbacks.onNotYet;
     this.onApplyEqualsCallback = callbacks.onApplyEquals;
+    this.onBlastRhsCallback = callbacks.onBlastRhs;
+    this.onBlastSimplifyCallback = callbacks.onBlastSimplify;
   }
 
   private renderHistory(historyLines: string[]): string {
@@ -40,6 +46,23 @@ export class EquationView {
     }).join('');
 
     return `<div class="equation-history-container">${linesHtml}</div>`;
+  }
+
+  private renderScale(tilt: ScaleTilt = 'balanced'): string {
+    const tiltClass = tilt === 'lhs_heavy' 
+      ? 'tilt-lhs-heavy' 
+      : (tilt === 'lhs_light' ? 'tilt-lhs-light' : 'tilt-balanced');
+
+    return `
+      <div class="scale-visual-container" aria-label="Balance Scale">
+        <div class="scale-beam-assembly ${tiltClass}">
+          <div class="scale-pan scale-pan-lhs"></div>
+          <div class="scale-beam-bar"></div>
+          <div class="scale-pan scale-pan-rhs"></div>
+        </div>
+        <div class="scale-fulcrum-pivot">▲</div>
+      </div>
+    `;
   }
 
   public render(
@@ -199,15 +222,17 @@ export class EquationView {
         exprHtml = `<span class="math-symbol ${opClass}" style="font-size: 54px;">${pendingArithmetic.operand1} ${opSymbol} ${pendingArithmetic.operand2}</span>`;
       }
 
+      const scaleHtml = mode === 'mode_c' ? this.renderScale('balanced') : '';
       this.container.innerHTML = `
         ${historyHtml}
-        <div class="equation-rail">
+        <div class="equation-rail ${mode === 'mode_c' ? 'mode-c-rail' : ''}">
           <div class="math-symbol">${leftSide}</div>
           <div class="math-symbol symbol-equals">=</div>
           <div id="arithmetic-rhs" class="collapsing-arithmetic-section">
             ${exprHtml}
           </div>
         </div>
+        ${scaleHtml}
       `;
       return;
     }
@@ -272,6 +297,90 @@ export class EquationView {
       return;
     }
 
+    // 5b. Mode C: Blasting RHS Phase (LHS popped, operand attached to laser, RHS awaiting blast)
+    if (mode === 'mode_c' && phase === 'blasting_rhs') {
+      const isCoeff = stage === 'undo_coefficient';
+      const leftVar = isCoeff
+        ? `<div class="math-symbol term-variable">Y</div>`
+        : (currentA > 1 
+            ? `<div class="term-tile op-times">${currentA}</div><div class="math-symbol term-times op-times">x</div><div class="math-symbol term-variable">Y</div>` 
+            : `<div class="math-symbol term-variable">Y</div>`);
+
+      const operand = state.blasterState?.carriedOperand;
+      const opSign = operand ? operand.operator : '+';
+      const opVal = operand ? operand.value : '';
+      const scaleHtml = this.renderScale(state.blasterState?.scaleTilt);
+
+      this.container.innerHTML = `
+        ${historyHtml}
+        <div class="equation-rail mode-c-rail">
+          ${leftVar}
+          <div class="math-symbol symbol-equals">=</div>
+          <div id="term-rhs-mode-c" class="math-symbol blast-rhs-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Blast RHS with ${opSign}${opVal}">
+            ${currentC}
+          </div>
+        </div>
+        ${scaleHtml}
+        <div class="operation-banner mode-c-banner">
+          Aim your laser at ${currentC} to balance the scale with ${opSign}${opVal}! ⚡
+        </div>
+      `;
+
+      this.container.querySelector('#term-rhs-mode-c')?.addEventListener('click', () => {
+        this.onBlastRhsCallback?.();
+      });
+      return;
+    }
+
+    // 5c. Mode C: Awaiting Simplify Phase (RHS balanced, awaiting Calculator blaster)
+    if (mode === 'mode_c' && phase === 'awaiting_simplify') {
+      const isCoeff = stage === 'undo_coefficient';
+      const leftVar = isCoeff
+        ? `<div class="math-symbol term-variable">Y</div>`
+        : (currentA > 1 
+            ? `<div class="term-tile op-times">${currentA}</div><div class="math-symbol term-times op-times">x</div><div class="math-symbol term-variable">Y</div>` 
+            : `<div class="math-symbol term-variable">Y</div>`);
+
+      const unsimplified = state.blasterState?.rhsUnsimplified;
+      let rhsDisplay = '';
+      if (unsimplified?.op === '÷') {
+        rhsDisplay = `
+          <div class="fraction op-divide" style="font-size: 50px;">
+            <div class="num">${unsimplified.leftNum}</div>
+            <div class="fraction-bar"></div>
+            <div class="denom">${unsimplified.rightNum}</div>
+          </div>
+        `;
+      } else if (unsimplified) {
+        const opSymbol = unsimplified.op === '+' ? '+' : '−';
+        rhsDisplay = `${unsimplified.leftNum} ${opSymbol} ${unsimplified.rightNum}`;
+      } else {
+        rhsDisplay = `${currentC}`;
+      }
+
+      const scaleHtml = this.renderScale('balanced');
+
+      this.container.innerHTML = `
+        ${historyHtml}
+        <div class="equation-rail mode-c-rail">
+          ${leftVar}
+          <div class="math-symbol symbol-equals">=</div>
+          <div id="term-simplify-target" class="math-symbol blast-simplify-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Blast with Calculator to simplify">
+            ${rhsDisplay}
+          </div>
+        </div>
+        ${scaleHtml}
+        <div class="operation-banner mode-c-banner calc-prompt-banner">
+          Scale is balanced! Equip the Calculator 🖩 blaster on the left and blast to simplify.
+        </div>
+      `;
+
+      this.container.querySelector('#term-simplify-target')?.addEventListener('click', () => {
+        this.onBlastSimplifyCallback?.();
+      });
+      return;
+    }
+
     // 6. Mode A: Carrying State (Term is detached, landing slot appears)
     if (phase === 'carrying' && carriedTerm) {
       if (carriedTerm === 'constant') {
@@ -328,7 +437,7 @@ export class EquationView {
     // Coefficient + multiplication + Y
     if (currentA > 1) {
       const isInteractiveCoeff = stage === 'undo_coefficient';
-      const isNotYet = mode === 'mode_b' && currentB !== 0;
+      const isNotYet = (mode === 'mode_b' || mode === 'mode_c') && currentB !== 0;
       const coeffClass = isInteractiveCoeff ? 'interactive' : (isNotYet ? 'not-yet-target' : '');
       leftHtml += `
         <div id="term-coefficient" class="term-tile op-times ${coeffClass}" data-term="coefficient">
@@ -353,13 +462,16 @@ export class EquationView {
       `;
     }
 
+    const scaleHtml = mode === 'mode_c' ? this.renderScale(state.blasterState?.scaleTilt || 'balanced') : '';
+
     this.container.innerHTML = `
       ${historyHtml}
-      <div class="equation-rail ${mode === 'mode_b' ? 'mode-b-rail' : ''}">
+      <div class="equation-rail ${mode === 'mode_b' ? 'mode-b-rail' : (mode === 'mode_c' ? 'mode-c-rail' : '')}">
         ${leftHtml}
         <div class="math-symbol symbol-equals">=</div>
         <div class="math-symbol">${currentC}</div>
       </div>
+      ${scaleHtml}
       <div id="equation-feedback-banner" class="operation-banner" style="display: ${state.errorMessage ? 'block' : 'none'}; background: rgba(244, 63, 94, 0.18); border-color: #f43f5e; color: #fecdd3;">
         ${state.errorMessage || ''}
       </div>
@@ -446,6 +558,13 @@ export class EquationView {
     const equalsDest = this.container.querySelector<HTMLElement>('#eq-equals-target');
     if (equalsDest) targets.push({ id: 'eq-equals-target', type: 'destination', element: equalsDest });
 
+    // Mode C: RHS and Simplify blast targets
+    const rhsModeCTarget = this.container.querySelector<HTMLElement>('#term-rhs-mode-c');
+    if (rhsModeCTarget) targets.push({ id: 'term-rhs-mode-c', type: 'destination', element: rhsModeCTarget });
+
+    const simplifyTarget = this.container.querySelector<HTMLElement>('#term-simplify-target');
+    if (simplifyTarget) targets.push({ id: 'term-simplify-target', type: 'destination', element: simplifyTarget });
+
     return targets;
   }
 
@@ -465,6 +584,14 @@ export class EquationView {
     const equalsTarget = this.container.querySelector('#eq-equals-target');
     if (equalsTarget) {
       equalsTarget.classList.toggle('active', isHovered);
+    }
+    const rhsModeCTarget = this.container.querySelector('#term-rhs-mode-c');
+    if (rhsModeCTarget) {
+      rhsModeCTarget.classList.toggle('active', isHovered);
+    }
+    const simplifyTarget = this.container.querySelector('#term-simplify-target');
+    if (simplifyTarget) {
+      simplifyTarget.classList.toggle('active', isHovered);
     }
   }
 

@@ -2,12 +2,53 @@ import { HandLandmarks, LaserRay, RayHitResult, LandmarkPoint } from '../vision/
 import { transformLandmarkToViewport, ViewportRect } from '../vision/coordinateTransform';
 import { InteractiveTarget } from '../vision/rayCaster';
 
+export interface BlasterOverlayInfo {
+  type: string | null;
+  carriedOperandText?: string | null;
+  dwellProgress?: number;
+}
+
+interface BlasterTheme {
+  primary: string;
+  glow: string;
+  glowAlpha: string;
+  symbol: string;
+}
+
+function getBlasterTheme(type: string | null | undefined): BlasterTheme {
+  switch (type) {
+    case '+':
+      return { primary: '#10b981', glow: '#34d399', glowAlpha: 'rgba(16, 185, 129, 0.45)', symbol: '+' };
+    case '-':
+    case '−':
+      return { primary: '#f43f5e', glow: '#fb7185', glowAlpha: 'rgba(244, 63, 94, 0.45)', symbol: '−' };
+    case '×':
+      return { primary: '#f59e0b', glow: '#fbbf24', glowAlpha: 'rgba(245, 158, 11, 0.45)', symbol: '×' };
+    case '÷':
+    case '/':
+      return { primary: '#a855f7', glow: '#c084fc', glowAlpha: 'rgba(168, 85, 247, 0.45)', symbol: '÷' };
+    case 'calc':
+      return { primary: '#38bdf8', glow: '#60a5fa', glowAlpha: 'rgba(56, 189, 248, 0.5)', symbol: '⚡' };
+    default:
+      return { primary: '#fbbf24', glow: '#06b6d4', glowAlpha: 'rgba(6, 182, 212, 0.4)', symbol: '' };
+  }
+}
+
 export class CanvasOverlay {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   public handsOnly: boolean = false;
   public showDebug: boolean = false;
-  private particles: Array<{ x: number; y: number; vx: number; vy: number; life: number; color: string }> = [];
+  private particles: Array<{
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    color: string;
+    text?: string;
+    size?: number;
+  }> = [];
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -32,7 +73,8 @@ export class CanvasOverlay {
     hit: RayHitResult | null,
     carriedPos: { x: number; y: number } | null,
     cameraViewport: ViewportRect,
-    debugTargets?: InteractiveTarget[]
+    debugTargets?: InteractiveTarget[],
+    blasterInfo?: BlasterOverlayInfo
   ) {
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -49,10 +91,10 @@ export class CanvasOverlay {
 
     // 3. Draw Laser Ray
     if (ray && ray.active) {
-      this.drawLaserRay(ray, hit);
+      this.drawLaserRay(ray, hit, blasterInfo);
     }
 
-    // 4. Draw Tether to Carried Term
+    // 4. Draw Tether to Carried Term (Mode A)
     if (ray && ray.active && carriedPos) {
       this.drawTether(ray.origin, carriedPos);
     }
@@ -136,9 +178,10 @@ export class CanvasOverlay {
     ctx.restore();
   }
 
-  private drawLaserRay(ray: LaserRay, hit: RayHitResult | null) {
+  private drawLaserRay(ray: LaserRay, hit: RayHitResult | null, blasterInfo?: BlasterOverlayInfo) {
     const ctx = this.ctx;
     const { origin, direction } = ray;
+    const theme = getBlasterTheme(blasterInfo?.type);
 
     // Determine ray length
     let endX = origin.x + direction.x * 2000;
@@ -147,7 +190,24 @@ export class CanvasOverlay {
     if (hit) {
       endX = hit.point.x;
       endY = hit.point.y;
-      this.spawnImpactParticles(endX, endY);
+      this.spawnImpactParticles(endX, endY, theme.primary);
+    }
+
+    // Spawn symbol particles floating along the laser ray
+    if (Math.random() < 0.3 && theme.symbol) {
+      const t = Math.random() * 0.85 + 0.1;
+      const px = origin.x + (endX - origin.x) * t;
+      const py = origin.y + (endY - origin.y) * t;
+      this.particles.push({
+        x: px,
+        y: py,
+        vx: (Math.random() - 0.5) * 1.8,
+        vy: (Math.random() - 0.5) * 1.8 - 0.8,
+        life: 0.85,
+        color: theme.primary,
+        text: theme.symbol,
+        size: 16
+      });
     }
 
     ctx.save();
@@ -156,10 +216,10 @@ export class CanvasOverlay {
     ctx.beginPath();
     ctx.moveTo(origin.x, origin.y);
     ctx.lineTo(endX, endY);
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
-    ctx.lineWidth = 8;
-    ctx.shadowColor = '#06b6d4';
-    ctx.shadowBlur = 18;
+    ctx.strokeStyle = theme.glowAlpha;
+    ctx.lineWidth = 9;
+    ctx.shadowColor = theme.glow;
+    ctx.shadowBlur = 20;
     ctx.lineCap = 'round';
     ctx.stroke();
 
@@ -169,28 +229,67 @@ export class CanvasOverlay {
     ctx.lineTo(endX, endY);
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#38bdf8';
+    ctx.shadowColor = theme.primary;
     ctx.shadowBlur = 8;
     ctx.stroke();
 
     // Fingertip emitter ring
     ctx.beginPath();
-    ctx.arc(origin.x, origin.y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(251, 191, 36, 0.6)';
-    ctx.shadowColor = '#fbbf24';
-    ctx.shadowBlur = 20;
+    ctx.arc(origin.x, origin.y, 11, 0, Math.PI * 2);
+    ctx.fillStyle = theme.primary;
+    ctx.shadowColor = theme.glow;
+    ctx.shadowBlur = 22;
     ctx.fill();
 
     // Hit impact burst
     if (hit) {
       ctx.beginPath();
-      ctx.arc(endX, endY, 12, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.5)';
-      ctx.shadowColor = '#38bdf8';
+      ctx.arc(endX, endY, 14, 0, Math.PI * 2);
+      ctx.fillStyle = theme.glowAlpha;
+      ctx.strokeStyle = theme.primary;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = theme.glow;
       ctx.shadowBlur = 25;
       ctx.fill();
+      ctx.stroke();
     }
 
+    ctx.restore();
+
+    // Draw carried operand badge moving down the laser line!
+    if (blasterInfo?.carriedOperandText) {
+      let badgeX = origin.x;
+      let badgeY = origin.y;
+      const isTargetingRhs = hit && hit.targetId === 'term-rhs-mode-c';
+      if (isTargetingRhs) {
+        const progress = Math.min(1, Math.max(0, blasterInfo.dwellProgress || 0));
+        badgeX = origin.x + (endX - origin.x) * progress;
+        badgeY = origin.y + (endY - origin.y) * progress;
+      }
+      this.drawCarriedOperandBadge(badgeX, badgeY, blasterInfo.carriedOperandText, theme.primary);
+    }
+  }
+
+  private drawCarriedOperandBadge(x: number, y: number, text: string, color: string) {
+    const ctx = this.ctx;
+    ctx.save();
+    // Glowing outer bubble
+    ctx.beginPath();
+    ctx.arc(x, y, 22, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 18;
+    ctx.fill();
+    ctx.stroke();
+
+    // Inner text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y + 1);
     ctx.restore();
   }
 
@@ -209,7 +308,7 @@ export class CanvasOverlay {
     ctx.restore();
   }
 
-  private spawnImpactParticles(x: number, y: number) {
+  private spawnImpactParticles(x: number, y: number, customColor?: string) {
     if (Math.random() < 0.4) {
       const angle = Math.random() * Math.PI * 2;
       const speed = Math.random() * 2 + 1;
@@ -219,7 +318,7 @@ export class CanvasOverlay {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 1.0,
-        color: Math.random() > 0.5 ? '#38bdf8' : '#fbbf24'
+        color: customColor || (Math.random() > 0.5 ? '#38bdf8' : '#fbbf24')
       });
     }
   }
@@ -231,20 +330,30 @@ export class CanvasOverlay {
       const p = this.particles[i];
       p.x += p.vx;
       p.y += p.vy;
-      p.life -= 0.05;
+      p.life -= 0.045;
 
       if (p.life <= 0) {
         this.particles.splice(i, 1);
         continue;
       }
 
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.life * 3, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.globalAlpha = p.life;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.life);
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 6;
-      ctx.fill();
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = p.color;
+
+      if (p.text) {
+        ctx.font = `bold ${p.size || 16}px Outfit, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.text, p.x, p.y);
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.life * 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
     }
     ctx.restore();
   }

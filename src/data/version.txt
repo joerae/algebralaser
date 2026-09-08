@@ -1,3 +1,33 @@
+Version 1.5.0
+Date: 2026-09-09
+
+Release Notes:
+- Mode C: Blast Balance 💥:
+  * Added Mode C interaction implementing the Blast Balance mechanics with dynamic lasers, carried operands, physical scale tilts, and calculator blasting.
+  * Header mode toggle: Smoothly switch between "Mode A: Move Across", "Mode B: Balance Both Sides", and "Mode C: Blast Balance" at any time.
+  * 5 Blaster Types on Left Panel: Plus (+), Minus (−), Times (×), Divide (÷), and Calculator (🖩). Player equips a blaster with 400ms laser dwell or click.
+  * Dynamic Blaster Lasers: Equipping a blaster changes the laser beam color (Emerald for +, Rose for −, Amber for ×, Purple for ÷, Neon Blue for Calc) and emits flying symbol particles along the beam.
+  * Physical Balance Scale: Positioned directly beneath the equation with fulcrum pivot centered under the '=' sign. Firing correct blaster at LHS smashes the term free and tilts the scale physically (heavy/light) with smooth physics transition.
+  * Laser Carried Operand: Smashed operand attaches to fingertip laser emitter and smoothly slides down the laser ray toward the RHS target as dwell progresses.
+  * Blasting RHS: Firing laser at RHS target levels/balances the scale back to 0° and transforms RHS into an unsimplified expression (e.g. 11 + 1 or 12 / 3).
+  * Calculator Blaster & Arithmetic Simplification: Equipping the Calculator blaster pulses guidance on unsimplified RHS. Blasting RHS opens arithmetic choice cards (12, 13, 14); choosing correctly collapses the expression into a single number and records history.
+  * Keyboard & Gesture Support: Full keyboard shortcuts (+, -, *, /, c to equip; Enter/Space to fire) and hand-tracking laser dwell support.
+- Files Edited / Created:
+  * src/math/types.ts: Added SolverMode ('mode_c'), BlasterType, ScaleTilt, CarriedOperand, UnsimplifiedExpression, BlasterState, new GamePhases ('blasting_rhs', 'awaiting_simplify').
+  * src/math/linearEquation.ts: Added Mode C state methods (createInitialBlasterState, equipBlaster, blastLhs, blastRhs, blastSimplify) and undo snapshots.
+  * src/math/linearEquationModeC.test.ts: [NEW] Vitest test suite for Mode C lifecycle and undo support.
+  * src/audio/soundEffects.ts: Added sound effects for blaster equip, smash free, scale tilt, and scale balance.
+  * src/ui/blasterPanelView.ts: [NEW] Left panel with 5 blaster cards, SVG dwell circles, active states, and guidance pulses.
+  * src/ui/equationView.ts: Rendered physical balance scale (beam bar, pans, fulcrum pivot) with tilt classes, Mode C targets, and click callbacks.
+  * src/ui/canvasOverlay.ts: Implemented blaster-themed laser beams, flying symbol particles, and carried operand badge sliding down laser ray.
+  * src/ui/hudView.ts: Added Mode C button in header toggle and updated version badge to v1.5.0.
+  * index.html: Added aside #blaster-panel element.
+  * src/styles/index.css: Added styling for blaster panel, balance scale, tilt physics, and Mode C equation targets.
+  * src/game/gameController.ts: Added selectBlaster, shootLhs, shootRhs, shootSimplify, and Mode C hints.
+  * src/game/interactionController.ts: Added blaster selection dwell, LHS shoot dwell, RHS blast dwell, simplify dwell, and keyboard shortcuts.
+  * src/main.ts: Wired BlasterPanelView, Mode C interaction callbacks, layout positioning, targets collection, and overlay rendering.
+  * src/vision/types.ts & src/vision/rayCaster.ts: Added 'blaster' target type.
+
 Version 1.4.0
 Date: 2026-09-08
 

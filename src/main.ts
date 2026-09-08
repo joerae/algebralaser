@@ -2,17 +2,18 @@ import { GameController } from './game/gameController';
 import { InteractionController } from './game/interactionController';
 import { CameraManager } from './vision/cameraManager';
 import { HandLandmarkerService } from './vision/handLandmarkerService';
-import { CanvasOverlay } from './ui/canvasOverlay';
+import { CanvasOverlay, BlasterOverlayInfo } from './ui/canvasOverlay';
 import { EquationView } from './ui/equationView';
 import { AnswersView } from './ui/answersView';
 import { HudView } from './ui/hudView';
 import { ForgePanelView, ForgeSign } from './ui/forgePanelView';
+import { BlasterPanelView } from './ui/blasterPanelView';
 import { classifyHandPose } from './vision/poseClassifier';
 import { computeLaserRay } from './vision/coordinateTransform';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
 import { LaserRay } from './vision/types';
 import { soundManager } from './audio/soundEffects';
-import { SolverMode } from './math/types';
+import { SolverMode, BlasterType } from './math/types';
 
 class App {
   private game: GameController;
@@ -23,6 +24,7 @@ class App {
   private equationView: EquationView;
   private answersView: AnswersView;
   private forgePanelView: ForgePanelView;
+  private blasterPanelView: BlasterPanelView;
   private hudView: HudView;
   private raySmoother: RaySmoother;
 
@@ -35,6 +37,7 @@ class App {
   private cameraBoxEl: HTMLElement | null = null;
   private answersColumnEl: HTMLElement | null = null;
   private forgePanelEl: HTMLElement | null = null;
+  private blasterPanelEl: HTMLElement | null = null;
   private isCameraRunning: boolean = false;
   private wasSnapped: boolean = false;
   private wasCrossed: boolean = false;
@@ -56,9 +59,11 @@ class App {
     this.cameraBoxEl = document.getElementById('camera-box');
     this.answersColumnEl = document.getElementById('answers-column');
     this.forgePanelEl = document.getElementById('forge-panel');
+    this.blasterPanelEl = document.getElementById('blaster-panel');
     const equationArea = document.getElementById('equation-area') as HTMLElement;
     const answersColumn = document.getElementById('answers-column') as HTMLElement;
     const forgePanel = document.getElementById('forge-panel') as HTMLElement;
+    const blasterPanel = document.getElementById('blaster-panel') as HTMLElement;
     const hudHeader = document.getElementById('hud-header') as HTMLElement;
     const hudFooter = document.getElementById('hud-footer') as HTMLElement;
     const modalEl = document.getElementById('settings-modal') as HTMLElement;
@@ -97,18 +102,53 @@ class App {
       this.triggerSplitAndBalance();
     };
 
+    // Wire Mode C callbacks
+    this.interaction.onBlasterSelected = (blaster) => {
+      this.handleSelectBlaster(blaster);
+    };
+
+    this.interaction.onSmashLhsRequested = () => {
+      this.game.shootLhs();
+      this.needTargetsRefresh = true;
+    };
+
+    this.interaction.onBlastRhsRequested = () => {
+      this.game.shootRhs();
+      this.needTargetsRefresh = true;
+    };
+
+    this.interaction.onBlastSimplifyRequested = () => {
+      this.game.shootSimplify();
+      this.needTargetsRefresh = true;
+    };
+
     window.addEventListener('resize', () => {
       this.needTargetsRefresh = true;
     });
 
     // 3. UI Views
     this.equationView = new EquationView(equationArea, {
-      onPickup: (term) => this.game.pickup(term),
+      onPickup: (term) => {
+        if (this.game.getState().mode === 'mode_c') {
+          this.game.shootLhs();
+          this.needTargetsRefresh = true;
+        } else {
+          this.game.pickup(term);
+        }
+      },
       onDrop: () => this.popBubbleAndDrop(),
       onNext: () => this.game.nextLevel(),
       onReplay: () => this.game.restartLevel(),
       onNotYet: () => this.equationView.triggerNotYet(),
-      onApplyEquals: () => this.triggerSplitAndBalance()
+      onApplyEquals: () => this.triggerSplitAndBalance(),
+      onBlastRhs: () => {
+        this.game.shootRhs();
+        this.needTargetsRefresh = true;
+      },
+      onBlastSimplify: () => {
+        this.game.shootSimplify();
+        this.needTargetsRefresh = true;
+      }
     });
 
     this.answersView = new AnswersView(answersColumn, (choice) => {
@@ -117,6 +157,10 @@ class App {
 
     this.forgePanelView = new ForgePanelView(forgePanel, {
       onSelectSign: (sign) => this.handleForgeSign(sign)
+    });
+
+    this.blasterPanelView = new BlasterPanelView(blasterPanel, {
+      onSelectBlaster: (blaster) => this.handleSelectBlaster(blaster)
     });
 
     this.hudView = new HudView(hudHeader, hudFooter, modalEl, debugEl, bannerEl, {
@@ -180,6 +224,11 @@ class App {
         window.setTimeout(() => this.bubbleEl?.classList.remove('shake-nah-uh'), 450);
       }
     }
+  }
+
+  private handleSelectBlaster(blaster: BlasterType) {
+    this.game.selectBlaster(blaster);
+    this.needTargetsRefresh = true;
   }
 
   private triggerSplitAndBalance() {
@@ -286,7 +335,12 @@ class App {
 
     // Contextual instruction
     let instr = 'Get Y on its own.';
-    if (state.mode === 'mode_b') {
+    if (state.mode === 'mode_c') {
+      instr = this.game.getHint();
+      if (state.phase === 'question') {
+        this.updateArrowAndLayout(state.phase);
+      }
+    } else if (state.mode === 'mode_b') {
       if (state.phase === 'ready') {
         if (state.stage === 'undo_constant') {
           const sign = state.currentB < 0 ? '−' : '+';
@@ -328,7 +382,19 @@ class App {
     // Contextual camera badge hint
     const hintBadge = document.getElementById('camera-hint-badge');
     if (hintBadge) {
-      if (state.mode === 'mode_b') {
+      if (state.mode === 'mode_c') {
+        if (state.phase === 'ready') {
+          hintBadge.textContent = state.blasterState?.equipped ? 'Shoot LHS Term 💥' : 'Equip Blaster 🔫';
+        } else if (state.phase === 'blasting_rhs') {
+          hintBadge.textContent = 'Blast RHS to Balance 🎯';
+        } else if (state.phase === 'awaiting_simplify') {
+          hintBadge.textContent = 'Equip Calculator 🖩 & Blast';
+        } else if (state.phase === 'question') {
+          hintBadge.textContent = 'Aim laser at answer 👉';
+        } else if (state.phase === 'solved') {
+          hintBadge.textContent = 'Show Open Palm 👋 or Point Next';
+        }
+      } else if (state.mode === 'mode_b') {
         if (state.phase === 'ready') {
           hintBadge.textContent = 'Point up at equation ☝️';
         } else if (state.phase === 'forging') {
@@ -732,6 +798,7 @@ class App {
 
     // 60 FPS lightweight updates
     this.forgePanelView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
+    this.blasterPanelView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
     this.equationView.setDestinationHovered(interState.isDestinationHovered);
     this.answersView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
 
@@ -743,6 +810,16 @@ class App {
       );
     }
 
+    let blasterInfo: BlasterOverlayInfo | undefined = undefined;
+    if (gameState.mode === 'mode_c') {
+      const operand = gameState.blasterState?.carriedOperand;
+      blasterInfo = {
+        type: gameState.blasterState?.equipped || null,
+        carriedOperandText: operand ? `${operand.operator}${operand.value}` : null,
+        dwellProgress: interState.dwellProgress
+      };
+    }
+
     // Render Canvas Overlay (hand skeleton, laser, particles)
     this.canvasOverlay.render(
       hands,
@@ -750,7 +827,8 @@ class App {
       hitResult,
       interState.carriedPosition,
       cameraViewport,
-      interactiveTargets
+      interactiveTargets,
+      blasterInfo
     );
 
     requestAnimationFrame((t) => this.loop(t));
@@ -790,6 +868,47 @@ class App {
     } else {
       if (this.forgePanelEl) this.forgePanelEl.style.display = 'none';
       this.forgePanelView.render(false);
+    }
+
+    // Mode C: Blaster Panel on Left
+    const isBlasterVisible = gameState.mode === 'mode_c';
+    if (isBlasterVisible && this.cameraBoxEl && this.blasterPanelEl) {
+      const cameraRect = this.cameraBoxEl.getBoundingClientRect();
+      const columnWidth = 165;
+      let left = cameraRect.left - columnWidth - 18;
+      if (left < 10) left = 10;
+
+      this.blasterPanelEl.style.display = 'flex';
+      const activeBlaster = gameState.blasterState?.equipped || null;
+      let recommended: BlasterType | null = null;
+      if (gameState.phase === 'awaiting_simplify') {
+        recommended = 'calc';
+      } else if (gameState.phase === 'ready') {
+        recommended = gameState.stage === 'undo_constant' 
+          ? (gameState.currentB < 0 ? '+' : '-') 
+          : '÷';
+      }
+      this.blasterPanelView.render(true, activeBlaster, gameState.phase, recommended);
+
+      const headerEl = this.blasterPanelEl.querySelector<HTMLElement>('.blaster-header');
+      const headerHeight = headerEl ? headerEl.offsetHeight + 8 : 50;
+      const top = Math.max(10, cameraRect.top - headerHeight);
+      const totalHeight = cameraRect.height + (cameraRect.top - top);
+
+      this.blasterPanelEl.style.left = `${left}px`;
+      this.blasterPanelEl.style.top = `${top}px`;
+      this.blasterPanelEl.style.width = `${columnWidth}px`;
+      this.blasterPanelEl.style.height = `${totalHeight}px`;
+      this.blasterPanelEl.style.right = 'auto';
+
+      const cardsContainer = this.blasterPanelEl.querySelector<HTMLElement>('.blaster-cards-vertical');
+      if (cardsContainer) {
+        cardsContainer.style.height = `${cameraRect.height}px`;
+        cardsContainer.style.flex = '0 0 auto';
+      }
+    } else {
+      if (this.blasterPanelEl) this.blasterPanelEl.style.display = 'none';
+      this.blasterPanelView.render(false);
     }
 
     // 2. Downward Arrow to Top of Forge Area during 'forging' phase (Mode B)
@@ -843,7 +962,7 @@ class App {
     this.answersColumnEl.style.right = 'auto';
 
     // Curving arrow from equation to question card
-    const termEl = document.getElementById('arithmetic-rhs');
+    const termEl = document.getElementById('arithmetic-rhs') || document.getElementById('term-simplify-target') || document.getElementById('term-rhs-mode-c');
     const questionCard = this.answersColumnEl.querySelector<HTMLElement>('.arithmetic-question');
 
     if (termEl && questionCard && this.arrowSvgEl && this.arrowPathEl) {
@@ -899,7 +1018,7 @@ class App {
 
   private collectTargets(): InteractiveTarget[] {
     const gameState = this.game.getState();
-    const isDynamicPhase = gameState.phase === 'question' || gameState.phase === 'solved' || gameState.phase === 'forging' || gameState.phase === 'applying';
+    const isDynamicPhase = gameState.phase === 'question' || gameState.phase === 'solved' || gameState.phase === 'forging' || gameState.phase === 'applying' || gameState.phase === 'blasting_rhs' || gameState.phase === 'awaiting_simplify';
     if (!this.needTargetsRefresh && this.cachedTargets.length > 0 && !isDynamicPhase) {
       return this.cachedTargets;
     }
@@ -908,6 +1027,7 @@ class App {
     const eqTargets = this.equationView.getInteractiveElements();
     const ansTargets = this.answersView.getInteractiveElements();
     const forgeTargets = this.forgePanelView.getInteractiveElements();
+    const blasterTargets = this.blasterPanelView.getInteractiveElements();
 
     eqTargets.forEach(t => {
       const rect = t.element.getBoundingClientRect();
@@ -930,6 +1050,27 @@ class App {
 
     if (gameState.phase === 'forging') {
       forgeTargets.forEach(t => {
+        const rect = t.element.getBoundingClientRect();
+        const pad = 22;
+        targets.push({
+          id: t.id,
+          type: t.type,
+          rect: {
+            left: rect.left - pad,
+            top: rect.top - pad,
+            right: rect.right + pad,
+            bottom: rect.bottom + pad,
+            width: rect.width + pad * 2,
+            height: rect.height + pad * 2
+          },
+          enabled: true,
+          priority: 2
+        });
+      });
+    }
+
+    if (gameState.mode === 'mode_c') {
+      blasterTargets.forEach(t => {
         const rect = t.element.getBoundingClientRect();
         const pad = 22;
         targets.push({

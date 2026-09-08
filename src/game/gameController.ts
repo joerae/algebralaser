@@ -1,4 +1,4 @@
-import { LinearEquationDef, EquationState, SolverMode, OperationSign } from '../math/types';
+import { LinearEquationDef, EquationState, SolverMode, OperationSign, BlasterType } from '../math/types';
 import { 
   createInitialState, 
   pickUpTerm, 
@@ -8,7 +8,11 @@ import {
   undo,
   forgeOpposite,
   applyToBothSides,
-  cancelLhsInverse
+  cancelLhsInverse,
+  equipBlaster,
+  blastLhs,
+  blastRhs,
+  blastSimplify
 } from '../math/linearEquation';
 import { soundManager } from '../audio/soundEffects';
 import { generateCuratedLevelSet } from '../math/puzzleGenerator';
@@ -144,6 +148,54 @@ export class GameController {
     this.notify();
   }
 
+  public selectBlaster(blaster: BlasterType): void {
+    if (this.state.mode !== 'mode_c') return;
+    this.state = equipBlaster(this.state, blaster);
+    soundManager.playBlasterEquip();
+    this.notify();
+  }
+
+  public shootLhs(blaster?: BlasterType): boolean {
+    if (this.state.mode !== 'mode_c') return false;
+
+    const res = blastLhs(this.state, blaster);
+    this.state = res.state;
+    if (res.success) {
+      soundManager.playSmashFree();
+      setTimeout(() => soundManager.playScaleTilt(), 100);
+    } else if (res.notYet) {
+      soundManager.playNotYet();
+    }
+    this.notify();
+    return res.success;
+  }
+
+  public shootRhs(): boolean {
+    if (this.state.mode !== 'mode_c' || this.state.phase !== 'blasting_rhs') return false;
+
+    const res = blastRhs(this.state);
+    if (!res.success) return false;
+
+    this.state = res.state;
+    soundManager.playScaleBalance();
+    this.notify();
+    return true;
+  }
+
+  public shootSimplify(blaster?: BlasterType): boolean {
+    if (this.state.mode !== 'mode_c' || this.state.phase !== 'awaiting_simplify') return false;
+
+    const res = blastSimplify(this.state, blaster);
+    this.state = res.state;
+    if (res.success) {
+      soundManager.playPickup();
+    } else if (res.notYet) {
+      soundManager.playNotYet();
+    }
+    this.notify();
+    return res.success;
+  }
+
   public onBeforeCorrectAdvance?: (correctVal: number, done: () => void) => void;
 
   public answer(choice: number): boolean {
@@ -216,6 +268,10 @@ export class GameController {
     }
     if (stage === 'undo_constant') {
       const absB = Math.abs(currentB);
+      if (mode === 'mode_c') {
+        const blasterSign = currentB < 0 ? '+' : '−';
+        return `Equip the ${blasterSign} blaster on the left, then blast ${currentB < 0 ? '−' : '+'}${absB} to smash it free!`;
+      }
       if (mode === 'mode_b') {
         return currentB < 0
           ? `Point at −${absB} to pick it up, then forge +${absB} and apply to both sides.`
@@ -228,6 +284,9 @@ export class GameController {
       }
     }
     if (stage === 'undo_coefficient') {
+      if (mode === 'mode_c') {
+        return `Equip the ÷ blaster on the left, then blast ${currentA} to divide both sides by ${currentA}!`;
+      }
       if (mode === 'mode_b') {
         return `Point at ${currentA} to pick it up, forge ÷${currentA} and apply to both sides.`;
       }

@@ -20,21 +20,46 @@ export type SolverStage =
   | 'undo_coefficient'  // when b == 0 and a > 1, divide by coefficient
   | 'solved';           // when a == 1 and b == 0
 
-export type SolverMode = 'mode_a' | 'mode_b';
+export type SolverMode = 'mode_a' | 'mode_b' | 'mode_c';
 
 export type GamePhase =
-  | 'ready'       // waiting for player to grab a term
-  | 'carrying'    // term picked up, aiming at destination (Mode A)
-  | 'forging'     // term picked up, forge panel active (Mode B)
-  | 'applying'    // opposite operation forged, aiming at = sign (Mode B)
-  | 'balancing'   // dual-split animation and balancing (Mode B)
-  | 'cancelling'  // brief visual cancellation animation
-  | 'question'    // unsimplified equation committed, awaiting arithmetic choice
-  | 'feedback'    // brief feedback after answering (merging / success)
-  | 'solved'      // puzzle completed, showing verification
-  | 'paused';     // paused state
+  | 'ready'              // waiting for player to grab a term or fire blaster
+  | 'carrying'           // term picked up, aiming at destination (Mode A)
+  | 'forging'            // term picked up, forge panel active (Mode B)
+  | 'applying'           // opposite operation forged, aiming at = sign (Mode B)
+  | 'balancing'          // dual-split animation and balancing (Mode B)
+  | 'cancelling'         // brief visual cancellation animation
+  | 'blasting_rhs'       // LHS smashed free, operand carried, aiming at RHS (Mode C)
+  | 'awaiting_simplify'  // RHS blasted, scale balanced, awaiting Calculator blaster (Mode C)
+  | 'question'           // unsimplified equation committed, awaiting arithmetic choice
+  | 'feedback'           // brief feedback after answering (merging / success)
+  | 'solved'             // puzzle completed, showing verification
+  | 'paused';            // paused state
 
 export type OperationSign = '+' | '-' | '−' | '×' | '÷';
+
+export type BlasterType = '+' | '-' | '−' | '×' | '÷' | 'calc';
+
+export type ScaleTilt = 'balanced' | 'lhs_heavy' | 'lhs_light';
+
+export interface CarriedOperand {
+  operator: OperationSign;
+  value: number;
+}
+
+export interface UnsimplifiedExpression {
+  leftNum: number;
+  op: OperationSign;
+  rightNum: number;
+  displayText: string;
+}
+
+export interface BlasterState {
+  equipped: BlasterType | null;
+  scaleTilt: ScaleTilt;
+  carriedOperand: CarriedOperand | null;
+  rhsUnsimplified: UnsimplifiedExpression | null;
+}
 
 export interface ForgedOperation {
   originalOperator: OperationSign;
@@ -81,6 +106,7 @@ export interface EquationState {
   carriedTerm: 'constant' | 'coefficient' | null;
   forgedOperation: ForgedOperation | null;
   balancedDisplay: BalancedDisplay | null;
+  blasterState?: BlasterState;
   pendingArithmetic: PendingArithmetic | null;
   cancellation: CancellationDisplay | null;
   errorMessage: string | null;
@@ -98,6 +124,7 @@ export interface HistorySnapshot {
   carriedTerm: 'constant' | 'coefficient' | null;
   forgedOperation: ForgedOperation | null;
   balancedDisplay: BalancedDisplay | null;
+  blasterState?: BlasterState;
   pendingArithmetic: PendingArithmetic | null;
   equationHistory: string[];
 }

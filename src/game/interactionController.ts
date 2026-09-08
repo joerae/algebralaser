@@ -1,7 +1,7 @@
 import { GameController } from './gameController';
 import { LaserRay, RayHitResult, ClassifiedPose } from '../vision/types';
 import { soundManager } from '../audio/soundEffects';
-import { OperationSign } from '../math/types';
+import { OperationSign, BlasterType } from '../math/types';
 
 export interface InteractionState {
   laserRay: LaserRay | null;
@@ -35,6 +35,10 @@ export class InteractionController {
   public onNotYetRequested?: (term: 'coefficient') => void;
   public onForgeRequested?: (sign: OperationSign) => void;
   public onApplyEqualsRequested?: () => void;
+  public onBlasterSelected?: (blaster: BlasterType) => void;
+  public onSmashLhsRequested?: () => void;
+  public onBlastRhsRequested?: () => void;
+  public onBlastSimplifyRequested?: () => void;
   private lastDwellTargetId: string | null = null;
   private lastDwellTime: number = 0;
   private openPalmStartTime: number = 0;
@@ -99,7 +103,184 @@ export class InteractionController {
       return;
     }
 
-    // Phase: READY
+    // Mode C: Blaster Selection (Available across ready, blasting_rhs, and awaiting_simplify)
+    if (gameState.mode === 'mode_c' && hit && hit.targetType === 'blaster' && pose.isPointing) {
+      this.state.hoveredTargetId = hit.targetId;
+
+      if (this.lastDwellTargetId !== hit.targetId) {
+        this.lastDwellTargetId = hit.targetId;
+        this.lastDwellTime = now;
+        this.state.dwellProgress = 0;
+        this.state.dwellTargetId = hit.targetId;
+      } else {
+        const elapsed = now - this.lastDwellTime;
+        const progress = Math.min(1.0, elapsed / 400);
+        this.state.dwellProgress = progress;
+
+        if (progress > 0.2 && Math.random() < 0.2) {
+          soundManager.playDwellTick(progress);
+        }
+
+        if (progress >= 1.0) {
+          let bType: BlasterType = '+';
+          if (hit.targetId === 'blaster-op-minus') bType = '-';
+          else if (hit.targetId === 'blaster-op-times') bType = '×';
+          else if (hit.targetId === 'blaster-op-divide') bType = '÷';
+          else if (hit.targetId === 'blaster-op-calc') bType = 'calc';
+
+          this.game.selectBlaster(bType);
+          this.onBlasterSelected?.(bType);
+          this.resetDwell();
+        }
+      }
+      return;
+    }
+
+    // Mode C: BLASTING RHS (carrying operand along laser ray)
+    if (gameState.phase === 'blasting_rhs' && gameState.mode === 'mode_c') {
+      this.openPalmStartTime = 0;
+      this.state.openPalmProgress = 0;
+
+      if (!ray || !ray.active) {
+        this.state.hoveredTargetId = null;
+        this.state.isDestinationHovered = false;
+        this.resetDwell();
+        return;
+      }
+
+      if (hit && hit.targetId === 'term-rhs-mode-c' && pose.isPointing) {
+        this.state.hoveredTargetId = hit.targetId;
+        this.state.isDestinationHovered = true;
+
+        if (this.lastDwellTargetId !== hit.targetId) {
+          this.lastDwellTargetId = hit.targetId;
+          this.lastDwellTime = now;
+          this.state.dwellProgress = 0;
+          this.state.dwellTargetId = hit.targetId;
+        } else {
+          const elapsed = now - this.lastDwellTime;
+          const progress = Math.min(1.0, elapsed / 500);
+          this.state.dwellProgress = progress;
+
+          if (progress > 0.2 && Math.random() < 0.2) {
+            soundManager.playDwellTick(progress);
+          }
+
+          if (progress >= 1.0) {
+            this.game.shootRhs();
+            this.onBlastRhsRequested?.();
+            this.resetDwell();
+          }
+        }
+      } else {
+        this.state.hoveredTargetId = null;
+        this.state.isDestinationHovered = false;
+        this.resetDwell();
+      }
+      return;
+    }
+
+    // Mode C: AWAITING SIMPLIFY (RHS balanced, aiming Calculator blaster at unsimplified RHS)
+    if (gameState.phase === 'awaiting_simplify' && gameState.mode === 'mode_c') {
+      this.openPalmStartTime = 0;
+      this.state.openPalmProgress = 0;
+
+      if (!ray || !ray.active) {
+        this.state.hoveredTargetId = null;
+        this.state.isDestinationHovered = false;
+        this.resetDwell();
+        return;
+      }
+
+      if (hit && hit.targetId === 'term-simplify-target' && pose.isPointing) {
+        this.state.hoveredTargetId = hit.targetId;
+        this.state.isDestinationHovered = true;
+
+        if (this.lastDwellTargetId !== hit.targetId) {
+          this.lastDwellTargetId = hit.targetId;
+          this.lastDwellTime = now;
+          this.state.dwellProgress = 0;
+          this.state.dwellTargetId = hit.targetId;
+        } else {
+          const elapsed = now - this.lastDwellTime;
+          const progress = Math.min(1.0, elapsed / this.dwellDurationMs);
+          this.state.dwellProgress = progress;
+
+          if (progress > 0.2 && Math.random() < 0.2) {
+            soundManager.playDwellTick(progress);
+          }
+
+          if (progress >= 1.0) {
+            this.game.shootSimplify();
+            this.onBlastSimplifyRequested?.();
+            this.resetDwell();
+          }
+        }
+      } else {
+        this.state.hoveredTargetId = null;
+        this.state.isDestinationHovered = false;
+        this.resetDwell();
+      }
+      return;
+    }
+
+    // Phase: READY (Mode C: Dwell to shoot LHS)
+    if (gameState.phase === 'ready' && gameState.mode === 'mode_c') {
+      this.openPalmStartTime = 0;
+      this.state.openPalmProgress = 0;
+
+      if (!ray || !ray.active) {
+        this.state.hoveredTargetId = null;
+        this.resetDwell();
+        return;
+      }
+
+      if (hit && pose.isPointing) {
+        this.state.hoveredTargetId = hit.targetId;
+
+        if (hit.targetId === 'term-coefficient-not-yet') {
+          this.game.shootLhs();
+          this.onNotYetRequested?.('coefficient');
+          this.state.hoveredTargetId = null;
+          this.resetDwell();
+          return;
+        }
+
+        if (hit.targetId === 'term-constant' || hit.targetId === 'term-coefficient') {
+          if (this.lastDwellTargetId !== hit.targetId) {
+            this.lastDwellTargetId = hit.targetId;
+            this.lastDwellTime = now;
+            this.state.dwellProgress = 0;
+            this.state.dwellTargetId = hit.targetId;
+          } else {
+            const elapsed = now - this.lastDwellTime;
+            const progress = Math.min(1.0, elapsed / this.dwellDurationMs);
+            this.state.dwellProgress = progress;
+
+            if (progress > 0.2 && Math.random() < 0.2) {
+              soundManager.playDwellTick(progress);
+            }
+
+            if (progress >= 1.0) {
+              const success = this.game.shootLhs();
+              if (success) {
+                this.onSmashLhsRequested?.();
+              } else {
+                this.onNotYetRequested?.('coefficient');
+              }
+              this.resetDwell();
+            }
+          }
+          return;
+        }
+      } else {
+        this.state.hoveredTargetId = null;
+        this.resetDwell();
+      }
+      return;
+    }
+
+    // Phase: READY (Mode A & B)
     if (gameState.phase === 'ready') {
       this.resetDwell();
       this.openPalmStartTime = 0;
@@ -477,19 +658,56 @@ export class InteractionController {
       return true;
     }
 
-    // Enter / Space: Pick up or Drop
-    if (e.key === 'Enter' || e.key === ' ') {
-      if (gameState.phase === 'ready') {
-        if (gameState.stage === 'undo_constant') {
-          return this.game.pickup('constant');
-        } else if (gameState.stage === 'undo_coefficient') {
-          return this.game.pickup('coefficient');
-        }
-      } else if (gameState.phase === 'carrying') {
-        return this.game.drop();
-      } else if (gameState.phase === 'solved') {
-        this.game.nextLevel();
+    // Mode C: Blaster selection shortcuts (+, -, *, /, c)
+    if (gameState.mode === 'mode_c') {
+      if (e.key === '+' || e.key === '=') {
+        this.game.selectBlaster('+');
         return true;
+      }
+      if (e.key === '-' || e.key === '_') {
+        this.game.selectBlaster('-');
+        return true;
+      }
+      if (e.key === '*' || e.key === 'x' || e.key === 'X') {
+        this.game.selectBlaster('×');
+        return true;
+      }
+      if (e.key === '/' || e.key === 'd' || e.key === 'D') {
+        this.game.selectBlaster('÷');
+        return true;
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        this.game.selectBlaster('calc');
+        return true;
+      }
+    }
+
+    // Enter / Space: Actions across modes
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (gameState.mode === 'mode_c') {
+        if (gameState.phase === 'ready') {
+          return this.game.shootLhs();
+        } else if (gameState.phase === 'blasting_rhs') {
+          return this.game.shootRhs();
+        } else if (gameState.phase === 'awaiting_simplify') {
+          return this.game.shootSimplify();
+        } else if (gameState.phase === 'solved') {
+          this.game.nextLevel();
+          return true;
+        }
+      } else {
+        if (gameState.phase === 'ready') {
+          if (gameState.stage === 'undo_constant') {
+            return this.game.pickup('constant');
+          } else if (gameState.stage === 'undo_coefficient') {
+            return this.game.pickup('coefficient');
+          }
+        } else if (gameState.phase === 'carrying') {
+          return this.game.drop();
+        } else if (gameState.phase === 'solved') {
+          this.game.nextLevel();
+          return true;
+        }
       }
     }
 
