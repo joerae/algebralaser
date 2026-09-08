@@ -23,7 +23,7 @@ export class GameController {
   private cancellationTimeout: number | null = null;
   public reducedMotion: boolean = false;
 
-  constructor(levels?: LinearEquationDef[], initialMode: SolverMode = 'mode_a') {
+  constructor(levels?: LinearEquationDef[], initialMode: SolverMode = 'mode_b') {
     this.levels = levels || generateCuratedLevelSet();
     this.state = createInitialState(this.levels[0], initialMode);
   }

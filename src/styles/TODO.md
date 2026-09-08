@@ -1,16 +1,17 @@
 TODO
 
-[x] The camera box has now been made smaller and wider, it is clipping the camera to a smaller area. This makes it hard for me to use finger gestures
-    - Fixed in v1.2.0 & v1.3.0: Unclipped 4:3 view with object-fit: contain; on big screens expanded to twice the size (up to 1066px x 800px) with 2x/1x view toggle button in header.
+[x] Balance mode - make it the default mode on loading
 
-[x] Finger lasers feel a little laggy and unresponsive, and not that accurate. Please tune them for performance and accuracy
-    - Fixed in v1.2.0: Adaptive velocity-responsive smoothing (0.85 fast / 0.38 steady) and doubled MCP knuckle-to-tip baseline to halve angular noise.
+[x] Balance mode - Forge panel. Need to lay out the opposites vertically. Right now I can't get to the + because it is in a column next to the -. Make them take up the full height of the camera box, so it is easy to hit the one I want
 
-[x] ensure the layout is responsive. I want this to run on a Chromebook too, even with a resolution of 1366x768
-    - Fixed in v1.2.0 & v1.3.0: Fluid clamp formulas and dedicated @media queries prevent scrolling on 1366x768 while seamlessly scaling up on big displays.
+[x] Balancing mode - once I've picked up a number that needs forging, run an arrow pointing down to the forging area, similar to the one that makes me do the equations. This is to help me focus my attention there.
 
-[x] let's add colours for each of the operations (plus, minus, divided, multiplied) to make it really obvious that plus and minus are opposites. Like maybe Plus is glowing white ,and minus is glowing black. Multiplied is glowing red, and divided is glowing purple? I'm not sure
-    - Fixed in v1.2.0: Plus (Glowing Ice-White), Minus (Dark Void Obsidian), Multiplied (Glowing Crimson-Red), Divided (Glowing Royal-Purple) with live duality morphing across the equals sign.
+[x] Balancing mide - after I have forged, right now I have to push the result up to the equals. In fact, it could be to the whole equation
 
-NOT YET, BIGGER TASK
- I'd like it to try "mode B" on equations, that I can choose between. In this one, I can choose what part of the equation I want to blast. There's lots of room between each part. And to "blast" it, I then need to choose it's opposite. Like to get rid of a +4, I start blasting it, then on the left I need to choose what to blast it with, and I can point to a minus for a while to get that beam, then a blast out four of it... somehow? By selecting four? And then when I have that, I blast it to BOTH sides of the equation by holding up. After that is done, I have to do the calcualtion on the right side that subtracts 4 from it.
+[x] Balancing mode - after targeting the equation with the forged number, there's an animation showing removing the forged number for both sides. That's cool, but right now it goes so fast I can't take it in. Maybe the forged number floats above each side, and we see it smash in and remove on side one, then side two. And when it hits side two, this transitions into the arrow that makes up do the calcaultion on the other side
+
+[x] Balancing mode - Equation finished info. It should be tracking each new version of the equation on both sides as I adapt it (e.g. point the forged sign to the equation, and also answer the question on the right) - the equation should adapt, and I can see the new version of it up above.
+
+
+Not Yet
+[  ] for things like "3x Y", instead write it as "3Y", but as I put my finger on the 3 to pick it up, it expands to (3x) Y, and we see the 3x inside the bubble, so it shows me that 3Y and 3x Y are the same thing

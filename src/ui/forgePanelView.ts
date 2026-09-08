@@ -29,9 +29,8 @@ export class ForgePanelView {
     this.container.style.display = 'flex';
 
     const isApplying = mode === 'applying';
-    const headerTitle = isApplying ? 'APPLY TO BOTH SIDES' : 'FORGE THE OPPOSITE';
     const subTitle = isApplying 
-      ? 'Pull forged bubble up to the = sign ☝️' 
+      ? 'Pull forged bubble up to the equation ☝️' 
       : 'Hold bubble on the opposite sign for 1s, or click';
 
     const signs: Array<{ id: string; sign: ForgeSign; display: string; className: string }> = [
@@ -70,19 +69,12 @@ export class ForgePanelView {
 
     this.container.innerHTML = `
       <div class="forge-header ${isApplying ? 'applying' : ''}">
-        <div class="forge-badge">${isApplying ? '✨ Opposites Balance' : '🔥 Anvil'}</div>
-        <div class="forge-title">${headerTitle}</div>
+        <div class="forge-badge">${isApplying ? '✨ Balanced' : '🔥 Forge Opposite'}</div>
         <div class="forge-subtitle">${subTitle}</div>
       </div>
-      <div class="forge-cards-grid">
+      <div class="forge-cards-vertical">
         ${cardsHtml}
       </div>
-      ${isApplying ? `
-        <div class="forge-apply-guide">
-          <span class="guide-arrow">⬆️</span>
-          <span>Target the <strong>=</strong> sign</span>
-        </div>
-      ` : ''}
     `;
 
     // Cache elements and attach click/touch listeners

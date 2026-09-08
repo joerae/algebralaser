@@ -222,6 +222,7 @@ describe('Linear Equation Mathematics & State Machine', () => {
     state = applied1.state;
     expect(state.phase).toBe('balancing');
     expect(state.balancedDisplay?.fullBalancedLine).toBe('3 x Y − 1 + 1 = 11 + 1');
+    expect(state.equationHistory).toEqual(['3 x Y − 1 = 11']);
 
     // Step 4: Cancel LHS inverse and calculate
     state = cancelLhsInverse(state);
@@ -240,6 +241,7 @@ describe('Linear Equation Mathematics & State Machine', () => {
     expect(state.currentC).toBe(12);
     expect(state.stage).toBe('undo_coefficient');
     expect(state.phase).toBe('ready');
+    expect(state.equationHistory).toEqual(['3 x Y − 1 = 11', '3 x Y = 11 + 1']);
 
     // Step 5: Repeat for ×3
     const pick2 = pickUpTerm(state, 'coefficient');
@@ -259,6 +261,7 @@ describe('Linear Equation Mathematics & State Machine', () => {
     expect(applied2.success).toBe(true);
     state = applied2.state;
     expect(state.phase).toBe('balancing');
+    expect(state.equationHistory).toEqual(['3 x Y − 1 = 11', '3 x Y = 11 + 1', '3 x Y = 12']);
 
     // Cancel LHS inverse
     state = cancelLhsInverse(state);
@@ -277,6 +280,12 @@ describe('Linear Equation Mathematics & State Machine', () => {
     expect(state.currentC).toBe(4);
     expect(state.stage).toBe('solved');
     expect(state.phase).toBe('solved');
+    expect(state.equationHistory).toEqual([
+      '3 x Y − 1 = 11',
+      '3 x Y = 11 + 1',
+      '3 x Y = 12',
+      'Y = 12 ÷ 3'
+    ]);
   });
 });
 

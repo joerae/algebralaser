@@ -177,9 +177,10 @@ html, body {
 /* Upper Equation Area (generous vertical room for Star Wars receding history lines) */
 .equation-area {
   width: 100%;
-  min-height: 220px;
-  max-height: 250px;
-  flex-shrink: 0;
+  height: 240px;
+  min-height: 240px;
+  max-height: 240px;
+  flex: 0 0 240px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -187,6 +188,7 @@ html, body {
   padding-bottom: 6px;
   z-index: 25;
   position: relative;
+  box-sizing: border-box;
 }
 
 /* Floating Carried Bubble */
@@ -310,8 +312,8 @@ html, body {
   aspect-ratio: 4 / 3;
   width: auto;
   max-width: min(92vw, calc(100vw - 580px), 1100px);
-  height: clamp(420px, min(65vh, calc(100vh - 310px)), 780px);
-  max-height: 800px;
+  height: clamp(360px, min(56vh, calc(100vh - 360px)), 700px);
+  max-height: 720px;
   background: rgba(15, 23, 42, 0.88);
   border: 2px solid rgba(56, 189, 248, 0.35);
   border-radius: 24px;
@@ -462,12 +464,18 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  perspective: 650px;
+  height: 125px;
+  min-height: 125px;
+  max-height: 125px;
+  flex: 0 0 125px;
+  overflow: hidden;
+  perspective: 550px;
   perspective-origin: 50% 100%;
   gap: 4px;
   width: 100%;
   margin-bottom: 6px;
   pointer-events: none;
+  box-sizing: border-box;
 }
 
 .history-line {
@@ -477,33 +485,53 @@ html, body {
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: 50% 100%;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
-/* Depth 1: Most recent past step (just above active) */
+/* Depth 1: Most recent past step (just above active) - Big and crisp */
 .history-line[data-depth="1"] {
-  font-size: 26px;
-  opacity: 0.65;
-  transform: rotateX(15deg) scale(0.92);
-  color: #bae6fd;
-  text-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  font-size: 25px;
+  opacity: 0.88;
+  transform: rotateX(15deg) scale(0.96);
+  color: #e0f2fe;
+  text-shadow: 0 0 14px rgba(56, 189, 248, 0.45);
 }
 
-/* Depth 2: Older step */
+/* Depth 2: Step before that - Slightly smaller, receding upward */
 .history-line[data-depth="2"] {
   font-size: 20px;
-  opacity: 0.42;
-  transform: rotateX(25deg) scale(0.82) translateY(-4px);
-  color: #7dd3fc;
-  text-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+  opacity: 0.68;
+  transform: rotateX(23deg) scale(0.86);
+  color: #bae6fd;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
 }
 
-/* Depth 3+: Oldest step */
-.history-line[data-depth="3"],
-.history-line[data-depth="4"] {
+/* Depth 3: Step before that - Smaller, deeper in perspective */
+.history-line[data-depth="3"] {
   font-size: 16px;
-  opacity: 0.25;
-  transform: rotateX(35deg) scale(0.72) translateY(-8px);
+  opacity: 0.52;
+  transform: rotateX(31deg) scale(0.78);
+  color: #7dd3fc;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.22);
+}
+
+/* Depth 4: Older step */
+.history-line[data-depth="4"] {
+  font-size: 13px;
+  opacity: 0.38;
+  transform: rotateX(38deg) scale(0.70);
   color: #38bdf8;
+}
+
+/* Depth 5+: Oldest steps (receding into deep space) */
+.history-line[data-depth="5"],
+.history-line[data-depth="6"],
+.history-line[data-depth="7"],
+.history-line[data-depth="8"] {
+  font-size: 11px;
+  opacity: 0.26;
+  transform: rotateX(44deg) scale(0.62);
+  color: #0284c7;
 }
 
 .equation-rail {
@@ -1383,9 +1411,18 @@ input:checked + .slider:before {
   }
 
   .equation-area {
-    min-height: 155px;
-    max-height: 180px;
+    height: 195px;
+    min-height: 195px;
+    max-height: 195px;
+    flex: 0 0 195px;
     padding-bottom: 2px;
+  }
+
+  .equation-history-container {
+    height: 95px;
+    min-height: 95px;
+    max-height: 95px;
+    flex: 0 0 95px;
   }
 
   .equation-rail {
@@ -1652,30 +1689,32 @@ input:checked + .slider:before {
    ========================================================================== */
 .forge-panel {
   position: absolute;
-  width: 260px;
+  width: 165px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  gap: 12px;
   z-index: 35;
   transition: opacity 0.25s ease;
+  box-sizing: border-box;
 }
 
 .forge-header {
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(15, 23, 42, 0.94);
   border: 1px solid rgba(56, 189, 248, 0.35);
-  border-radius: 18px;
-  padding: 14px 18px;
+  border-radius: 16px;
+  padding: 6px 10px;
   text-align: center;
   backdrop-filter: blur(14px);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.55);
   transition: all 0.3s ease;
+  flex-shrink: 0;
+  margin-bottom: 8px;
 }
 
 .forge-header.applying {
   border-color: rgba(251, 191, 36, 0.5);
-  box-shadow: 0 0 35px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.35);
 }
 
 .forge-badge {
@@ -1684,27 +1723,22 @@ input:checked + .slider:before {
   color: #38bdf8;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  margin-bottom: 3px;
-}
-
-.forge-title {
-  font-size: 21px;
-  font-weight: 800;
-  color: var(--gold-bright);
-  letter-spacing: -0.3px;
+  margin-bottom: 2px;
 }
 
 .forge-subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
-  margin-top: 4px;
-  line-height: 1.35;
+  line-height: 1.25;
 }
 
+.forge-cards-vertical,
 .forge-cards-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  width: 100%;
 }
 
 .forge-card {
@@ -1712,8 +1746,9 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 94px;
-  border-radius: 18px;
+  flex: 1;
+  min-height: 0;
+  border-radius: 16px;
   background: var(--bg-card);
   border: 2px solid var(--border-subtle);
   cursor: pointer;
@@ -1726,8 +1761,8 @@ input:checked + .slider:before {
 .forge-card.hovered {
   border-color: var(--cyan-bright);
   background: var(--bg-card-hover);
-  transform: translateY(-3px) scale(1.04);
-  box-shadow: 0 10px 28px rgba(6, 182, 212, 0.35);
+  transform: translateX(-4px) scale(1.04);
+  box-shadow: 0 10px 28px rgba(6, 182, 212, 0.4);
 }
 
 .forge-card.dimmed {
@@ -1831,21 +1866,65 @@ input:checked + .slider:before {
   transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
 }
 
-.split-clone.flying {
+@keyframes pulseApplyingRail {
+  0%, 100% {
+    border-color: rgba(251, 191, 36, 0.4);
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.18), inset 0 0 10px rgba(245, 158, 11, 0.04);
+    background: rgba(245, 158, 11, 0.03);
+  }
+  50% {
+    border-color: rgba(251, 191, 36, 0.95);
+    box-shadow: 0 0 45px rgba(245, 158, 11, 0.55), inset 0 0 24px rgba(245, 158, 11, 0.16);
+    background: rgba(245, 158, 11, 0.10);
+  }
+}
+
+.equation-rail.applying-target {
+  border: 2px dashed rgba(251, 191, 36, 0.65);
+  cursor: pointer;
+  animation: pulseApplyingRail 1.8s infinite ease-in-out;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.equation-rail.applying-target.active {
+  animation: none;
+  border: 2px solid var(--gold-bright);
+  background: rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 55px rgba(245, 158, 11, 0.75), inset 0 0 25px rgba(251, 191, 36, 0.35);
+  transform: scale(1.02);
+}
+
+.split-clone.hovering {
   transition: all 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 45px rgba(56, 189, 248, 0.9), inset 0 0 20px rgba(56, 189, 248, 0.6);
+  animation: cloneHoverBob 0.8s infinite alternate ease-in-out;
 }
 
-.balanced-cancel-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 54px;
+@keyframes cloneHoverBob {
+  0% { transform: translate(-50%, -50%) translateY(0px) scale(1.04); }
+  100% { transform: translate(-50%, -50%) translateY(-5px) scale(1.1); }
 }
 
-.balanced-banner {
-  background: rgba(16, 185, 129, 0.18) !important;
-  border-color: #10b981 !important;
-  color: #a7f3d0 !important;
+.split-clone.smashing {
+  transition: all 0.24s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  transform: translate(-50%, -50%) scale(1.22);
+  box-shadow: 0 0 60px rgba(245, 158, 11, 0.95);
+}
+
+.split-clone.smashed {
+  transform: translate(-50%, -50%) scale(1.75);
+  opacity: 0;
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+.lhs-smash-flash {
+  animation: smashImpactFlash 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes smashImpactFlash {
+  0% { transform: scale(1.15); filter: brightness(2.2) drop-shadow(0 0 20px #f43f5e); }
+  50% { transform: scale(1.05); filter: brightness(1.5) drop-shadow(0 0 10px #f43f5e); }
+  100% { transform: scale(0.2); opacity: 0; }
 }
 
 

@@ -32,10 +32,10 @@ export class EquationView {
   }
 
   private renderHistory(historyLines: string[]): string {
-    if (!historyLines || historyLines.length === 0) return '';
-    const n = historyLines.length;
-    const linesHtml = historyLines.map((line, idx) => {
-      const depth = n - idx; // depth 1 is most recent
+    const lines = historyLines || [];
+    const n = lines.length;
+    const linesHtml = lines.map((line, idx) => {
+      const depth = n - idx; // depth 1 is most recent (closest to active rail)
       return `<div class="history-line" data-depth="${depth}">${line}</div>`;
     }).join('');
 
@@ -247,23 +247,25 @@ export class EquationView {
         ? `
           <div id="eq-equals-target" class="symbol-equals-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Apply to both sides">
             <span class="math-symbol symbol-equals">=</span>
-            <span class="equals-hint-pill">DROP HERE ⚡</span>
           </div>
         `
         : `<div class="math-symbol symbol-equals">=</div>`;
 
       this.container.innerHTML = `
         ${historyHtml}
-        <div class="equation-rail mode-b-rail">
+        <div id="equation-drop-target" class="equation-rail mode-b-rail ${isApplying ? 'applying-target' : ''} ${isDestinationHovered ? 'active' : ''}">
           ${leftHtml}
           ${equalsTargetHtml}
-          <div class="math-symbol">${currentC}</div>
+          <div id="term-rhs" class="math-symbol">${currentC}</div>
         </div>
-        ${isApplying ? '<div class="operation-banner pulse">Drag forged bubble to the = sign!</div>' : ''}
       `;
 
       if (isApplying) {
-        this.container.querySelector('#eq-equals-target')?.addEventListener('click', () => {
+        this.container.querySelector('#equation-drop-target')?.addEventListener('click', () => {
+          this.onApplyEqualsCallback?.();
+        });
+        this.container.querySelector('#eq-equals-target')?.addEventListener('click', (e) => {
+          e.stopPropagation();
           this.onApplyEqualsCallback?.();
         });
       }
@@ -438,7 +440,9 @@ export class EquationView {
     const dropDest = this.container.querySelector<HTMLElement>('#drop-destination');
     if (dropDest) targets.push({ id: 'drop-destination', type: 'destination', element: dropDest });
 
-    // Mode B: Equals target
+    // Mode B: Equals and Equation drop targets
+    const eqTarget = this.container.querySelector<HTMLElement>('#equation-drop-target');
+    if (eqTarget) targets.push({ id: 'equation-drop-target', type: 'destination', element: eqTarget });
     const equalsDest = this.container.querySelector<HTMLElement>('#eq-equals-target');
     if (equalsDest) targets.push({ id: 'eq-equals-target', type: 'destination', element: equalsDest });
 
@@ -453,6 +457,29 @@ export class EquationView {
     const dest = this.container.querySelector('#drop-destination');
     if (dest) {
       dest.classList.toggle('active', isHovered);
+    }
+    const eqTarget = this.container.querySelector('#equation-drop-target');
+    if (eqTarget) {
+      eqTarget.classList.toggle('active', isHovered);
+    }
+    const equalsTarget = this.container.querySelector('#eq-equals-target');
+    if (equalsTarget) {
+      equalsTarget.classList.toggle('active', isHovered);
+    }
+  }
+
+  /**
+   * Flash LHS term during cancellation impact
+   */
+  public triggerLhsCancelFlash() {
+    const lhsEl = this.container.querySelector<HTMLElement>('#term-constant') 
+      || this.container.querySelector<HTMLElement>('#term-coefficient') 
+      || this.container.querySelector<HTMLElement>('.term-tile');
+    if (lhsEl) {
+      lhsEl.classList.add('lhs-smash-flash');
+      window.setTimeout(() => {
+        lhsEl.style.opacity = '0';
+      }, 250);
     }
   }
 
@@ -523,19 +550,46 @@ export class EquationView {
     return eq ? eq.getBoundingClientRect() : null;
   }
 
-  public getSplitTargets(): { left: { x: number; y: number }; right: { x: number; y: number } } | null {
+  public getSplitTargets(): { 
+    left: { hover: { x: number; y: number }; smash: { x: number; y: number } }; 
+    right: { hover: { x: number; y: number }; smash: { x: number; y: number } } 
+  } | null {
+    const rail = this.container.querySelector<HTMLElement>('.equation-rail');
     const eq = this.container.querySelector<HTMLElement>('.symbol-equals');
-    if (!eq) return null;
+    if (!rail || !eq) return null;
+    const railRect = rail.getBoundingClientRect();
     const eqRect = eq.getBoundingClientRect();
+
+    const lhsEl = this.container.querySelector<HTMLElement>('#term-constant') 
+      || this.container.querySelector<HTMLElement>('#term-coefficient') 
+      || this.container.querySelector<HTMLElement>('.term-tile');
+    const rhsEl = this.container.querySelector<HTMLElement>('#term-rhs') 
+      || this.container.querySelectorAll<HTMLElement>('.math-symbol')[1];
+
+    const lhsRect = lhsEl ? lhsEl.getBoundingClientRect() : {
+      left: eqRect.left - 120,
+      width: 60,
+      top: eqRect.top,
+      height: eqRect.height
+    };
+
+    const rhsRect = rhsEl ? rhsEl.getBoundingClientRect() : {
+      left: eqRect.right + 60,
+      width: 60,
+      top: eqRect.top,
+      height: eqRect.height
+    };
+
+    const hoverY = railRect.top - 65;
 
     return {
       left: {
-        x: eqRect.left - 50,
-        y: eqRect.top + eqRect.height / 2
+        hover: { x: lhsRect.left + lhsRect.width / 2, y: hoverY },
+        smash: { x: lhsRect.left + lhsRect.width / 2, y: lhsRect.top + lhsRect.height / 2 }
       },
       right: {
-        x: eqRect.right + 50,
-        y: eqRect.top + eqRect.height / 2
+        hover: { x: rhsRect.left + rhsRect.width / 2, y: hoverY },
+        smash: { x: rhsRect.left + rhsRect.width / 2, y: rhsRect.top + rhsRect.height / 2 }
       }
     };
   }

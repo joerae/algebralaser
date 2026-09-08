@@ -7,7 +7,8 @@ import {
   SolverMode,
   ForgedOperation,
   BalancedDisplay,
-  OperationSign
+  OperationSign,
+  SolverStage
 } from './types';
 import { createPendingArithmetic } from './puzzleGenerator';
 
@@ -26,6 +27,19 @@ export function formatEquationLine(a: number, b: number, c: number): string {
   }
 
   return `${left} = ${c}`;
+}
+
+export function formatUnsimplifiedEquationLine(
+  a: number,
+  _stage: SolverStage,
+  _c: number,
+  pending: PendingArithmetic
+): string {
+  const left = pending.operator === '÷'
+    ? 'Y'
+    : (a === 1 ? 'Y' : `${a} x Y`);
+  const opDisplay = pending.operator === '-' ? '−' : pending.operator;
+  return `${left} = ${pending.operand1} ${opDisplay} ${pending.operand2}`;
 }
 
 export function createInitialState(problem: LinearEquationDef, mode: SolverMode = 'mode_a'): EquationState {
@@ -246,10 +260,16 @@ export function applyToBothSides(
     simplifiedLhs
   };
 
+  const currentLine = formatEquationLine(state.currentA, state.currentB, state.currentC);
+  const updatedHistory = state.equationHistory.includes(currentLine)
+    ? [...state.equationHistory]
+    : [...state.equationHistory, currentLine];
+
   return {
     state: {
       ...state,
       history,
+      equationHistory: updatedHistory,
       phase: 'balancing',
       balancedDisplay,
       pendingArithmetic,
@@ -390,8 +410,20 @@ export function submitAnswer(
   }
 
   // Record completed line before simplifying state
-  const completedLine = formatEquationLine(state.currentA, state.currentB, state.currentC);
-  const updatedEquationHistory = [...state.equationHistory, completedLine];
+  let completedLine: string;
+  if (state.mode === 'mode_b' && state.pendingArithmetic) {
+    completedLine = formatUnsimplifiedEquationLine(
+      state.currentA,
+      state.stage,
+      state.currentC,
+      state.pendingArithmetic
+    );
+  } else {
+    completedLine = formatEquationLine(state.currentA, state.currentB, state.currentC);
+  }
+  const updatedEquationHistory = state.equationHistory.includes(completedLine)
+    ? [...state.equationHistory]
+    : [...state.equationHistory, completedLine];
 
   // Correct answer! Advance equation
   const history = [...state.history, saveSnapshot(state)];

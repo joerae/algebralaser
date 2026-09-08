@@ -66,7 +66,7 @@ class App {
     const bannerEl = document.getElementById('camera-banner') as HTMLElement;
 
     // 2. Core Controllers & Services
-    const savedMode = (localStorage.getItem('algebra_solver_mode') as SolverMode) || 'mode_a';
+    const savedMode = (localStorage.getItem('algebra_solver_mode') as SolverMode) || 'mode_b';
     this.game = new GameController(undefined, savedMode);
     this.interaction = new InteractionController(this.game);
     this.camera = new CameraManager();
@@ -192,6 +192,7 @@ class App {
 
     if (!targets || !eqRect || !this.splitLeftEl || !this.splitRightEl) {
       this.game.applyBalance();
+      this.game.cancelLhs();
       this.isSplitting = false;
       this.needTargetsRefresh = true;
       return;
@@ -217,25 +218,64 @@ class App {
 
     soundManager.playSplit();
 
-    // Fly outward to LHS and RHS
+    // Stage 1: Float up above both sides (LHS & RHS)
     window.requestAnimationFrame(() => {
       if (this.splitLeftEl && this.splitRightEl) {
-        this.splitLeftEl.classList.add('flying');
-        this.splitRightEl.classList.add('flying');
-        this.splitLeftEl.style.left = `${targets.left.x}px`;
-        this.splitLeftEl.style.top = `${targets.left.y}px`;
-        this.splitRightEl.style.left = `${targets.right.x}px`;
-        this.splitRightEl.style.top = `${targets.right.y}px`;
+        this.splitLeftEl.classList.add('hovering');
+        this.splitRightEl.classList.add('hovering');
+        this.splitLeftEl.style.left = `${targets.left.hover.x}px`;
+        this.splitLeftEl.style.top = `${targets.left.hover.y}px`;
+        this.splitRightEl.style.left = `${targets.right.hover.x}px`;
+        this.splitRightEl.style.top = `${targets.right.hover.y}px`;
       }
     });
 
+    // Stage 2: Smash Side 1 (LHS) into term
     window.setTimeout(() => {
-      if (this.splitLeftEl) this.splitLeftEl.style.display = 'none';
-      if (this.splitRightEl) this.splitRightEl.style.display = 'none';
-      this.isSplitting = false;
-      this.game.applyBalance();
-      this.needTargetsRefresh = true;
-    }, 420);
+      if (!this.splitLeftEl) return;
+      this.splitLeftEl.classList.remove('hovering');
+      this.splitLeftEl.classList.add('smashing');
+      this.splitLeftEl.style.left = `${targets.left.smash.x}px`;
+      this.splitLeftEl.style.top = `${targets.left.smash.y}px`;
+
+      // Impact on LHS
+      window.setTimeout(() => {
+        soundManager.playPop();
+        this.equationView.triggerLhsCancelFlash();
+        if (this.splitLeftEl) {
+          this.splitLeftEl.classList.add('smashed');
+          window.setTimeout(() => {
+            if (this.splitLeftEl) this.splitLeftEl.style.display = 'none';
+          }, 180);
+        }
+
+        // Stage 3: Smash Side 2 (RHS) into constant
+        window.setTimeout(() => {
+          if (!this.splitRightEl) return;
+          this.splitRightEl.classList.remove('hovering');
+          this.splitRightEl.classList.add('smashing');
+          this.splitRightEl.style.left = `${targets.right.smash.x}px`;
+          this.splitRightEl.style.top = `${targets.right.smash.y}px`;
+
+          // Impact on RHS
+          window.setTimeout(() => {
+            soundManager.playSnap();
+            if (this.splitRightEl) {
+              this.splitRightEl.classList.add('smashed');
+              window.setTimeout(() => {
+                if (this.splitRightEl) this.splitRightEl.style.display = 'none';
+              }, 180);
+            }
+
+            // Stage 4: Transition directly into Question phase & arrow
+            this.isSplitting = false;
+            this.game.applyBalance();
+            this.game.cancelLhs(); // Directly advances state to 'question' phase!
+            this.needTargetsRefresh = true;
+          }, 240);
+        }, 220);
+      }, 240);
+    }, 450);
   }
 
   private updateView(state = this.game.getState(), extra = { currentLevel: this.game.getCurrentLevelNumber(), totalLevels: this.game.getTotalLevels() }) {
@@ -257,9 +297,9 @@ class App {
       } else if (state.phase === 'forging') {
         instr = 'Hold bubble on the opposite sign (+, −, ×, ÷) for 1s to forge it, or click.';
       } else if (state.phase === 'applying') {
-        instr = 'Pull forged bubble up to the = sign to balance both sides!';
+        instr = 'Pull forged bubble up to the equation to balance both sides!';
       } else if (state.phase === 'balancing') {
-        instr = 'Opposite applied to both sides! Cancelling inverse operations on variable side...';
+        instr = 'Opposites balance! Cancelling inverse operations on variable side...';
       } else if (state.phase === 'question') {
         instr = 'Aim laser at an answer card and hold to confirm, or click.';
         this.updateArrowAndLayout(state.phase);
@@ -294,7 +334,7 @@ class App {
         } else if (state.phase === 'forging') {
           hintBadge.textContent = 'Forge opposite sign ⚡';
         } else if (state.phase === 'applying') {
-          hintBadge.textContent = 'Aim at = to balance ⚖️';
+          hintBadge.textContent = 'Aim at equation to balance ⚖️';
         } else if (state.phase === 'question') {
           hintBadge.textContent = 'Aim laser at answer 👉';
         } else if (state.phase === 'solved') {
@@ -478,30 +518,33 @@ class App {
         }
       }
 
-      // Mode B: Equals Sign Snapping during 'applying'
+      // Mode B: Whole Equation Rail Snapping during 'applying'
       if (gameState.phase === 'applying') {
-        const eqEl = document.getElementById('eq-equals-target');
-        if (eqEl) {
-          const eqRect = eqEl.getBoundingClientRect();
-          const eqCenter = {
-            x: eqRect.left + eqRect.width / 2,
-            y: eqRect.top + eqRect.height / 2
-          };
+        const dropTargetEl = document.getElementById('equation-drop-target') || document.getElementById('eq-equals-target');
+        if (dropTargetEl) {
+          const rect = dropTargetEl.getBoundingClientRect();
+          const targetCenterY = rect.top + rect.height / 2;
 
           if (laserRay && laserRay.active) {
-            const t = (eqCenter.y - laserRay.origin.y) / laserRay.direction.y;
+            const t = (targetCenterY - laserRay.origin.y) / laserRay.direction.y;
             if (t > 0) {
               targetX = laserRay.origin.x + t * laserRay.direction.x;
-              targetY = eqCenter.y;
+              targetY = targetCenterY;
             }
           }
 
-          const dist = Math.hypot(targetX - eqCenter.x, targetY - eqCenter.y);
-          isSnapped = dist < 130;
+          const isNearRail = (
+            targetX >= rect.left - 40 &&
+            targetX <= rect.right + 40 &&
+            targetY >= rect.top - 45 &&
+            targetY <= rect.bottom + 45
+          );
+
+          isSnapped = isNearRail;
 
           if (isSnapped) {
-            targetX = eqCenter.x;
-            targetY = eqCenter.y;
+            targetY = targetCenterY;
+            targetX = Math.max(rect.left + 35, Math.min(rect.right - 35, targetX));
             interState.isDestinationHovered = true;
             if (!this.wasSnapped) {
               soundManager.playSnap();
@@ -591,7 +634,7 @@ class App {
               ringFill.style.strokeDashoffset = `${circumference}`;
             }
             if (caption) {
-              caption.textContent = 'Drag to = sign ☝️';
+              caption.textContent = 'Drag to equation ☝️';
             }
           }
         }
@@ -720,22 +763,63 @@ class App {
     const isForgeVisible = gameState.mode === 'mode_b' && (phase === 'forging' || phase === 'applying');
     if (isForgeVisible && this.cameraBoxEl && this.forgePanelEl) {
       const cameraRect = this.cameraBoxEl.getBoundingClientRect();
-      const columnWidth = 260;
+      const columnWidth = 165;
       let left = cameraRect.left - columnWidth - 18;
-      if (left < 14) left = 14;
-      const top = Math.max(65, cameraRect.top);
+      if (left < 10) left = 10;
+
+      this.forgePanelEl.style.display = 'flex';
+      this.forgePanelView.render(true, phase as 'forging' | 'applying', gameState.forgedOperation?.forgedOperator || null);
+
+      // Vertically align the 4 operator cards with the camera viewport
+      const headerEl = this.forgePanelEl.querySelector<HTMLElement>('.forge-header');
+      const headerHeight = headerEl ? headerEl.offsetHeight + 8 : 50;
+      const top = Math.max(10, cameraRect.top - headerHeight);
+      const totalHeight = cameraRect.height + (cameraRect.top - top);
 
       this.forgePanelEl.style.left = `${left}px`;
       this.forgePanelEl.style.top = `${top}px`;
+      this.forgePanelEl.style.width = `${columnWidth}px`;
+      this.forgePanelEl.style.height = `${totalHeight}px`;
       this.forgePanelEl.style.right = 'auto';
-      this.forgePanelEl.style.display = 'flex';
-      this.forgePanelView.render(true, phase as 'forging' | 'applying', gameState.forgedOperation?.forgedOperator || null);
+
+      const cardsContainer = this.forgePanelEl.querySelector<HTMLElement>('.forge-cards-vertical');
+      if (cardsContainer) {
+        cardsContainer.style.height = `${cameraRect.height}px`;
+        cardsContainer.style.flex = '0 0 auto';
+      }
     } else {
       if (this.forgePanelEl) this.forgePanelEl.style.display = 'none';
       this.forgePanelView.render(false);
     }
 
-    // 2. Answers Column on Right (visible during question phase)
+    // 2. Downward Arrow to Top of Forge Area during 'forging' phase (Mode B)
+    if (gameState.mode === 'mode_b' && phase === 'forging' && this.forgePanelEl && this.arrowSvgEl && this.arrowPathEl) {
+      const termEl = document.getElementById('term-constant') || document.getElementById('term-coefficient');
+      const headerEl = this.forgePanelEl.querySelector<HTMLElement>('.forge-header') || this.forgePanelEl;
+
+      if (termEl && headerEl) {
+        const termRect = termEl.getBoundingClientRect();
+        const headerRect = headerEl.getBoundingClientRect();
+
+        const startX = termRect.left + termRect.width / 2;
+        const startY = termRect.bottom + 6;
+        const endX = headerRect.right + 8;
+        const endY = headerRect.top + headerRect.height / 2;
+
+        const cp1X = startX;
+        const cp1Y = startY + (endY - startY) * 0.45;
+        const cp2X = endX + 40;
+        const cp2Y = endY;
+
+        const d = `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+        this.arrowPathEl.setAttribute('d', d);
+        this.arrowSvgEl.style.display = 'block';
+      }
+      if (this.answersColumnEl) this.answersColumnEl.style.display = 'none';
+      return;
+    }
+
+    // 3. Answers Column on Right (visible during question phase)
     if (phase !== 'question') {
       if (this.arrowSvgEl) this.arrowSvgEl.style.display = 'none';
       if (this.answersColumnEl) this.answersColumnEl.style.display = 'none';
@@ -957,14 +1041,14 @@ class App {
             );
           }
         } else if (gameState.phase === 'applying') {
-          const eqDest = document.getElementById('eq-equals-target');
+          const eqDest = document.getElementById('equation-drop-target') || document.getElementById('eq-equals-target');
           if (eqDest) {
             const rect = eqDest.getBoundingClientRect();
             isDestHovered = (
-              e.clientX >= rect.left - 20 &&
-              e.clientX <= rect.right + 20 &&
-              e.clientY >= rect.top - 20 &&
-              e.clientY <= rect.bottom + 20
+              e.clientX >= rect.left - 25 &&
+              e.clientX <= rect.right + 25 &&
+              e.clientY >= rect.top - 25 &&
+              e.clientY <= rect.bottom + 25
             );
           }
         }

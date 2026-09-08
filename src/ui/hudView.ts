@@ -39,7 +39,7 @@ export class HudView {
     debug: HTMLElement,
     banner: HTMLElement,
     callbacks: HudCallbacks,
-    initialMode: SolverMode = 'mode_a'
+    initialMode: SolverMode = 'mode_b'
   ) {
     this.headerEl = header;
     this.footerEl = footer;
