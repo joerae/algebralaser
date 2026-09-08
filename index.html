@@ -16,6 +16,8 @@
     <header id="hud-header" class="hud-header"></header>
 
     <main class="stage-container">
+      <aside id="forge-panel" class="forge-panel" aria-label="Forge the opposite" style="display: none;"></aside>
+
       <div class="workspace-center">
         <section id="equation-area" class="equation-area" aria-label="Equation workspace"></section>
 
@@ -58,6 +60,12 @@
       </svg>
       <span class="bubble-term"></span>
       <span class="bubble-caption"></span>
+    </div>
+    <div id="split-bubble-left" class="carried-bubble split-clone" style="display: none;">
+      <span class="bubble-term"></span>
+    </div>
+    <div id="split-bubble-right" class="carried-bubble split-clone" style="display: none;">
+      <span class="bubble-term"></span>
     </div>
     <svg id="equation-arrow-svg" class="equation-arrow-svg" style="display: none;">
       <defs>

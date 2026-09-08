@@ -7,7 +7,10 @@ import {
   submitAnswer, 
   undo, 
   formatVerification,
-  formatEquationLine
+  formatEquationLine,
+  forgeOpposite,
+  applyToBothSides,
+  cancelLhsInverse
 } from './linearEquation';
 import { 
   BENCHMARK_PUZZLE, 
@@ -172,4 +175,108 @@ describe('Linear Equation Mathematics & State Machine', () => {
       }
     }
   });
+
+  it('solves Mode B: Balance Both Sides step by step through forging and applying', () => {
+    let state = createInitialState(BENCHMARK_PUZZLE, 'mode_b');
+    expect(state.mode).toBe('mode_b');
+    expect(state.phase).toBe('ready');
+    expect(state.stage).toBe('undo_constant');
+
+    // Attempting to select coefficient 3 while -1 is present gives NOT YET
+    const invalidCoeff = pickUpTerm(state, 'coefficient');
+    expect(invalidCoeff.success).toBe(false);
+    expect(invalidCoeff.notYet).toBe(true);
+    expect(invalidCoeff.guideMessage).toContain('NOT YET');
+
+    // Step 1: Select -1 to undo
+    const pick1 = pickUpTerm(state, 'constant');
+    expect(pick1.success).toBe(true);
+    state = pick1.state;
+    expect(state.phase).toBe('forging');
+    expect(state.carriedTerm).toBe('constant');
+
+    // Step 2: Forge opposite - incorrect signs fail without resetting
+    const wrongMinus = forgeOpposite(state, '−');
+    expect(wrongMinus.correct).toBe(false);
+    const wrongTimes = forgeOpposite(state, '×');
+    expect(wrongTimes.correct).toBe(false);
+    const wrongDiv = forgeOpposite(state, '÷');
+    expect(wrongDiv.correct).toBe(false);
+    expect(state.phase).toBe('forging');
+
+    // Correct sign '+' for '-1'
+    const forgePlus = forgeOpposite(state, '+');
+    expect(forgePlus.correct).toBe(true);
+    state = forgePlus.state;
+    expect(state.phase).toBe('applying');
+    expect(state.forgedOperation).toEqual({
+      originalOperator: '-',
+      originalOperand: 1,
+      forgedOperator: '+',
+      forgedOperand: 1
+    });
+
+    // Step 3: Apply to both sides
+    const applied1 = applyToBothSides(state);
+    expect(applied1.success).toBe(true);
+    state = applied1.state;
+    expect(state.phase).toBe('balancing');
+    expect(state.balancedDisplay?.fullBalancedLine).toBe('3 x Y − 1 + 1 = 11 + 1');
+
+    // Step 4: Cancel LHS inverse and calculate
+    state = cancelLhsInverse(state);
+    expect(state.phase).toBe('question');
+    expect(state.pendingArithmetic?.operand1).toBe(11);
+    expect(state.pendingArithmetic?.operand2).toBe(1);
+    expect(state.pendingArithmetic?.operator).toBe('+');
+    expect(state.pendingArithmetic?.correctAnswer).toBe(12);
+
+    // Answer 12
+    const ans1 = submitAnswer(state, 12);
+    expect(ans1.correct).toBe(true);
+    state = ans1.state;
+    expect(state.currentA).toBe(3);
+    expect(state.currentB).toBe(0);
+    expect(state.currentC).toBe(12);
+    expect(state.stage).toBe('undo_coefficient');
+    expect(state.phase).toBe('ready');
+
+    // Step 5: Repeat for ×3
+    const pick2 = pickUpTerm(state, 'coefficient');
+    expect(pick2.success).toBe(true);
+    state = pick2.state;
+    expect(state.phase).toBe('forging');
+
+    // Forge ÷ for ×3
+    const forgeDiv = forgeOpposite(state, '÷');
+    expect(forgeDiv.correct).toBe(true);
+    state = forgeDiv.state;
+    expect(state.phase).toBe('applying');
+    expect(state.forgedOperation?.forgedOperator).toBe('÷');
+
+    // Apply to both sides
+    const applied2 = applyToBothSides(state);
+    expect(applied2.success).toBe(true);
+    state = applied2.state;
+    expect(state.phase).toBe('balancing');
+
+    // Cancel LHS inverse
+    state = cancelLhsInverse(state);
+    expect(state.phase).toBe('question');
+    expect(state.pendingArithmetic?.operand1).toBe(12);
+    expect(state.pendingArithmetic?.operand2).toBe(3);
+    expect(state.pendingArithmetic?.operator).toBe('÷');
+    expect(state.pendingArithmetic?.correctAnswer).toBe(4);
+
+    // Answer 4
+    const ans2 = submitAnswer(state, 4);
+    expect(ans2.correct).toBe(true);
+    state = ans2.state;
+    expect(state.currentA).toBe(1);
+    expect(state.currentB).toBe(0);
+    expect(state.currentC).toBe(4);
+    expect(state.stage).toBe('solved');
+    expect(state.phase).toBe('solved');
+  });
 });
+

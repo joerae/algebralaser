@@ -1,5 +1,6 @@
 import { soundManager } from '../audio/soundEffects';
 import versionText from '../data/version.txt?raw';
+import { SolverMode } from '../math/types';
 
 export interface HudCallbacks {
   onEnableCamera: () => void;
@@ -11,6 +12,7 @@ export interface HudCallbacks {
   onUndo: () => void;
   onHint: () => void;
   onRestart: () => void;
+  onModeChange: (mode: SolverMode) => void;
 }
 
 export class HudView {
@@ -21,6 +23,7 @@ export class HudView {
   private bannerEl: HTMLElement;
   private callbacks: HudCallbacks;
 
+  private currentMode: SolverMode = 'mode_a';
   private isMuted: boolean = false;
   private isCameraActive: boolean = false;
   private showDebug: boolean = false;
@@ -35,7 +38,8 @@ export class HudView {
     modal: HTMLElement,
     debug: HTMLElement,
     banner: HTMLElement,
-    callbacks: HudCallbacks
+    callbacks: HudCallbacks,
+    initialMode: SolverMode = 'mode_a'
   ) {
     this.headerEl = header;
     this.footerEl = footer;
@@ -43,9 +47,19 @@ export class HudView {
     this.debugEl = debug;
     this.bannerEl = banner;
     this.callbacks = callbacks;
+    this.currentMode = initialMode;
     this.renderHeader(1, 5);
     this.renderFooter('Get Y on its own.');
   }
+
+  public setMode(mode: SolverMode) {
+    this.currentMode = mode;
+    const btnA = this.headerEl.querySelector('#btn-mode-a');
+    const btnB = this.headerEl.querySelector('#btn-mode-b');
+    btnA?.classList.toggle('active', mode === 'mode_a');
+    btnB?.classList.toggle('active', mode === 'mode_b');
+  }
+
 
   public setCameraState(active: boolean) {
     this.isCameraActive = active;
@@ -127,6 +141,16 @@ export class HudView {
         <span>Magic Finger Algebra</span>
         <span class="brand-badge">Laser Powered</span>
       </div>
+      <div class="mode-toggle-group" role="group" aria-label="Equation interaction mode">
+        <button id="btn-mode-a" class="mode-toggle-btn ${this.currentMode === 'mode_a' ? 'active' : ''}" title="Mode A: Move Across (Drag across =)">
+          <span class="mode-icon">⇄</span>
+          <span class="mode-label">Mode A: Move Across</span>
+        </button>
+        <button id="btn-mode-b" class="mode-toggle-btn ${this.currentMode === 'mode_b' ? 'active' : ''}" title="Mode B: Balance Both Sides (Forge & Apply to Both Sides)">
+          <span class="mode-icon">⚖️</span>
+          <span class="mode-label">Mode B: Balance Both Sides</span>
+        </button>
+      </div>
       <div class="header-controls">
         <div class="level-indicator">Level ${level} of ${total}</div>
         <button id="btn-toggle-camera" class="icon-btn">📷 Enable Camera</button>
@@ -134,6 +158,20 @@ export class HudView {
         <button id="btn-settings" class="icon-btn">⚙️ Settings</button>
       </div>
     `;
+
+    this.headerEl.querySelector('#btn-mode-a')?.addEventListener('click', () => {
+      if (this.currentMode !== 'mode_a') {
+        this.setMode('mode_a');
+        this.callbacks.onModeChange('mode_a');
+      }
+    });
+
+    this.headerEl.querySelector('#btn-mode-b')?.addEventListener('click', () => {
+      if (this.currentMode !== 'mode_b') {
+        this.setMode('mode_b');
+        this.callbacks.onModeChange('mode_b');
+      }
+    });
 
     this.headerEl.querySelector('#btn-toggle-camera')?.addEventListener('click', () => {
       this.callbacks.onEnableCamera();
@@ -161,7 +199,7 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.3.0</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.4.0</button>
       </div>
     `;
 

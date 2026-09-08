@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-DhdXQ-DJ.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-BzdPt52D.css">
+  <script type="module" crossorigin src="/assets/index-BuhltfgH.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BB83hQ1B.css">
 </head>
 <body>
   <div id="app">
@@ -17,6 +17,8 @@
     <header id="hud-header" class="hud-header"></header>
 
     <main class="stage-container">
+      <aside id="forge-panel" class="forge-panel" aria-label="Forge the opposite" style="display: none;"></aside>
+
       <div class="workspace-center">
         <section id="equation-area" class="equation-area" aria-label="Equation workspace"></section>
 
@@ -59,6 +61,12 @@
       </svg>
       <span class="bubble-term"></span>
       <span class="bubble-caption"></span>
+    </div>
+    <div id="split-bubble-left" class="carried-bubble split-clone" style="display: none;">
+      <span class="bubble-term"></span>
+    </div>
+    <div id="split-bubble-right" class="carried-bubble split-clone" style="display: none;">
+      <span class="bubble-term"></span>
     </div>
     <svg id="equation-arrow-svg" class="equation-arrow-svg" style="display: none;">
       <defs>

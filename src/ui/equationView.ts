@@ -1,26 +1,34 @@
 import { EquationState } from '../math/types';
 
+export interface EquationViewCallbacks {
+  onPickup: (term: 'constant' | 'coefficient') => void;
+  onDrop: () => void;
+  onNext: () => void;
+  onReplay: () => void;
+  onNotYet?: (term: 'coefficient') => void;
+  onApplyEquals?: () => void;
+}
+
 export class EquationView {
   private container: HTMLElement;
   private onPickupCallback: (term: 'constant' | 'coefficient') => void;
   private onDropCallback: () => void;
   private onNextCallback: () => void;
   private onReplayCallback: () => void;
+  private onNotYetCallback?: (term: 'coefficient') => void;
+  private onApplyEqualsCallback?: () => void;
 
   constructor(
     container: HTMLElement,
-    callbacks: {
-      onPickup: (term: 'constant' | 'coefficient') => void;
-      onDrop: () => void;
-      onNext: () => void;
-      onReplay: () => void;
-    }
+    callbacks: EquationViewCallbacks
   ) {
     this.container = container;
     this.onPickupCallback = callbacks.onPickup;
     this.onDropCallback = callbacks.onDrop;
     this.onNextCallback = callbacks.onNext;
     this.onReplayCallback = callbacks.onReplay;
+    this.onNotYetCallback = callbacks.onNotYet;
+    this.onApplyEqualsCallback = callbacks.onApplyEquals;
   }
 
   private renderHistory(historyLines: string[]): string {
@@ -40,6 +48,7 @@ export class EquationView {
     _carriedPos: { x: number; y: number } | null = null
   ) {
     const { 
+      mode,
       currentA, 
       currentB, 
       currentC, 
@@ -47,6 +56,7 @@ export class EquationView {
       phase, 
       carriedTerm, 
       cancellation, 
+      balancedDisplay,
       pendingArithmetic, 
       equationHistory 
     } = state;
@@ -109,7 +119,61 @@ export class EquationView {
       return;
     }
 
-    // 3. Question Phase (Unsimplified intermediate expression, ready to collapse)
+    // 3. Mode B: Balancing Phase (showing both sides balanced and inverse cancelling)
+    if (phase === 'balancing' && balancedDisplay) {
+      const isCoeff = carriedTerm === 'coefficient' || stage === 'undo_coefficient';
+      let leftHtml = '';
+      let rightHtml = '';
+
+      if (isCoeff) {
+        leftHtml = `
+          <span class="balanced-term-group">
+            <span class="cancelling-term">${currentA} <span class="term-times">x</span></span>
+            <span class="term-variable">Y</span>
+            <span class="cancelling-term op-divide">÷ ${currentA}</span>
+          </span>
+        `;
+        rightHtml = `
+          <span class="math-symbol op-divide" style="font-size: 52px;">
+            ${balancedDisplay.rightBefore} ÷ ${state.forgedOperation?.forgedOperand || currentA}
+          </span>
+        `;
+      } else {
+        const absB = Math.abs(currentB);
+        const isNeg = currentB < 0;
+        const origSign = isNeg ? '−' : '+';
+        const forgeSign = isNeg ? '+' : '−';
+        const leftVar = currentA > 1 
+          ? `${currentA} <span class="term-times">x</span> <span class="term-variable">Y</span>` 
+          : `<span class="term-variable">Y</span>`;
+
+        leftHtml = `
+          <div class="math-symbol">${leftVar}</div>
+          <div class="balanced-cancel-group cancelling-term">
+            <span>${origSign} ${absB}</span>
+            <span class="${isNeg ? 'op-plus' : 'op-minus'}">${forgeSign} ${absB}</span>
+          </div>
+        `;
+        rightHtml = `
+          <span class="math-symbol" style="font-size: 52px;">
+            ${balancedDisplay.rightBefore} <span class="${isNeg ? 'op-plus' : 'op-minus'}">${forgeSign} ${absB}</span>
+          </span>
+        `;
+      }
+
+      this.container.innerHTML = `
+        ${historyHtml}
+        <div class="equation-rail balanced-rail">
+          ${leftHtml}
+          <div class="math-symbol symbol-equals">=</div>
+          ${rightHtml}
+        </div>
+        <div class="operation-banner balanced-banner">Opposite applied to both sides! Cancelling on variable side...</div>
+      `;
+      return;
+    }
+
+    // 4. Question Phase (Unsimplified intermediate expression, ready to collapse)
     if (phase === 'question' && pendingArithmetic) {
       let leftSide = '';
       if (pendingArithmetic.operator === '÷') {
@@ -148,7 +212,65 @@ export class EquationView {
       return;
     }
 
-    // 4. Carrying State (Term is detached, destination appears)
+    // 5. Mode B: Forging & Applying Phase (Original remains visible in equation)
+    if (mode === 'mode_b' && (phase === 'forging' || phase === 'applying')) {
+      let leftHtml = '';
+      const isCoeff = carriedTerm === 'coefficient';
+      const isConst = carriedTerm === 'constant';
+      const isApplying = phase === 'applying';
+
+      // Coefficient
+      if (currentA > 1) {
+        leftHtml += `
+          <div id="term-coefficient" class="term-tile op-times ${isCoeff ? 'selected-term' : ''}" data-term="coefficient">
+            ${currentA}
+          </div>
+          <div class="math-symbol term-times op-times">x</div>
+          <div class="math-symbol term-variable">Y</div>
+        `;
+      } else {
+        leftHtml += `<div class="math-symbol term-variable">Y</div>`;
+      }
+
+      // Constant term
+      if (currentB !== 0) {
+        const isNeg = currentB < 0;
+        const absB = Math.abs(currentB);
+        leftHtml += `
+          <div id="term-constant" class="term-tile ${isNeg ? 'op-minus' : 'op-plus'} ${isConst ? 'selected-term' : ''}" data-term="constant">
+            ${isNeg ? '−' : '+'} ${absB}
+          </div>
+        `;
+      }
+
+      const equalsTargetHtml = isApplying
+        ? `
+          <div id="eq-equals-target" class="symbol-equals-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Apply to both sides">
+            <span class="math-symbol symbol-equals">=</span>
+            <span class="equals-hint-pill">DROP HERE ⚡</span>
+          </div>
+        `
+        : `<div class="math-symbol symbol-equals">=</div>`;
+
+      this.container.innerHTML = `
+        ${historyHtml}
+        <div class="equation-rail mode-b-rail">
+          ${leftHtml}
+          ${equalsTargetHtml}
+          <div class="math-symbol">${currentC}</div>
+        </div>
+        ${isApplying ? '<div class="operation-banner pulse">Drag forged bubble to the = sign!</div>' : ''}
+      `;
+
+      if (isApplying) {
+        this.container.querySelector('#eq-equals-target')?.addEventListener('click', () => {
+          this.onApplyEqualsCallback?.();
+        });
+      }
+      return;
+    }
+
+    // 6. Mode A: Carrying State (Term is detached, landing slot appears)
     if (phase === 'carrying' && carriedTerm) {
       if (carriedTerm === 'constant') {
         const isNeg = currentB < 0;
@@ -198,14 +320,16 @@ export class EquationView {
       }
     }
 
-    // 5. Ready Phase (Standard equation with interactive tiles)
+    // 7. Ready Phase (Standard equation with spaced interactive tiles)
     let leftHtml = '';
 
     // Coefficient + multiplication + Y
     if (currentA > 1) {
       const isInteractiveCoeff = stage === 'undo_coefficient';
+      const isNotYet = mode === 'mode_b' && currentB !== 0;
+      const coeffClass = isInteractiveCoeff ? 'interactive' : (isNotYet ? 'not-yet-target' : '');
       leftHtml += `
-        <div id="term-coefficient" class="term-tile op-times ${isInteractiveCoeff ? 'interactive' : ''}" data-term="coefficient">
+        <div id="term-coefficient" class="term-tile op-times ${coeffClass}" data-term="coefficient">
           ${currentA}
         </div>
         <div class="math-symbol term-times op-times">x</div>
@@ -229,20 +353,66 @@ export class EquationView {
 
     this.container.innerHTML = `
       ${historyHtml}
-      <div class="equation-rail">
+      <div class="equation-rail ${mode === 'mode_b' ? 'mode-b-rail' : ''}">
         ${leftHtml}
         <div class="math-symbol symbol-equals">=</div>
         <div class="math-symbol">${currentC}</div>
       </div>
-      ${state.errorMessage ? `<div class="operation-banner" style="background: rgba(244, 63, 94, 0.15); border-color: #f43f5e; color: #fecdd3;">${state.errorMessage}</div>` : ''}
+      <div id="equation-feedback-banner" class="operation-banner" style="display: ${state.errorMessage ? 'block' : 'none'}; background: rgba(244, 63, 94, 0.18); border-color: #f43f5e; color: #fecdd3;">
+        ${state.errorMessage || ''}
+      </div>
     `;
 
-    // Attach click/touch listeners for mouse/touch play
+    // Attach click/touch listeners
     const constTile = this.container.querySelector('#term-constant');
     const coeffTile = this.container.querySelector('#term-coefficient');
 
-    constTile?.addEventListener('click', () => this.onPickupCallback('constant'));
-    coeffTile?.addEventListener('click', () => this.onPickupCallback('coefficient'));
+    constTile?.addEventListener('click', () => {
+      this.onPickupCallback('constant');
+    });
+
+    coeffTile?.addEventListener('click', () => {
+      if (coeffTile.classList.contains('not-yet-target')) {
+        this.triggerNotYet();
+        this.onNotYetCallback?.('coefficient');
+      } else {
+        this.onPickupCallback('coefficient');
+      }
+    });
+  }
+
+  /**
+   * Mode B: Gentle "NOT YET" shake on coefficient and pulse on active constant
+   */
+  public triggerNotYet() {
+    const coeff = this.container.querySelector<HTMLElement>('#term-coefficient');
+    const constant = this.container.querySelector<HTMLElement>('#term-constant');
+    const banner = this.container.querySelector<HTMLElement>('#equation-feedback-banner');
+
+    if (coeff) {
+      coeff.classList.remove('shake-not-yet');
+      void coeff.offsetWidth;
+      coeff.classList.add('shake-not-yet');
+      window.setTimeout(() => coeff.classList.remove('shake-not-yet'), 450);
+    }
+
+    if (constant) {
+      constant.classList.remove('pulse-target');
+      void constant.offsetWidth;
+      constant.classList.add('pulse-target');
+      window.setTimeout(() => constant.classList.remove('pulse-target'), 1200);
+    }
+
+    if (banner) {
+      banner.style.display = 'block';
+      banner.textContent = 'NOT YET — Undo the constant term first to avoid fractions!';
+      banner.classList.remove('shake-not-yet');
+      void banner.offsetWidth;
+      banner.classList.add('shake-not-yet');
+      window.setTimeout(() => {
+        banner.style.display = 'none';
+      }, 2500);
+    }
   }
 
   private attachDropListener() {
@@ -260,11 +430,21 @@ export class EquationView {
     const coeffTerm = this.container.querySelector<HTMLElement>('#term-coefficient.interactive');
     if (coeffTerm) targets.push({ id: 'term-coefficient', type: 'term', element: coeffTerm });
 
+    // Mode B: Not yet target for ray caster
+    const notYetCoeff = this.container.querySelector<HTMLElement>('#term-coefficient.not-yet-target');
+    if (notYetCoeff) targets.push({ id: 'term-coefficient-not-yet', type: 'term', element: notYetCoeff });
+
+    // Mode A: Drop destination
     const dropDest = this.container.querySelector<HTMLElement>('#drop-destination');
     if (dropDest) targets.push({ id: 'drop-destination', type: 'destination', element: dropDest });
 
+    // Mode B: Equals target
+    const equalsDest = this.container.querySelector<HTMLElement>('#eq-equals-target');
+    if (equalsDest) targets.push({ id: 'eq-equals-target', type: 'destination', element: equalsDest });
+
     return targets;
   }
+
 
   /**
    * Ultra-fast update of drop destination active state without rebuilding DOM!
@@ -337,4 +517,27 @@ export class EquationView {
       }
     }
   }
+
+  public getEqualsRect(): DOMRect | null {
+    const eq = this.container.querySelector<HTMLElement>('.symbol-equals');
+    return eq ? eq.getBoundingClientRect() : null;
+  }
+
+  public getSplitTargets(): { left: { x: number; y: number }; right: { x: number; y: number } } | null {
+    const eq = this.container.querySelector<HTMLElement>('.symbol-equals');
+    if (!eq) return null;
+    const eqRect = eq.getBoundingClientRect();
+
+    return {
+      left: {
+        x: eqRect.left - 50,
+        y: eqRect.top + eqRect.height / 2
+      },
+      right: {
+        x: eqRect.right + 50,
+        y: eqRect.top + eqRect.height / 2
+      }
+    };
+  }
 }
+

@@ -1,6 +1,7 @@
 import { GameController } from './gameController';
 import { LaserRay, RayHitResult, ClassifiedPose } from '../vision/types';
 import { soundManager } from '../audio/soundEffects';
+import { OperationSign } from '../math/types';
 
 export interface InteractionState {
   laserRay: LaserRay | null;
@@ -29,7 +30,11 @@ export class InteractionController {
   };
 
   public dwellDurationMs: number = 450;
+  public forgeDwellDurationMs: number = 1000;
   public onDropRequested?: () => void;
+  public onNotYetRequested?: (term: 'coefficient') => void;
+  public onForgeRequested?: (sign: OperationSign) => void;
+  public onApplyEqualsRequested?: () => void;
   private lastDwellTargetId: string | null = null;
   private lastDwellTime: number = 0;
   private openPalmStartTime: number = 0;
@@ -68,13 +73,14 @@ export class InteractionController {
         if (!this.state.trackingLostTimer) {
           this.state.trackingLostTimer = now;
         } else if (now - this.state.trackingLostTimer > 350) {
-          // Grace period expired: safely cancel carry
+          // Grace period expired: safely cancel carry in Mode A
           this.game.cancel();
           this.state.trackingLostTimer = null;
           this.state.carriedPosition = null;
           this.state.isDestinationHovered = false;
         }
       }
+      // In Mode B (forging or applying), losing hand tracking preserves current equation state!
       this.resetDwell();
       this.state.hoveredTargetId = null;
       this.openPalmStartTime = 0;
@@ -85,7 +91,7 @@ export class InteractionController {
     // Tracking is active, clear tracking loss timer
     this.state.trackingLostTimer = null;
 
-    // Handle Open Palm: cancel carry safely
+    // Handle Open Palm: cancel carry safely in Mode A
     if (pose.isOpenPalm && gameState.phase === 'carrying') {
       this.game.cancel();
       this.state.carriedPosition = null;
@@ -107,7 +113,12 @@ export class InteractionController {
       if (hit && pose.isPointing) {
         this.state.hoveredTargetId = hit.targetId;
 
-        if (hit.targetId === 'term-constant' && gameState.stage === 'undo_constant') {
+        if (hit.targetId === 'term-coefficient-not-yet') {
+          // Guided NOT YET shake
+          this.game.pickup('coefficient');
+          this.onNotYetRequested?.('coefficient');
+          this.state.hoveredTargetId = null;
+        } else if (hit.targetId === 'term-constant' && gameState.stage === 'undo_constant') {
           this.game.pickup('constant');
           this.state.carriedPosition = { ...hit.point };
         } else if (hit.targetId === 'term-coefficient') {
@@ -120,7 +131,123 @@ export class InteractionController {
       return;
     }
 
-    // Phase: CARRYING
+    // Phase: FORGING (Mode B — 1 second hold on opposite sign)
+    if (gameState.phase === 'forging') {
+      this.openPalmStartTime = 0;
+      this.state.openPalmProgress = 0;
+
+      if (hit) {
+        this.state.carriedPosition = { ...hit.point };
+      } else {
+        this.state.carriedPosition = ray ? { ...ray.origin } : null;
+      }
+
+      if (!ray || !ray.active) {
+        this.state.hoveredTargetId = null;
+        this.resetDwell();
+        return;
+      }
+
+      if (hit && hit.targetType === 'forge' && pose.isPointing) {
+        this.state.hoveredTargetId = hit.targetId;
+
+        if (this.lastDwellTargetId !== hit.targetId) {
+          this.lastDwellTargetId = hit.targetId;
+          this.lastDwellTime = now;
+          this.state.dwellProgress = 0;
+          this.state.dwellTargetId = hit.targetId;
+        } else {
+          const elapsed = now - this.lastDwellTime;
+          const progress = Math.min(1.0, elapsed / this.forgeDwellDurationMs);
+          this.state.dwellProgress = progress;
+
+          if (progress > 0.15 && Math.random() < 0.2) {
+            soundManager.playDwellTick(progress);
+          }
+
+          if (progress >= 1.0) {
+            let chosenSign: OperationSign = '+';
+            if (hit.targetId === 'forge-op-minus') chosenSign = '-';
+            else if (hit.targetId === 'forge-op-times') chosenSign = '×';
+            else if (hit.targetId === 'forge-op-divide') chosenSign = '÷';
+
+            if (this.onForgeRequested) {
+              this.onForgeRequested(chosenSign);
+            } else {
+              this.game.forge(chosenSign);
+            }
+            this.resetDwell();
+          }
+        }
+      } else {
+        this.state.hoveredTargetId = null;
+        this.resetDwell();
+      }
+      return;
+    }
+
+    // Phase: APPLYING (Mode B — pull forged bubble up to = sign)
+    if (gameState.phase === 'applying') {
+      this.openPalmStartTime = 0;
+      this.state.openPalmProgress = 0;
+
+      if (hit) {
+        this.state.carriedPosition = { ...hit.point };
+        this.state.isDestinationHovered = hit.targetId === 'eq-equals-target';
+      } else {
+        this.state.carriedPosition = ray ? { ...ray.origin } : null;
+        this.state.isDestinationHovered = false;
+      }
+
+      if (!ray || !ray.active) {
+        this.state.hoveredTargetId = null;
+        this.resetDwell();
+        return;
+      }
+
+      if (hit && hit.targetId === 'eq-equals-target' && pose.isPointing) {
+        this.state.hoveredTargetId = hit.targetId;
+
+        if (this.lastDwellTargetId !== hit.targetId) {
+          this.lastDwellTargetId = hit.targetId;
+          this.lastDwellTime = now;
+          this.state.dwellProgress = 0;
+          this.state.dwellTargetId = hit.targetId;
+        } else {
+          const elapsed = now - this.lastDwellTime;
+          const progress = Math.min(1.0, elapsed / this.dwellDurationMs);
+          this.state.dwellProgress = progress;
+
+          if (progress > 0.2 && Math.random() < 0.2) {
+            soundManager.playDwellTick(progress);
+          }
+
+          if (progress >= 1.0 || pose.isIndexCurled) {
+            if (this.onApplyEqualsRequested) {
+              this.onApplyEqualsRequested();
+            } else {
+              this.game.applyBalance();
+            }
+            this.resetDwell();
+          }
+        }
+      } else {
+        if (pose.isIndexCurled && this.state.isDestinationHovered) {
+          if (this.onApplyEqualsRequested) {
+            this.onApplyEqualsRequested();
+          } else {
+            this.game.applyBalance();
+          }
+          this.resetDwell();
+        } else {
+          this.state.hoveredTargetId = null;
+          this.resetDwell();
+        }
+      }
+      return;
+    }
+
+    // Phase: CARRYING (Mode A)
     if (gameState.phase === 'carrying') {
       this.resetDwell();
       this.openPalmStartTime = 0;
@@ -154,6 +281,14 @@ export class InteractionController {
         this.state.carriedPosition = null;
         this.state.isDestinationHovered = false;
       }
+      return;
+    }
+
+    // Phase: BALANCING (Animation in progress)
+    if (gameState.phase === 'balancing') {
+      this.state.carriedPosition = null;
+      this.state.isDestinationHovered = false;
+      this.resetDwell();
       return;
     }
 
@@ -314,6 +449,32 @@ export class InteractionController {
         this.game.answer(choices[2]);
         return true;
       }
+    }
+
+    // Mode B: Forging sign shortcuts (+, -, *, /)
+    if (gameState.phase === 'forging') {
+      if (e.key === '+' || e.key === '=') {
+        return this.game.forge('+');
+      }
+      if (e.key === '-' || e.key === '_') {
+        return this.game.forge('-');
+      }
+      if (e.key === '*' || e.key === 'x' || e.key === 'X') {
+        return this.game.forge('×');
+      }
+      if (e.key === '/' || e.key === 'd' || e.key === 'D') {
+        return this.game.forge('÷');
+      }
+    }
+
+    // Mode B: Applying (Enter or Space applies to both sides)
+    if (gameState.phase === 'applying' && (e.key === 'Enter' || e.key === ' ')) {
+      if (this.onApplyEqualsRequested) {
+        this.onApplyEqualsRequested();
+      } else {
+        this.game.applyBalance();
+      }
+      return true;
     }
 
     // Enter / Space: Pick up or Drop

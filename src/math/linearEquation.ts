@@ -3,7 +3,11 @@ import {
   EquationState, 
   HistorySnapshot, 
   PendingArithmetic, 
-  CancellationDisplay 
+  CancellationDisplay,
+  SolverMode,
+  ForgedOperation,
+  BalancedDisplay,
+  OperationSign
 } from './types';
 import { createPendingArithmetic } from './puzzleGenerator';
 
@@ -24,19 +28,22 @@ export function formatEquationLine(a: number, b: number, c: number): string {
   return `${left} = ${c}`;
 }
 
-export function createInitialState(problem: LinearEquationDef): EquationState {
+export function createInitialState(problem: LinearEquationDef, mode: SolverMode = 'mode_a'): EquationState {
   const stage = problem.b !== 0 
     ? 'undo_constant' 
     : (problem.a > 1 ? 'undo_coefficient' : 'solved');
 
   return {
     problem,
+    mode,
     currentA: problem.a,
     currentB: problem.b,
     currentC: problem.c,
     stage,
     phase: stage === 'solved' ? 'solved' : 'ready',
     carriedTerm: null,
+    forgedOperation: null,
+    balancedDisplay: null,
     pendingArithmetic: null,
     cancellation: null,
     errorMessage: null,
@@ -47,12 +54,15 @@ export function createInitialState(problem: LinearEquationDef): EquationState {
 
 function saveSnapshot(state: EquationState): HistorySnapshot {
   return {
+    mode: state.mode,
     currentA: state.currentA,
     currentB: state.currentB,
     currentC: state.currentC,
     stage: state.stage,
     phase: state.phase,
     carriedTerm: state.carriedTerm,
+    forgedOperation: state.forgedOperation ? { ...state.forgedOperation } : null,
+    balancedDisplay: state.balancedDisplay ? { ...state.balancedDisplay } : null,
     pendingArithmetic: state.pendingArithmetic ? { ...state.pendingArithmetic } : null,
     equationHistory: [...state.equationHistory]
   };
@@ -61,7 +71,7 @@ function saveSnapshot(state: EquationState): HistorySnapshot {
 export function pickUpTerm(
   state: EquationState, 
   term: 'constant' | 'coefficient'
-): { state: EquationState; success: boolean; guideMessage?: string } {
+): { state: EquationState; success: boolean; notYet?: boolean; guideMessage?: string } {
   if (state.phase !== 'ready') {
     return { state, success: false };
   }
@@ -71,13 +81,17 @@ export function pickUpTerm(
   if (term === 'coefficient' && state.currentB !== 0) {
     const signStr = state.currentB < 0 ? '−' : '+';
     const val = Math.abs(state.currentB);
+    const msg = state.mode === 'mode_b' 
+      ? `NOT YET — Undo ${signStr}${val} first to avoid fractions!` 
+      : `First undo the ${signStr}${val}.`;
     return {
       state: {
         ...state,
-        errorMessage: `First undo the ${signStr}${val}.`
+        errorMessage: msg
       },
       success: false,
-      guideMessage: `First undo the ${signStr}${val}.`
+      notYet: true,
+      guideMessage: msg
     };
   }
 
@@ -89,23 +103,181 @@ export function pickUpTerm(
     return { state, success: false };
   }
 
+  // In Mode B, picking up an operation enters 'forging' phase where original stays visible
+  const nextPhase = state.mode === 'mode_b' ? 'forging' : 'carrying';
+
   return {
     state: {
       ...state,
-      phase: 'carrying',
+      phase: nextPhase,
       carriedTerm: term,
+      forgedOperation: null,
+      balancedDisplay: null,
       errorMessage: null
     },
     success: true
   };
 }
 
+export function getRequiredForge(state: EquationState): {
+  originalSign: OperationSign;
+  requiredSign: OperationSign;
+  operand: number;
+} | null {
+  if (!state.carriedTerm) return null;
+
+  if (state.carriedTerm === 'constant') {
+    const isNeg = state.currentB < 0;
+    const operand = Math.abs(state.currentB);
+    return {
+      originalSign: isNeg ? '-' : '+',
+      requiredSign: isNeg ? '+' : '-',
+      operand
+    };
+  }
+
+  if (state.carriedTerm === 'coefficient') {
+    return {
+      originalSign: '×',
+      requiredSign: '÷',
+      operand: state.currentA
+    };
+  }
+
+  return null;
+}
+
+export function forgeOpposite(
+  state: EquationState,
+  sign: OperationSign
+): { state: EquationState; correct: boolean } {
+  if (state.phase !== 'forging' || !state.carriedTerm) {
+    return { state, correct: false };
+  }
+
+  const req = getRequiredForge(state);
+  if (!req) return { state, correct: false };
+
+  // Normalize sign comparison ('-' vs '−')
+  const normalize = (s: OperationSign) => (s === '−' ? '-' : s);
+  const isMatch = normalize(sign) === normalize(req.requiredSign);
+
+  if (!isMatch) {
+    return { state, correct: false };
+  }
+
+  const forgedOperation: ForgedOperation = {
+    originalOperator: req.originalSign,
+    originalOperand: req.operand,
+    forgedOperator: req.requiredSign,
+    forgedOperand: req.operand
+  };
+
+  return {
+    state: {
+      ...state,
+      phase: 'applying',
+      forgedOperation,
+      errorMessage: null
+    },
+    correct: true
+  };
+}
+
+export function applyToBothSides(
+  state: EquationState,
+  rng: () => number = Math.random
+): { state: EquationState; success: boolean } {
+  if (state.phase !== 'applying' || !state.forgedOperation || !state.carriedTerm) {
+    return { state, success: false };
+  }
+
+  const history = [...state.history, saveSnapshot(state)];
+  const { forgedOperator, forgedOperand } = state.forgedOperation;
+
+  let leftBefore = '';
+  let leftAdded = '';
+  let rightBefore = `${state.currentC}`;
+  let rightAdded = '';
+  let cancellingLhs = '';
+  let simplifiedLhs = '';
+  let pendingArithmetic: PendingArithmetic;
+
+  if (state.carriedTerm === 'constant') {
+    const isNeg = state.currentB < 0;
+    const origSign = isNeg ? '−' : '+';
+    const forgeSign = forgedOperator === '+' ? '+' : '−';
+
+    leftBefore = state.currentA === 1 ? 'Y' : `${state.currentA} x Y`;
+    leftAdded = `${origSign} ${forgedOperand} ${forgeSign} ${forgedOperand}`;
+    rightAdded = `${forgeSign} ${forgedOperand}`;
+    cancellingLhs = `${origSign} ${forgedOperand} ${forgeSign} ${forgedOperand}`;
+    simplifiedLhs = leftBefore;
+
+    pendingArithmetic = createPendingArithmetic(
+      state.currentC,
+      forgedOperand,
+      forgedOperator,
+      rng
+    );
+  } else {
+    // coefficient
+    leftBefore = `${state.currentA} x Y`;
+    leftAdded = `÷ ${forgedOperand}`;
+    rightAdded = `÷ ${forgedOperand}`;
+    cancellingLhs = `${state.currentA} x ... ÷ ${forgedOperand}`;
+    simplifiedLhs = 'Y';
+
+    pendingArithmetic = createPendingArithmetic(
+      state.currentC,
+      forgedOperand,
+      '÷',
+      rng
+    );
+  }
+
+  const balancedDisplay: BalancedDisplay = {
+    leftBefore,
+    leftAdded,
+    rightBefore,
+    rightAdded,
+    fullBalancedLine: `${leftBefore} ${leftAdded} = ${rightBefore} ${rightAdded}`,
+    cancellingLhs,
+    simplifiedLhs
+  };
+
+  return {
+    state: {
+      ...state,
+      history,
+      phase: 'balancing',
+      balancedDisplay,
+      pendingArithmetic,
+      errorMessage: null
+    },
+    success: true
+  };
+}
+
+export function cancelLhsInverse(state: EquationState): EquationState {
+  if (state.phase !== 'balancing' || !state.balancedDisplay) {
+    return state;
+  }
+
+  return {
+    ...state,
+    phase: 'question'
+  };
+}
+
 export function cancelCarry(state: EquationState): EquationState {
-  if (state.phase !== 'carrying') return state;
+  if (state.phase !== 'carrying' && state.phase !== 'forging') return state;
   return {
     ...state,
     phase: 'ready',
     carriedTerm: null,
+    forgedOperation: null,
+    balancedDisplay: null,
     errorMessage: null
   };
 }
@@ -248,6 +420,9 @@ export function submitAnswer(
       currentC: newC,
       stage: nextStage,
       phase: nextStage === 'solved' ? 'solved' : 'ready',
+      carriedTerm: null,
+      forgedOperation: null,
+      balancedDisplay: null,
       cancellation: null,
       pendingArithmetic: null,
       errorMessage: null
@@ -268,12 +443,15 @@ export function undo(state: EquationState): { state: EquationState; success: boo
     state: {
       ...state,
       history,
+      mode: last.mode || state.mode,
       currentA: last.currentA,
       currentB: last.currentB,
       currentC: last.currentC,
       stage: last.stage,
       phase: last.phase,
       carriedTerm: last.carriedTerm,
+      forgedOperation: last.forgedOperation,
+      balancedDisplay: last.balancedDisplay,
       pendingArithmetic: last.pendingArithmetic,
       equationHistory: last.equationHistory || [],
       cancellation: null,
@@ -282,6 +460,7 @@ export function undo(state: EquationState): { state: EquationState; success: boo
     success: true
   };
 }
+
 
 export function formatVerification(problem: LinearEquationDef): {
   subStep: string;

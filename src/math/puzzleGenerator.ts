@@ -1,4 +1,4 @@
-import { LinearEquationDef, EquationFamily, PendingArithmetic } from './types';
+import { LinearEquationDef, EquationFamily, PendingArithmetic, OperationSign } from './types';
 
 // Simple mulberry32 seeded PRNG
 export function createRng(seed: number) {
@@ -43,7 +43,7 @@ export const BENCHMARK_PUZZLE: LinearEquationDef = {
 export function generateArithmeticChoices(
   _op1: number,
   _op2: number,
-  _operator: '+' | '-' | '×' | '÷',
+  _operator: OperationSign,
   correct: number,
   rng: () => number = Math.random
 ): number[] {
@@ -79,7 +79,7 @@ export function generateArithmeticChoices(
 export function createPendingArithmetic(
   op1: number,
   op2: number,
-  operator: '+' | '-' | '×' | '÷',
+  operator: OperationSign,
   rng: () => number = Math.random
 ): PendingArithmetic {
   let correct: number;
@@ -93,6 +93,7 @@ export function createPendingArithmetic(
       wrongHint = `We added ${op2}. Start at ${op1} and count up ${op2}.`;
       break;
     case '-':
+    case '−':
       correct = op1 - op2;
       explanation = `${op1} − ${op2} = ${correct}`;
       wrongHint = `We subtracted ${op2}. Take ${op2} away from ${op1}.`;

@@ -20,19 +20,43 @@ export type SolverStage =
   | 'undo_coefficient'  // when b == 0 and a > 1, divide by coefficient
   | 'solved';           // when a == 1 and b == 0
 
+export type SolverMode = 'mode_a' | 'mode_b';
+
 export type GamePhase =
   | 'ready'       // waiting for player to grab a term
-  | 'carrying'    // term picked up, aiming at destination
+  | 'carrying'    // term picked up, aiming at destination (Mode A)
+  | 'forging'     // term picked up, forge panel active (Mode B)
+  | 'applying'    // opposite operation forged, aiming at = sign (Mode B)
+  | 'balancing'   // dual-split animation and balancing (Mode B)
   | 'cancelling'  // brief visual cancellation animation
   | 'question'    // unsimplified equation committed, awaiting arithmetic choice
   | 'feedback'    // brief feedback after answering (merging / success)
   | 'solved'      // puzzle completed, showing verification
   | 'paused';     // paused state
 
+export type OperationSign = '+' | '-' | '−' | '×' | '÷';
+
+export interface ForgedOperation {
+  originalOperator: OperationSign;
+  originalOperand: number;
+  forgedOperator: OperationSign;
+  forgedOperand: number;
+}
+
+export interface BalancedDisplay {
+  leftBefore: string;
+  leftAdded: string;
+  rightBefore: string;
+  rightAdded: string;
+  fullBalancedLine: string;
+  cancellingLhs: string;
+  simplifiedLhs: string;
+}
+
 export interface PendingArithmetic {
   operand1: number;
   operand2: number;
-  operator: '+' | '-' | '×' | '÷';
+  operator: OperationSign;
   correctAnswer: number;
   choices: number[]; // exactly 3 choices, shuffled
   explanation: string;
@@ -48,12 +72,15 @@ export interface CancellationDisplay {
 
 export interface EquationState {
   problem: LinearEquationDef;
+  mode: SolverMode;
   currentA: number;
   currentB: number;
   currentC: number;
   stage: SolverStage;
   phase: GamePhase;
   carriedTerm: 'constant' | 'coefficient' | null;
+  forgedOperation: ForgedOperation | null;
+  balancedDisplay: BalancedDisplay | null;
   pendingArithmetic: PendingArithmetic | null;
   cancellation: CancellationDisplay | null;
   errorMessage: string | null;
@@ -62,12 +89,16 @@ export interface EquationState {
 }
 
 export interface HistorySnapshot {
+  mode: SolverMode;
   currentA: number;
   currentB: number;
   currentC: number;
   stage: SolverStage;
   phase: GamePhase;
   carriedTerm: 'constant' | 'coefficient' | null;
+  forgedOperation: ForgedOperation | null;
+  balancedDisplay: BalancedDisplay | null;
   pendingArithmetic: PendingArithmetic | null;
   equationHistory: string[];
 }
+

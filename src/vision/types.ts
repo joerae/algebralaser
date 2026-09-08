@@ -32,7 +32,7 @@ export interface LaserRay {
 
 export interface RayHitResult {
   targetId: string;
-  targetType: 'term' | 'destination' | 'answer' | 'utility';
+  targetType: 'term' | 'destination' | 'answer' | 'utility' | 'forge';
   point: { x: number; y: number };
   distance: number;
 }

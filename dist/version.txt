@@ -1,3 +1,31 @@
+Version 1.4.0
+Date: 2026-09-08
+
+Release Notes:
+- Mode B: Balance Both Sides:
+  * Added dedicated Mode B interaction allowing students to rearrange equations by forging opposite operations and applying them to both sides.
+  * Header mode toggle: Smoothly switch between "Mode A: Move Across" and "Mode B: Balance Both Sides" at any time; resets equation state while preserving player level progression.
+  * Equation Layout & Spacing: Generous spacing between operations and symbols for laser targeting.
+  * Target Eligibility & "Not Yet" Feedback: Only cleanly cancellable operations are active (e.g. -1 before *3 in 3*Y - 1 = 12). Selecting an ineligible coefficient triggers a gentle "NOT YET" wobble on the coefficient and pulses the active constant.
+  * Step 1 - Operation Selection: Point-and-hold picks up active term into a floating laser bubble while keeping the original equation term visible.
+  * Step 2 - Forge the Opposite: Dedicated left-hand panel appears displaying four large sign targets (+, −, ×, ÷). 1-second dwell hold on sign. Incorrect signs trigger a non-destructive "nah-uh!" wobble allowing immediate retry; correct sign transforms the bubble with a dual-ring pulse.
+  * Step 3 - Apply to Both Sides: Prompt changes to "APPLY TO BOTH SIDES". Moving bubble to the '=' sign triggers equals activation and smoothly splits into two synchronized clones landing on LHS and RHS.
+  * Step 4 - Inverse Cancellation & Arithmetic: Variable side automatically cancels inverse operations (e.g. -1 + 1 cancels, leaving 3*Y). Right-hand arithmetic panel prompts the student to resolve the RHS balance (e.g. 12 + 1 = 13).
+  * State Resilience: Hand tracking loss preserves current equation and forging state; carried bubble remains securely tethered.
+- Files Edited / Created:
+  * src/math/types.ts: Added SolverMode, GamePhase, ForgedOperation, BalancedDisplay types.
+  * src/math/linearEquation.ts: Implemented Mode B lifecycle (forging, opposite validation, balanced application, cancellation).
+  * src/math/linearEquation.test.ts: Vitest suite covering Mode B math logic and phase progression.
+  * src/audio/soundEffects.ts: Added forge success, forge incorrect ("nah-uh"), split whoosh, and "not-yet" audio cues.
+  * src/ui/forgePanelView.ts: [NEW] Left-hand 4-operator forge panel with 1s dwell SVG progress and shake animations.
+  * src/ui/equationView.ts: Added Mode B spacing, target eligibility highlighting, 'NOT YET' feedback, and '=' targeting.
+  * src/ui/hudView.ts: Added Mode A / Mode B header toggle switch and v1.4.0 footer badge.
+  * index.html: Added forge panel aside and split clone bubble overlay elements.
+  * src/styles/index.css: Mode B rail spacing, forge panel styling, dwell SVG circles, split animations, and keyframes.
+  * src/game/gameController.ts: Integrated Mode B state transitions and pedagogical hints.
+  * src/game/interactionController.ts: Pointer/laser dwell tracking for 1000ms forge targets and '=' split detection.
+  * src/main.ts: Orchestrated Mode B UI layout, split animations, sound integration, and local storage persistence.
+
 Version 1.3.0
 Date: 2026-09-08
 
