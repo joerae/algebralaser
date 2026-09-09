@@ -1,6 +1,8 @@
 TODO
 
-[  ] Fix failing Netlify Builds. This is when I put it live on Netlify, they fail at "Build" step with this error: 8:05:52 PM: Netlify Build                                                 
+[x] Fix failing Netlify Builds. (RESOLVED: Root cause was `node_modules` committed to Git from Windows with 100644 non-executable file permissions on `node_modules/.bin/tsc`. Netlify detected existing `node_modules`, skipped `npm install`, and hit `sh: 1: tsc: Permission denied`. Fixed by untracking `node_modules` from Git, adding it to `.gitignore`, creating `netlify.toml`, and enabling `forceConsistentCasingInFileNames`).
+Previous error log:
+8:05:52 PM: Netlify Build                                                 
 8:05:52 PM: ────────────────────────────────────────────────────────────────
 8:05:52 PM: ​
 8:05:52 PM: ❯ Version
