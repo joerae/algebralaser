@@ -1,3 +1,11 @@
+Version 1.6.1
+Date: 2026-09-09
+
+Release Notes:
+- Mode D now shows signed cancellation arithmetic correctly (for example, −1 + 1 = 0) in both the equation and answer prompt.
+- Kept LHS cancellation expressions horizontal by preventing flex shrink/wrapping and widening the Mode D question rail.
+- Files: linearEquation.ts, linearEquationModeD.test.ts, equationView.ts, equation.css, and hudView.ts.
+
 Version 1.6.0
 Date: 2026-09-09
 

@@ -82,6 +82,9 @@ describe('Mode D: Blast Sides State Machine & Mathematics', () => {
     expect(actLhsSimp.success).toBe(true);
     state = actLhsSimp.state;
     expect(state.phase).toBe('question');
+    expect(state.pendingArithmetic?.operand1).toBe(-1);
+    expect(state.pendingArithmetic?.operator).toBe('+');
+    expect(state.pendingArithmetic?.operand2).toBe(1);
     expect(state.pendingArithmetic?.correctAnswer).toBe(0);
 
     // Answer 0 for LHS

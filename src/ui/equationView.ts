@@ -320,7 +320,7 @@ export class EquationView {
       const scaleHtml = (mode === 'mode_c' || mode === 'mode_d') ? this.renderScale('balanced', 0) : '';
       this.container.innerHTML = `
         ${historyHtml}
-        <div class="equation-rail ${(mode === 'mode_c' || mode === 'mode_d') ? 'mode-c-rail' : ''}">
+        <div class="equation-rail ${(mode === 'mode_c' || mode === 'mode_d') ? 'mode-c-rail' : ''} ${mode === 'mode_d' ? 'mode-d-question-rail' : ''}">
           ${railContentHtml}
         </div>
         ${scaleHtml}

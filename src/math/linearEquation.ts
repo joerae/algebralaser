@@ -874,13 +874,14 @@ export function activateModeDSimplify(
   if (side === 'lhs') {
     if (state.modeDState.targetTerm === 'constant') {
       const absB = Math.abs(state.currentB);
+      const inverseOperand = selectedInverse.operator === '+' ? absB : -absB;
       pendingArithmetic = {
-        operand1: absB,
-        operand2: absB,
-        operator: selectedInverse.operator === '+' ? '-' : '+',
+        operand1: state.currentB,
+        operand2: Math.abs(inverseOperand),
+        operator: inverseOperand >= 0 ? '+' : '-',
         correctAnswer: 0,
         choices: shuffleArray([0, absB, -absB], rng),
-        explanation: `${absB} − ${absB} = 0 (Cancels to zero!)`,
+        explanation: `${state.currentB} ${inverseOperand >= 0 ? '+' : '−'} ${Math.abs(inverseOperand)} = 0 (Cancels to zero!)`,
         wrongHint: `Adding and subtracting the same number cancels to zero.`
       };
     } else {
