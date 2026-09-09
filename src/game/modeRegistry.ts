@@ -93,7 +93,13 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
         return 'Pull forged bubble up to the equation to balance both sides!';
       }
       if (phase === 'balancing') {
-        return 'Opposites balance! Cancelling inverse operations on variable side...';
+        return 'Watch the forged operation power up one side at a time...';
+      }
+      if (phase === 'awaiting_cleanup') {
+        if (state.balancedDisplay?.lhsCleaned) return 'Now solve the calculation on the right.';
+        if (state.balancedDisplay?.rhsSolved) return 'Now sweep the glowing identity on the left.';
+        if (!state.balancedDisplay?.rhsActivated) return 'Sweep the left identity, or point at the right expression to calculate it.';
+        return 'Choose either side: sweep the left identity or answer the right calculation.';
       }
       if (phase === 'question') {
         return 'Aim laser at an answer card and hold to confirm, or click.';

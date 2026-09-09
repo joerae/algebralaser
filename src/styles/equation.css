@@ -218,19 +218,24 @@
   white-space: nowrap;
 }
 
-.equation-rail.mode-d-rail {
+.equation-rail.mode-d-rail,
+.equation-rail.mode-b-rail {
   width: min(680px, calc(100vw - 32px));
   min-width: 0;
   max-width: 680px;
 }
 
-.mode-d-rail .equation-side {
+.mode-d-rail .equation-side,
+.mode-b-rail .equation-side {
   flex: 1 1 0;
   min-width: 0;
 }
 
 .mode-d-rail .term-tile,
-.mode-d-rail .pulsing-simplify-target {
+.mode-d-rail .pulsing-simplify-target,
+.mode-b-rail .term-tile,
+.mode-b-rail .mode-b-cleanup-target,
+.mode-b-rail .mode-b-cleanup-preview {
   flex-shrink: 0;
   box-sizing: border-box;
   white-space: nowrap;

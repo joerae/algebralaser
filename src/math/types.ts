@@ -27,7 +27,8 @@ export type GamePhase =
   | 'carrying'           // term picked up, aiming at destination (Mode A)
   | 'forging'            // term picked up, forge panel active (Mode B)
   | 'applying'           // opposite operation forged, aiming at = sign (Mode B)
-  | 'balancing'          // dual-split animation and balancing (Mode B)
+  | 'balancing'          // sequential apply-to-both-sides animation (Mode B)
+  | 'awaiting_cleanup'   // applied inverse is visible and ready to blast away (Mode B)
   | 'cancelling'         // brief visual cancellation animation
   | 'blasting_rhs'       // LHS smashed free, operand carried, aiming at RHS (Mode C)
   | 'awaiting_simplify'  // RHS blasted, scale balanced, awaiting Calculator blaster (Mode C) / Mode D simplify prompt
@@ -101,6 +102,11 @@ export interface BalancedDisplay {
   fullBalancedLine: string;
   cancellingLhs: string;
   simplifiedLhs: string;
+  lhsApplied: boolean;
+  rhsApplied: boolean;
+  lhsCleaned: boolean;
+  rhsActivated: boolean;
+  rhsSolved: boolean;
 }
 
 export interface PendingArithmetic {
@@ -155,5 +161,3 @@ export interface HistorySnapshot {
   pendingArithmetic: PendingArithmetic | null;
   equationHistory: string[];
 }
-
-

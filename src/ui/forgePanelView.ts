@@ -145,6 +145,14 @@ export class ForgePanelView {
     }
   }
 
+  public getCardCenter(sign: ForgeSign): { x: number; y: number } | null {
+    const cardId = sign === '+'
+      ? 'forge-op-plus'
+      : (sign === '-' || sign === '−' ? 'forge-op-minus' : (sign === '×' ? 'forge-op-times' : 'forge-op-divide'));
+    const rect = this.cardElements.get(cardId)?.cardEl.getBoundingClientRect();
+    return rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : null;
+  }
+
   public getInteractiveElements(): Array<{ id: string; type: 'forge'; element: HTMLElement }> {
     const result: Array<{ id: string; type: 'forge'; element: HTMLElement }> = [];
     for (const [cardId, { cardEl }] of this.cardElements) {

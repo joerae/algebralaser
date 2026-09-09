@@ -297,7 +297,12 @@ export function applyToBothSides(
     rightAdded,
     fullBalancedLine: `${leftBefore} ${leftAdded} = ${rightBefore} ${rightAdded}`,
     cancellingLhs,
-    simplifiedLhs
+    simplifiedLhs,
+    lhsApplied: false,
+    rhsApplied: false,
+    lhsCleaned: false,
+    rhsActivated: false,
+    rhsSolved: false
   };
 
   const currentLine = formatEquationLine(state.currentA, state.currentB, state.currentC);
@@ -319,14 +324,108 @@ export function applyToBothSides(
   };
 }
 
+function completeModeBStep(state: EquationState): EquationState {
+  if (!state.pendingArithmetic) return state;
+
+  const completedLine = formatUnsimplifiedEquationLine(
+    state.currentA,
+    state.stage,
+    state.currentC,
+    state.pendingArithmetic
+  );
+  const equationHistory = state.equationHistory.includes(completedLine)
+    ? [...state.equationHistory]
+    : [...state.equationHistory, completedLine];
+  const currentA = state.stage === 'undo_coefficient' ? 1 : state.currentA;
+  const currentB = state.stage === 'undo_constant' ? 0 : state.currentB;
+  const currentC = state.pendingArithmetic.correctAnswer;
+  const stage: SolverStage = currentB !== 0
+    ? 'undo_constant'
+    : (currentA > 1 ? 'undo_coefficient' : 'solved');
+
+  return {
+    ...state,
+    history: [...state.history, saveSnapshot(state)],
+    equationHistory,
+    currentA,
+    currentB,
+    currentC,
+    stage,
+    phase: stage === 'solved' ? 'solved' : 'ready',
+    carriedTerm: null,
+    forgedOperation: null,
+    balancedDisplay: null,
+    pendingArithmetic: null,
+    errorMessage: null
+  };
+}
+
 export function cancelLhsInverse(state: EquationState): EquationState {
-  if (state.phase !== 'balancing' || !state.balancedDisplay) {
+  if (state.phase !== 'awaiting_cleanup' || !state.balancedDisplay) {
+    return state;
+  }
+
+  const cleanedState: EquationState = {
+    ...state,
+    balancedDisplay: {
+      ...state.balancedDisplay,
+      lhsCleaned: true
+    }
+  };
+
+  return state.balancedDisplay.rhsSolved ? completeModeBStep(cleanedState) : cleanedState;
+}
+
+export function revealModeBBalanceSide(
+  state: EquationState,
+  side: 'lhs' | 'rhs'
+): EquationState {
+  if (state.mode !== 'mode_b' || state.phase !== 'balancing' || !state.balancedDisplay) {
     return state;
   }
 
   return {
     ...state,
-    phase: 'question'
+    balancedDisplay: {
+      ...state.balancedDisplay,
+      lhsApplied: side === 'lhs' ? true : state.balancedDisplay.lhsApplied,
+      rhsApplied: side === 'rhs' ? true : state.balancedDisplay.rhsApplied
+    }
+  };
+}
+
+export function finishModeBBalance(state: EquationState): EquationState {
+  if (
+    state.mode !== 'mode_b' ||
+    state.phase !== 'balancing' ||
+    !state.balancedDisplay?.lhsApplied ||
+    !state.balancedDisplay?.rhsApplied
+  ) {
+    return state;
+  }
+
+  return {
+    ...state,
+    phase: 'awaiting_cleanup'
+  };
+}
+
+export function activateModeBRhsCalculation(state: EquationState): EquationState {
+  if (
+    state.mode !== 'mode_b' ||
+    state.phase !== 'awaiting_cleanup' ||
+    !state.balancedDisplay ||
+    state.balancedDisplay.rhsSolved
+  ) {
+    return state;
+  }
+
+  return {
+    ...state,
+    balancedDisplay: {
+      ...state.balancedDisplay,
+      rhsActivated: true
+    }
   };
 }
 
@@ -1020,7 +1119,10 @@ export function submitAnswer(
   state: EquationState,
   answer: number
 ): { state: EquationState; correct: boolean; hint?: string } {
-  if (state.phase !== 'question' || !state.pendingArithmetic) {
+  const isParallelModeBStep = state.mode === 'mode_b'
+    && state.phase === 'awaiting_cleanup'
+    && !!state.balancedDisplay?.rhsActivated;
+  if ((state.phase !== 'question' && !isParallelModeBStep) || !state.pendingArithmetic) {
     return { state, correct: false };
   }
 
@@ -1038,6 +1140,23 @@ export function submitAnswer(
   }
 
   const history = [...state.history, saveSnapshot(state)];
+
+  if (isParallelModeBStep && state.balancedDisplay) {
+    const answeredState: EquationState = {
+      ...state,
+      history,
+      currentC: state.pendingArithmetic.correctAnswer,
+      balancedDisplay: {
+        ...state.balancedDisplay,
+        rhsSolved: true
+      },
+      errorMessage: null
+    };
+    return {
+      state: state.balancedDisplay.lhsCleaned ? completeModeBStep(answeredState) : answeredState,
+      correct: true
+    };
+  }
 
   // Mode D two-step simplification handling
   if (state.mode === 'mode_d' && state.modeDState && state.modeDState.activeSimplifyingSide) {

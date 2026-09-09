@@ -1,3 +1,34 @@
+Version 1.8.3
+Date: 2026-09-09
+
+Release Notes:
+- Mode B's paired forged charges now leave the fingertip together, settle beneath the LHS and RHS, then apply sequentially while the second charge waits in place.
+- Files: splitBalanceAnimation.ts, equationView.ts, Mode B CSS, and hudView.ts.
+
+Version 1.8.2
+Date: 2026-09-09
+
+Release Notes:
+- Simplified Mode B's carried inverse into two equal caption-free fingertip bubbles and made the whole equation rail the roomy highlighted apply target.
+- RHS answer choices now stay hidden until the learner points at the unsimplified RHS expression; LHS cleanup remains available before or after that calculation.
+- Files: linearEquation.ts/tests/types, GameController, Mode B handler/registry, main.ts, EquationView, CarriedBubbleView, Mode B CSS, and hudView.ts.
+
+Version 1.8.1
+Date: 2026-09-09
+
+Release Notes:
+- Mode B now lets learners simplify either side first: sweep the LHS identity or answer the RHS calculation, then complete the remaining side.
+- Forging pulls the carried bubble into the selected forge during dwell, creates two inverse charges, and fires them from the fingertip to the LHS and RHS in sequence without parking a bubble on the equals sign.
+- Files: linearEquation.ts/tests/types, GameController, Mode B handler, main.ts, EquationView, CarriedBubbleView, splitBalanceAnimation.ts, index.html, and Mode B CSS.
+
+Version 1.8.0
+Date: 2026-09-09
+
+Release Notes:
+- Upgraded Mode B with fingertip-carried bubbles, forge round trips, sequential one-side-at-a-time balancing, required laser-sweep identity cleanup, smoke VFX, and wider collision-free equation rails.
+- Mode B cleanup now rearms whenever the laser leaves its current cleanup target, including when it moves directly across another part of the equation.
+- Files: linearEquation.ts/tests/types, GameController, Mode B interaction, main.ts, EquationView, CarriedBubbleView, ForgePanelView, splitBalanceAnimation.ts, Mode B/equation CSS, and modeRegistry.ts.
+
 Version 1.7.1
 Date: 2026-09-09
 

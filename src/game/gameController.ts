@@ -9,6 +9,9 @@ import {
   forgeOpposite,
   applyToBothSides,
   cancelLhsInverse,
+  revealModeBBalanceSide,
+  finishModeBBalance,
+  activateModeBRhsCalculation,
   equipBlaster,
   blastLhs,
   blastRhs,
@@ -136,21 +139,41 @@ export class GameController {
     this.state = res.state;
     this.notify();
 
-    // Auto-cancel LHS inverse after short pedagogical glance (750ms)
-    window.setTimeout(() => {
-      if (this.state.phase === 'balancing') {
-        this.state = cancelLhsInverse(this.state);
-        this.notify();
-      }
-    }, 750);
-
     return true;
   }
 
-  public cancelLhs(): void {
-    if (this.state.phase !== 'balancing') return;
-    this.state = cancelLhsInverse(this.state);
+  public revealModeBBalanceSide(side: 'lhs' | 'rhs'): void {
+    const next = revealModeBBalanceSide(this.state, side);
+    if (next === this.state) return;
+    this.state = next;
     this.notify();
+  }
+
+  public finishModeBBalance(): void {
+    const next = finishModeBBalance(this.state);
+    if (next === this.state) return;
+    this.state = next;
+    this.notify();
+  }
+
+  public activateModeBRhsCalculation(): boolean {
+    const next = activateModeBRhsCalculation(this.state);
+    if (next === this.state) return false;
+    this.state = next;
+    soundManager.playPickup();
+    this.notify();
+    return true;
+  }
+
+  public cancelLhs(): boolean {
+    if (this.state.phase !== 'awaiting_cleanup') return false;
+    this.state = cancelLhsInverse(this.state);
+    soundManager.playSmashFree();
+    if (this.state.stage === 'solved') {
+      setTimeout(() => soundManager.playCelebration(), 300);
+    }
+    this.notify();
+    return true;
   }
 
   public selectBlaster(blaster: BlasterType): void {
@@ -258,7 +281,10 @@ export class GameController {
   public onBeforeCorrectAdvance?: (correctVal: number, done: () => void) => void;
 
   public answer(choice: number): boolean {
-    if (this.state.phase !== 'question' || !this.state.pendingArithmetic) return false;
+    const canAnswerModeB = this.state.mode === 'mode_b'
+      && this.state.phase === 'awaiting_cleanup'
+      && !!this.state.balancedDisplay?.rhsActivated;
+    if ((this.state.phase !== 'question' && !canAnswerModeB) || !this.state.pendingArithmetic) return false;
 
     const res = submitAnswer(this.state, choice);
 

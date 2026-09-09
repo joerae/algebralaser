@@ -3,6 +3,8 @@
   gap: 32px;
   padding: 12px 42px;
   min-height: 104px;
+  width: min(820px, calc(100vw - 32px));
+  max-width: 820px;
 }
 
 .equation-rail.mode-b-rail .term-tile {
@@ -286,6 +288,117 @@
   transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
 }
 
+.split-clone.powerup-anchor {
+  animation: modeBPowerupCharge 0.72s ease-in-out infinite alternate;
+}
+
+.split-clone.queued-charge {
+  transform: translate(-50%, -50%) scale(0.84);
+  animation: modeBQueuedCharge 0.72s ease-in-out infinite alternate;
+}
+
+.split-clone.waiting-charge {
+  opacity: 0.82;
+  animation-delay: 0.16s;
+}
+
+@keyframes modeBQueuedCharge {
+  from { transform: translate(-50%, -50%) translateY(0) scale(0.82); filter: brightness(0.95); }
+  to { transform: translate(-50%, -50%) translateY(-5px) scale(0.92); filter: brightness(1.28); }
+}
+
+.split-clone.moving-to-hold {
+  animation: none;
+  transform: translate(-50%, -50%) scale(0.88);
+  transition: left 0.68s cubic-bezier(0.16, 1, 0.3, 1), top 0.68s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s ease;
+}
+
+.split-clone.holding-charge {
+  animation: modeBHoldingCharge 0.8s ease-in-out infinite alternate;
+  box-shadow: 0 0 38px rgba(251, 191, 36, 0.72), inset 0 0 18px rgba(255, 255, 255, 0.28);
+}
+
+@keyframes modeBHoldingCharge {
+  from { transform: translate(-50%, -50%) translateY(0) scale(0.88); filter: brightness(1); }
+  to { transform: translate(-50%, -50%) translateY(-5px) scale(0.96); filter: brightness(1.25); }
+}
+
+@keyframes modeBPowerupCharge {
+  from { transform: translate(-50%, -50%) scale(0.96); filter: brightness(1); }
+  to { transform: translate(-50%, -50%) scale(1.1); filter: brightness(1.35); }
+}
+
+.forge-traveller.forge-outbound,
+.forge-traveller.forge-returning {
+  transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1), top 0.42s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.forge-traveller.forge-outbound {
+  transform: translate(-50%, -50%) scale(1.12);
+}
+
+.forge-traveller.forge-returning {
+  transform: translate(-50%, -50%) scale(0.96);
+}
+
+.forge-traveller.forge-flipping .bubble-term {
+  animation: modeBForgeFlip 0.36s ease-in-out;
+}
+
+@keyframes modeBForgeFlip {
+  0% { transform: rotateY(0deg) scale(1); }
+  50% { transform: rotateY(90deg) scale(1.25); opacity: 0.25; }
+  100% { transform: rotateY(180deg) scale(1); opacity: 1; }
+}
+
+.pickup-traveller.sucking-up {
+  transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: brightness(1.28);
+}
+
+.bubble-twin {
+  position: absolute;
+  left: calc(100% - 8px);
+  top: 50%;
+  width: 78px;
+  height: 78px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid currentColor;
+  border-radius: 9999px;
+  transform: translateY(-50%) scale(0.9);
+  box-shadow: 0 0 30px currentColor;
+  background: rgba(15, 23, 42, 0.94);
+  z-index: -1;
+}
+
+.bubble-twin.op-plus {
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.5) 0%, rgba(15, 23, 42, 0.94) 75%);
+}
+
+.bubble-twin.op-minus {
+  background: radial-gradient(circle at 35% 35%, rgba(30, 41, 59, 0.75) 0%, #020617 80%);
+}
+
+.bubble-twin.op-times {
+  background: radial-gradient(circle at 35% 35%, rgba(244, 63, 94, 0.5) 0%, rgba(15, 23, 42, 0.94) 75%);
+}
+
+.bubble-twin.op-divide {
+  background: radial-gradient(circle at 35% 35%, rgba(168, 85, 247, 0.5) 0%, rgba(15, 23, 42, 0.94) 75%);
+}
+
+.bubble-twin-term {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  color: inherit;
+  text-shadow: 0 0 12px currentColor;
+}
+
+
+
 @keyframes pulseApplyingRail {
   0%, 100% {
     border-color: rgba(251, 191, 36, 0.4);
@@ -339,6 +452,148 @@
 
 .lhs-smash-flash {
   animation: smashImpactFlash 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.equation-rail.applying-target .symbol-equals-target {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+
+.carried-bubble.double-charge {
+  width: 80px;
+  min-width: 80px;
+  height: 80px;
+  padding: 0;
+}
+
+.carried-bubble.double-charge .bubble-term,
+.carried-bubble.double-charge .bubble-twin-term {
+  font-size: 30px;
+}
+
+.carried-bubble.double-charge .bubble-caption,
+.carried-bubble.double-charge .bubble-progress-ring {
+  display: none;
+}
+
+.carried-bubble.double-charge .bubble-twin {
+  left: calc(100% + 10px);
+  width: 80px;
+  height: 80px;
+  transform: translateY(-50%);
+}
+
+.mode-b-balance-rail {
+  overflow: visible;
+}
+
+.mode-b-cleanup-preview,
+.mode-b-cleanup-target {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 78px;
+  padding: 8px 16px;
+  border-radius: 16px;
+  font-size: 48px;
+  font-weight: 700;
+  transition: transform 0.16s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.mode-b-cleanup-preview {
+  border: 2px solid rgba(251, 191, 36, 0.42);
+  background: rgba(251, 191, 36, 0.08);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+}
+
+.mode-b-cleanup-target {
+  cursor: crosshair;
+  border: 2px dashed rgba(251, 191, 36, 0.85);
+  background: rgba(251, 191, 36, 0.16);
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
+  animation: modeBCleanupPulse 1.05s ease-in-out infinite;
+}
+
+.mode-b-cleanup-target.active,
+.mode-b-cleanup-target:hover {
+  border-style: solid;
+  transform: scale(1.08);
+  box-shadow: 0 0 46px rgba(251, 191, 36, 0.9);
+}
+
+.mode-b-identity-fraction,
+.mode-b-rhs-operation {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.mode-b-solve-target {
+  cursor: pointer;
+  border-color: rgba(56, 189, 248, 0.72);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.34);
+  animation: modeBSolveTargetPulse 1.2s ease-in-out infinite;
+}
+
+.mode-b-solve-target.active,
+.mode-b-solve-target:hover {
+  border-color: var(--cyan-bright);
+  transform: scale(1.06);
+  box-shadow: 0 0 38px rgba(56, 189, 248, 0.78);
+}
+
+@keyframes modeBSolveTargetPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.24); }
+}
+
+@keyframes modeBCleanupPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.05); filter: brightness(1.28); }
+}
+
+.mode-b-cleanup-target.mode-b-cleanup-exploding {
+  pointer-events: none;
+  animation: modeBCleanupVanish 0.62s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.mode-b-smoke-puff {
+  --puff-angle: 0deg;
+  --puff-distance: 48px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(226, 232, 240, 0.95) 0%, rgba(100, 116, 139, 0.58) 48%, transparent 72%);
+  filter: blur(1px);
+  animation: modeBSmokeWhiff 0.58s ease-out forwards;
+}
+
+@keyframes modeBCleanupVanish {
+  0% { opacity: 1; transform: scale(1); filter: blur(0); }
+  28% { opacity: 1; transform: scale(1.14); filter: brightness(2); }
+  100% { opacity: 0; transform: scale(0.42); filter: blur(9px); }
+}
+
+@keyframes modeBSmokeWhiff {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--puff-angle)) translateX(0) scale(0.35); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--puff-angle)) translateX(var(--puff-distance)) scale(1.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-b-cleanup-target,
+  .mode-b-cleanup-target.mode-b-cleanup-exploding,
+  .mode-b-smoke-puff {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 
 @keyframes smashImpactFlash {

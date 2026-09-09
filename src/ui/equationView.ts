@@ -7,6 +7,8 @@ export interface EquationViewCallbacks {
   onReplay: () => void;
   onNotYet?: (term: 'coefficient') => void;
   onApplyEquals?: () => void;
+  onModeBCleanup?: () => void;
+  onActivateModeBRhs?: () => void;
   onBlastRhs?: () => void;
   onBlastSimplify?: () => void;
   onBlastModeDSide?: (side: 'lhs' | 'rhs') => void;
@@ -21,6 +23,8 @@ export class EquationView {
   private onReplayCallback: () => void;
   private onNotYetCallback?: (term: 'coefficient') => void;
   private onApplyEqualsCallback?: () => void;
+  private onModeBCleanupCallback?: () => void;
+  private onActivateModeBRhsCallback?: () => void;
   private onBlastRhsCallback?: () => void;
   private onBlastSimplifyCallback?: () => void;
   private onBlastModeDSideCallback?: (side: 'lhs' | 'rhs') => void;
@@ -37,6 +41,8 @@ export class EquationView {
     this.onReplayCallback = callbacks.onReplay;
     this.onNotYetCallback = callbacks.onNotYet;
     this.onApplyEqualsCallback = callbacks.onApplyEquals;
+    this.onModeBCleanupCallback = callbacks.onModeBCleanup;
+    this.onActivateModeBRhsCallback = callbacks.onActivateModeBRhs;
     this.onBlastRhsCallback = callbacks.onBlastRhs;
     this.onBlastSimplifyCallback = callbacks.onBlastSimplify;
     this.onBlastModeDSideCallback = callbacks.onBlastModeDSide;
@@ -166,7 +172,106 @@ export class EquationView {
       return;
     }
 
-    // 3. Mode B: Balancing Phase (showing both sides balanced and inverse cancelling)
+    // 3. Mode B: reveal one side at a time, then leave the identity in place
+    // until the learner sweeps it with the laser.
+    if (mode === 'mode_b' && (phase === 'balancing' || phase === 'awaiting_cleanup') && balancedDisplay) {
+      const isCoeff = carriedTerm === 'coefficient' || stage === 'undo_coefficient';
+      const lhsApplied = balancedDisplay.lhsApplied;
+      const rhsApplied = balancedDisplay.rhsApplied;
+      const cleanupIsLive = phase === 'awaiting_cleanup' && !balancedDisplay.lhsCleaned;
+      const cleanupId = cleanupIsLive ? 'id="mode-b-cleanup-target"' : '';
+      const cleanupClass = cleanupIsLive ? 'mode-b-cleanup-target' : 'mode-b-cleanup-preview';
+      const rhsCanActivate = phase === 'awaiting_cleanup' && !balancedDisplay.rhsActivated && !balancedDisplay.rhsSolved;
+      const rhsTargetId = rhsCanActivate ? 'id="mode-b-rhs-target"' : 'id="arithmetic-rhs"';
+      const rhsTargetClass = rhsCanActivate ? 'mode-b-solve-target' : '';
+      const variableHtml = currentA > 1
+        ? `<span class="math-symbol">${currentA}<span class="term-variable">Y</span></span>`
+        : `<span class="math-symbol term-variable">Y</span>`;
+
+      let leftHtml: string;
+      if (!lhsApplied) {
+        const originalConstant = currentB === 0
+          ? ''
+          : `<span class="term-tile ${currentB < 0 ? 'op-minus' : 'op-plus'}">${currentB < 0 ? '&minus;' : '+'} ${Math.abs(currentB)}</span>`;
+        leftHtml = `${variableHtml}${originalConstant}`;
+      } else if (balancedDisplay.lhsCleaned) {
+        leftHtml = isCoeff
+          ? `<span class="math-symbol term-variable">Y</span>`
+          : variableHtml;
+      } else if (isCoeff) {
+        leftHtml = `
+          <div ${cleanupId} class="${cleanupClass} op-divide" role="button" aria-label="Blast away ${currentA} divided by ${currentA}">
+            <div class="fraction mode-b-identity-fraction">
+              <div class="num">${currentA}</div>
+              <div class="fraction-bar"></div>
+              <div class="denom">${state.forgedOperation?.forgedOperand || currentA}</div>
+            </div>
+          </div>
+          <span class="math-symbol term-variable">Y</span>
+        `;
+      } else {
+        const isNeg = currentB < 0;
+        const originalSign = isNeg ? '&minus;' : '+';
+        const forgedSign = isNeg ? '+' : '&minus;';
+        leftHtml = `
+          ${variableHtml}
+          <div ${cleanupId} class="${cleanupClass} ${isNeg ? 'op-plus' : 'op-minus'}" role="button" aria-label="Blast away the cancelling pair">
+            <span>${originalSign} ${Math.abs(currentB)}</span>
+            <span>${forgedSign} ${Math.abs(currentB)}</span>
+          </div>
+        `;
+      }
+
+      let rightHtml = `<span class="math-symbol">${currentC}</span>`;
+      if (balancedDisplay.rhsSolved) {
+        rightHtml = `<span class="math-symbol mode-b-rhs-solved">${currentC}</span>`;
+      } else if (rhsApplied) {
+        if (isCoeff) {
+          rightHtml = `
+            <div ${rhsTargetId} class="collapsing-arithmetic-section mode-b-rhs-operation ${rhsTargetClass}">
+              <div class="fraction op-divide">
+                <div class="num">${currentC}</div>
+                <div class="fraction-bar"></div>
+                <div class="denom">${state.forgedOperation?.forgedOperand || currentA}</div>
+              </div>
+            </div>
+          `;
+        } else {
+          const forgedSign = state.forgedOperation?.forgedOperator === '+' ? '+' : '&minus;';
+          rightHtml = `<div ${rhsTargetId} class="collapsing-arithmetic-section mode-b-rhs-operation ${rhsTargetClass}"><span class="math-symbol">${currentC} ${forgedSign} ${state.forgedOperation?.forgedOperand || Math.abs(currentB)}</span></div>`;
+        }
+      }
+
+      const banner = phase === 'awaiting_cleanup'
+        ? (balancedDisplay.lhsCleaned
+            ? 'Great! Now solve the calculation on the right.'
+            : (balancedDisplay.rhsSolved
+                ? 'Great! Now sweep away the identity on the left.'
+                : (balancedDisplay.rhsActivated
+                    ? 'Choose either side: sweep the identity or solve the calculation.'
+                    : 'Sweep the identity, or point at the right side to calculate it.')))
+        : (rhsApplied ? 'Both sides changed!' : (lhsApplied ? 'Now applying the same power to the right side...' : 'Powering up both sides...'));
+
+      this.container.innerHTML = `
+        ${historyHtml}
+        <div class="equation-rail mode-b-rail mode-b-balance-rail">
+          <div class="equation-side equation-lhs">${leftHtml}</div>
+          <div class="math-symbol symbol-equals">=</div>
+          <div class="equation-side equation-rhs">${rightHtml}</div>
+        </div>
+        <div class="operation-banner balanced-banner">${banner}</div>
+      `;
+
+      this.container.querySelector('#mode-b-cleanup-target')?.addEventListener('click', () => {
+        this.onModeBCleanupCallback?.();
+      });
+      this.container.querySelector('#mode-b-rhs-target')?.addEventListener('click', () => {
+        this.onActivateModeBRhsCallback?.();
+      });
+      return;
+    }
+
+    // Legacy Mode B balancing renderer (kept for non-Mode-B callers).
     if (phase === 'balancing' && balancedDisplay) {
       const isCoeff = carriedTerm === 'coefficient' || stage === 'undo_coefficient';
       let leftHtml = '';
@@ -338,7 +443,7 @@ export class EquationView {
       // Coefficient
       if (currentA > 1) {
         leftHtml += `
-          <div id="term-coefficient" class="term-tile op-times ${isCoeff ? 'selected-term' : ''}" data-term="coefficient">
+          <div id="term-coefficient" class="term-tile op-times ${isCoeff && !isApplying ? 'selected-term' : ''}" data-term="coefficient">
             ${currentA}
           </div>
           <div class="math-symbol term-times op-times">x</div>
@@ -353,7 +458,7 @@ export class EquationView {
         const isNeg = currentB < 0;
         const absB = Math.abs(currentB);
         leftHtml += `
-          <div id="term-constant" class="term-tile ${isNeg ? 'op-minus' : 'op-plus'} ${isConst ? 'selected-term' : ''}" data-term="constant">
+          <div id="term-constant" class="term-tile ${isNeg ? 'op-minus' : 'op-plus'} ${isConst && !isApplying ? 'selected-term' : ''}" data-term="constant">
             ${isNeg ? '−' : '+'} ${absB}
           </div>
         `;
@@ -884,6 +989,12 @@ export class EquationView {
     const simpRhs = this.container.querySelector<HTMLElement>('#simplify-target-rhs');
     if (simpRhs) targets.push({ id: 'simplify-target-rhs', type: 'term', element: simpRhs });
 
+    const modeBCleanup = this.container.querySelector<HTMLElement>('#mode-b-cleanup-target');
+    if (modeBCleanup) targets.push({ id: 'mode-b-cleanup-target', type: 'term', element: modeBCleanup });
+
+    const modeBRhs = this.container.querySelector<HTMLElement>('#mode-b-rhs-target');
+    if (modeBRhs) targets.push({ id: 'mode-b-rhs-target', type: 'term', element: modeBRhs });
+
     return targets;
   }
 
@@ -912,6 +1023,14 @@ export class EquationView {
     if (simplifyTarget) {
       simplifyTarget.classList.toggle('active', isHovered);
     }
+    const modeBCleanup = this.container.querySelector('#mode-b-cleanup-target');
+    if (modeBCleanup) {
+      modeBCleanup.classList.toggle('active', isHovered);
+    }
+    const modeBRhs = this.container.querySelector('#mode-b-rhs-target');
+    if (modeBRhs) {
+      modeBRhs.classList.toggle('active', isHovered);
+    }
     const blastTargetLhs = this.container.querySelector('#equation-side-lhs.blast-target-side');
     if (blastTargetLhs) {
       blastTargetLhs.classList.toggle('active', isHovered);
@@ -935,6 +1054,26 @@ export class EquationView {
         lhsEl.style.opacity = '0';
       }, 250);
     }
+  }
+
+  public triggerModeBCleanup(onComplete: () => void, reducedMotion: boolean = false) {
+    const target = this.container.querySelector<HTMLElement>('#mode-b-cleanup-target');
+    if (!target || reducedMotion) {
+      onComplete();
+      return;
+    }
+
+    target.classList.add('mode-b-cleanup-exploding');
+    for (let i = 0; i < 12; i++) {
+      const puff = document.createElement('span');
+      puff.className = 'mode-b-smoke-puff';
+      puff.style.setProperty('--puff-angle', `${i * 30}deg`);
+      puff.style.setProperty('--puff-distance', `${42 + (i % 4) * 10}px`);
+      puff.style.animationDelay = `${(i % 3) * 35}ms`;
+      target.appendChild(puff);
+    }
+
+    window.setTimeout(onComplete, 620);
   }
 
   /**
@@ -1013,6 +1152,8 @@ export class EquationView {
     if (!rail || !eq) return null;
     const railRect = rail.getBoundingClientRect();
     const eqRect = eq.getBoundingClientRect();
+    const lhsSideRect = this.container.querySelector<HTMLElement>('.equation-lhs')?.getBoundingClientRect();
+    const rhsSideRect = this.container.querySelector<HTMLElement>('.equation-rhs')?.getBoundingClientRect();
 
     const lhsEl = this.container.querySelector<HTMLElement>('#term-constant') 
       || this.container.querySelector<HTMLElement>('#term-coefficient') 
@@ -1034,15 +1175,21 @@ export class EquationView {
       height: eqRect.height
     };
 
-    const hoverY = railRect.top - 65;
+    const holdingY = railRect.bottom + 48;
+    const lhsHoldingX = lhsSideRect
+      ? lhsSideRect.left + lhsSideRect.width / 2
+      : lhsRect.left + lhsRect.width / 2;
+    const rhsHoldingX = rhsSideRect
+      ? rhsSideRect.left + rhsSideRect.width / 2
+      : rhsRect.left + rhsRect.width / 2;
 
     return {
       left: {
-        hover: { x: lhsRect.left + lhsRect.width / 2, y: hoverY },
+        hover: { x: lhsHoldingX, y: holdingY },
         smash: { x: lhsRect.left + lhsRect.width / 2, y: lhsRect.top + lhsRect.height / 2 }
       },
       right: {
-        hover: { x: rhsRect.left + rhsRect.width / 2, y: hoverY },
+        hover: { x: rhsHoldingX, y: holdingY },
         smash: { x: rhsRect.left + rhsRect.width / 2, y: rhsRect.top + rhsRect.height / 2 }
       }
     };

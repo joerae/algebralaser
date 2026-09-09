@@ -8,6 +8,8 @@ export interface ModeInteractionCallbacks {
   onNotYetRequested?: (term: 'coefficient') => void;
   onForgeRequested?: (sign: '+' | '-' | '−' | '×' | '÷') => void;
   onApplyEqualsRequested?: () => void;
+  onModeBCleanupRequested?: () => void;
+  onModeBPickupRequested?: (term: 'constant' | 'coefficient', source: { x: number; y: number }, finger: { x: number; y: number }) => void;
   onBlasterSelected?: (blaster: '+' | '-' | '−' | '×' | '÷' | 'calc') => void;
   onSmashLhsRequested?: () => void;
   onBlastRhsRequested?: () => void;

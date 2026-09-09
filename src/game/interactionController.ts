@@ -40,6 +40,8 @@ export class InteractionController {
   public onNotYetRequested?: (term: 'coefficient') => void;
   public onForgeRequested?: (sign: OperationSign) => void;
   public onApplyEqualsRequested?: () => void;
+  public onModeBCleanupRequested?: () => void;
+  public onModeBPickupRequested?: (term: 'constant' | 'coefficient', source: { x: number; y: number }, finger: { x: number; y: number }) => void;
   public onBlasterSelected?: (blaster: BlasterType) => void;
   public onSmashLhsRequested?: () => void;
   public onBlastRhsRequested?: () => void;
@@ -74,6 +76,8 @@ export class InteractionController {
       onNotYetRequested: this.onNotYetRequested,
       onForgeRequested: this.onForgeRequested,
       onApplyEqualsRequested: this.onApplyEqualsRequested,
+      onModeBCleanupRequested: this.onModeBCleanupRequested,
+      onModeBPickupRequested: this.onModeBPickupRequested,
       onBlasterSelected: this.onBlasterSelected,
       onSmashLhsRequested: this.onSmashLhsRequested,
       onBlastRhsRequested: this.onBlastRhsRequested,

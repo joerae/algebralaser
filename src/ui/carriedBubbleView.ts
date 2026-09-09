@@ -14,6 +14,8 @@ export class CarriedBubbleView {
   private bubbleEl: HTMLElement | null;
   private termEl: HTMLElement | null;
   private captionEl: HTMLElement | null;
+  private twinEl: HTMLElement | null;
+  private twinTermEl: HTMLElement | null;
   private ringFillEl: SVGCircleElement | null;
   private circumference: number = 2 * Math.PI * 45; // ~282.74
 
@@ -26,6 +28,8 @@ export class CarriedBubbleView {
     this.bubbleEl = bubbleEl;
     this.termEl = bubbleEl?.querySelector('.bubble-term') || null;
     this.captionEl = bubbleEl?.querySelector('.bubble-caption') || null;
+    this.twinEl = bubbleEl?.querySelector('.bubble-twin') || null;
+    this.twinTermEl = bubbleEl?.querySelector('.bubble-twin-term') || null;
     this.ringFillEl = bubbleEl?.querySelector<SVGCircleElement>('.bubble-ring-fill') || null;
   }
 
@@ -36,6 +40,7 @@ export class CarriedBubbleView {
   public hide(): void {
     if (!this.bubbleEl) return;
     this.bubbleEl.style.display = 'none';
+    if (this.twinEl) this.twinEl.style.display = 'none';
     if (this.ringFillEl) {
       this.ringFillEl.style.strokeDashoffset = `${this.circumference}`;
     }
@@ -97,27 +102,27 @@ export class CarriedBubbleView {
       if (dropTargetEl) {
         const rect = dropTargetEl.getBoundingClientRect();
         const targetCenterY = rect.top + rect.height / 2;
+        let aimX = targetX;
+        let aimY = targetY;
 
         if (laserRay && laserRay.active) {
           const t = (targetCenterY - laserRay.origin.y) / laserRay.direction.y;
           if (t > 0) {
-            targetX = laserRay.origin.x + t * laserRay.direction.x;
-            targetY = targetCenterY;
+            aimX = laserRay.origin.x + t * laserRay.direction.x;
+            aimY = targetCenterY;
           }
         }
 
         const isNearRail = (
-          targetX >= rect.left - 40 &&
-          targetX <= rect.right + 40 &&
-          targetY >= rect.top - 45 &&
-          targetY <= rect.bottom + 45
+          aimX >= rect.left - 40 &&
+          aimX <= rect.right + 40 &&
+          aimY >= rect.top - 45 &&
+          aimY <= rect.bottom + 45
         );
 
         isSnapped = isNearRail;
 
         if (isSnapped) {
-          targetY = targetCenterY;
-          targetX = Math.max(rect.left + 35, Math.min(rect.right - 35, targetX));
           isDestinationHovered = true;
           if (!this.wasSnapped) {
             soundManager.playSnap();
@@ -139,10 +144,12 @@ export class CarriedBubbleView {
     this.bubbleEl.style.left = `${targetX}px`;
     this.bubbleEl.style.top = `${targetY}px`;
     this.bubbleEl.classList.toggle('snapped', isSnapped);
+    this.bubbleEl.classList.toggle('double-charge', gameState.phase === 'applying');
     this.bubbleEl.classList.remove('op-plus', 'op-minus', 'op-times', 'op-divide');
 
     // 3. Phase-specific bubble content
     if (gameState.phase === 'forging') {
+      if (this.twinEl) this.twinEl.style.display = 'none';
       this.bubbleEl.classList.remove('crossed');
       if (this.termEl) {
         if (gameState.carriedTerm === 'constant') {
@@ -171,6 +178,11 @@ export class CarriedBubbleView {
           ? 'op-plus' 
           : (forged.forgedOperator === '-' ? 'op-minus' : (forged.forgedOperator === '×' ? 'op-times' : 'op-divide'));
         this.bubbleEl.classList.add(opClass);
+        if (this.twinEl) {
+          this.twinEl.className = `bubble-twin ${opClass}`;
+          this.twinEl.style.display = 'flex';
+        }
+        if (this.twinTermEl) this.twinTermEl.textContent = `${opSymbol}${forged.forgedOperand}`;
       }
 
       if (isSnapped) {
@@ -189,7 +201,7 @@ export class CarriedBubbleView {
         }
 
         if (this.captionEl) {
-          this.captionEl.textContent = progress >= 0.9 ? 'SPLIT!' : 'Hold to balance ⚖️';
+          this.captionEl.textContent = '';
         }
 
         if (progress >= 1.0) {
@@ -201,10 +213,11 @@ export class CarriedBubbleView {
           this.ringFillEl.style.strokeDashoffset = `${this.circumference}`;
         }
         if (this.captionEl) {
-          this.captionEl.textContent = 'Drag to equation ☝️';
+          this.captionEl.textContent = '';
         }
       }
     } else if (gameState.phase === 'carrying') {
+      if (this.twinEl) this.twinEl.style.display = 'none';
       const isCrossed = targetX >= equalsX;
 
       if (isCrossed && !this.wasCrossed) {

@@ -10,7 +10,7 @@ import { ForgePanelView, ForgeSign } from './ui/forgePanelView';
 import { BlasterPanelView } from './ui/blasterPanelView';
 import { InversePanelView } from './ui/inversePanelView';
 import { CarriedBubbleView } from './ui/carriedBubbleView';
-import { runSplitBalanceAnimation } from './ui/animations/splitBalanceAnimation';
+import { runForgeRoundTripAnimation, runPickupToFingerAnimation, runSplitBalanceAnimation } from './ui/animations/splitBalanceAnimation';
 import { getModeDefinition } from './game/modeRegistry';
 import { classifyHandPose } from './vision/poseClassifier';
 import { computeLaserRay } from './vision/coordinateTransform';
@@ -45,6 +45,9 @@ class App {
   private inversePanelEl: HTMLElement | null = null;
   private isCameraRunning: boolean = false;
   private isSplitting: boolean = false;
+  private isModeBCleanupAnimating: boolean = false;
+  private isModeBForgeAnimating: boolean = false;
+  private isModeBPickupAnimating: boolean = false;
   private isModeDForgeAnimating: boolean = false;
   private cachedTargets: InteractiveTarget[] = [];
   private needTargetsRefresh: boolean = true;
@@ -86,6 +89,11 @@ class App {
 
     // Wire arithmetic RHS collapse animation before advancing to next step
     this.game.onBeforeCorrectAdvance = (correctVal, done) => {
+      const state = this.game.getState();
+      if (state.mode === 'mode_b' && state.phase === 'awaiting_cleanup') {
+        done();
+        return;
+      }
       this.equationView.triggerCollapse(correctVal, done);
     };
 
@@ -105,6 +113,14 @@ class App {
 
     this.interaction.onApplyEqualsRequested = () => {
       this.triggerSplitAndBalance();
+    };
+
+    this.interaction.onModeBCleanupRequested = () => {
+      this.triggerModeBCleanup();
+    };
+
+    this.interaction.onModeBPickupRequested = (term, source, finger) => {
+      this.handleModeBPickup(term, source, finger);
     };
 
     // Wire Mode C callbacks
@@ -149,6 +165,8 @@ class App {
       onReplay: () => this.game.restartLevel(),
       onNotYet: () => this.equationView.triggerNotYet(),
       onApplyEquals: () => this.triggerSplitAndBalance(),
+      onModeBCleanup: () => this.triggerModeBCleanup(),
+      onActivateModeBRhs: () => this.game.activateModeBRhsCalculation(),
       onBlastRhs: () => {
         this.game.shootRhs();
         this.needTargetsRefresh = true;
@@ -236,10 +254,46 @@ class App {
   }
 
   private handleForgeSign(sign: ForgeSign) {
+    if (this.isModeBForgeAnimating || this.isModeBPickupAnimating) return;
+    const before = this.game.getState();
+    const target = this.forgePanelView.getCardCenter(sign);
+    const from = this.interaction.getState().carriedPosition;
     const ok = this.game.forge(sign);
     if (ok) {
       this.forgePanelView.triggerSuccess(sign);
       this.needTargetsRefresh = true;
+      if (target && from && this.splitLeftEl && before.carriedTerm) {
+        const operand = before.carriedTerm === 'constant' ? Math.abs(before.currentB) : before.currentA;
+        const originalSymbol = before.carriedTerm === 'constant'
+          ? `${before.currentB < 0 ? '\u2212' : '+'}${operand}`
+          : `\u00d7${operand}`;
+        const forgedSymbol = `${sign === '-' || sign === '−' ? '\u2212' : sign}${operand}`;
+        const originalClass = before.carriedTerm === 'constant'
+          ? (before.currentB < 0 ? 'op-minus' : 'op-plus')
+          : 'op-times';
+        const forgedClass = sign === '+'
+          ? 'op-plus'
+          : (sign === '-' || sign === '−' ? 'op-minus' : (sign === '×' ? 'op-times' : 'op-divide'));
+
+        this.isModeBForgeAnimating = true;
+        this.carriedBubbleView.hide();
+        runForgeRoundTripAnimation({
+          bubbleEl: this.splitLeftEl,
+          twinEl: this.splitRightEl || undefined,
+          from,
+          to: target,
+          originalSymbol,
+          forgedSymbol,
+          originalClass,
+          forgedClass,
+          getReturnPosition: () => this.interaction.getState().carriedPosition,
+          reducedMotion: this.game.reducedMotion,
+          onComplete: () => {
+            this.isModeBForgeAnimating = false;
+            this.needTargetsRefresh = true;
+          }
+        });
+      }
     } else {
       this.forgePanelView.triggerShake(sign);
       this.carriedBubbleView.triggerNahUhShake();
@@ -249,6 +303,38 @@ class App {
   private handleSelectBlaster(blaster: BlasterType) {
     this.game.selectBlaster(blaster);
     this.needTargetsRefresh = true;
+  }
+
+  private handleModeBPickup(
+    term: 'constant' | 'coefficient',
+    source: { x: number; y: number },
+    finger: { x: number; y: number }
+  ) {
+    const before = this.game.getState();
+    if (!this.game.pickup(term) || !this.splitRightEl) return;
+
+    const operand = term === 'constant' ? Math.abs(before.currentB) : before.currentA;
+    const symbol = term === 'constant'
+      ? `${before.currentB < 0 ? '\u2212' : '+'}${operand}`
+      : `\u00d7${operand}`;
+    const operationClass = term === 'constant'
+      ? (before.currentB < 0 ? 'op-minus' : 'op-plus')
+      : 'op-times';
+
+    this.isModeBPickupAnimating = true;
+    this.carriedBubbleView.hide();
+    runPickupToFingerAnimation({
+      bubbleEl: this.splitRightEl,
+      source,
+      finger,
+      symbol,
+      operationClass,
+      reducedMotion: this.game.reducedMotion,
+      onComplete: () => {
+        this.isModeBPickupAnimating = false;
+        this.needTargetsRefresh = true;
+      }
+    });
   }
 
   private handleModeDInverseChoice(choiceId: string) {
@@ -278,16 +364,23 @@ class App {
   }
 
   private triggerSplitAndBalance() {
-    if (this.isSplitting) return;
+    if (this.isSplitting || this.isModeBForgeAnimating || this.isModeBPickupAnimating) return;
     this.isSplitting = true;
+    const splitSource = this.interaction.getState().carriedPosition || undefined;
     this.carriedBubbleView.hide();
 
     const targets = this.equationView.getSplitTargets();
     const eqRect = this.equationView.getEqualsRect();
 
+    if (!this.game.applyBalance()) {
+      this.isSplitting = false;
+      return;
+    }
+
     if (!targets || !eqRect || !this.splitLeftEl || !this.splitRightEl) {
-      this.game.applyBalance();
-      this.game.cancelLhs();
+      this.game.revealModeBBalanceSide('lhs');
+      this.game.revealModeBBalanceSide('rhs');
+      this.game.finishModeBBalance();
       this.isSplitting = false;
       this.needTargetsRefresh = true;
       return;
@@ -302,21 +395,41 @@ class App {
       forgedOp: state.forgedOperation,
       targets,
       eqCenter,
+      source: splitSource,
       onLhsImpact: () => {
-        this.equationView.triggerLhsCancelFlash();
+        this.game.revealModeBBalanceSide('lhs');
+        this.needTargetsRefresh = true;
+      },
+      onRhsImpact: () => {
+        this.game.revealModeBBalanceSide('rhs');
+        this.needTargetsRefresh = true;
       },
       onComplete: () => {
         this.isSplitting = false;
-        this.game.applyBalance();
-        this.game.cancelLhs();
+        this.game.finishModeBBalance();
         this.needTargetsRefresh = true;
-      }
+      },
+      reducedMotion: this.game.reducedMotion
     });
+  }
+
+  private triggerModeBCleanup() {
+    if (this.isModeBCleanupAnimating || this.game.getState().phase !== 'awaiting_cleanup') return;
+    this.isModeBCleanupAnimating = true;
+    this.equationView.triggerModeBCleanup(() => {
+      this.isModeBCleanupAnimating = false;
+      this.game.cancelLhs();
+      this.needTargetsRefresh = true;
+    }, this.game.reducedMotion);
   }
 
   private updateView(state = this.game.getState(), extra = { currentLevel: this.game.getCurrentLevelNumber(), totalLevels: this.game.getTotalLevels() }) {
     this.equationView.render(state);
-    this.answersView.render(state.pendingArithmetic);
+    const showModeBAnswer = state.mode === 'mode_b'
+      && state.phase === 'awaiting_cleanup'
+      && !!state.balancedDisplay?.rhsActivated
+      && !state.balancedDisplay?.rhsSolved;
+    this.answersView.render((state.phase === 'question' || showModeBAnswer) ? state.pendingArithmetic : null);
     this.hudView.updateProgress(extra.currentLevel, extra.totalLevels);
     this.needTargetsRefresh = true;
 
@@ -329,7 +442,7 @@ class App {
       hintBadge.textContent = modeDef.getBadgeHint(state);
     }
 
-    if (state.phase === 'question') {
+    if (state.phase === 'question' || showModeBAnswer) {
       this.updateArrowAndLayout(state.phase);
     }
   }
@@ -457,7 +570,7 @@ class App {
     const gameState = this.game.getState();
 
     // Process Carried Bubble Position & Magnetic Snapping
-    const isCarryingLike = (gameState.phase === 'carrying' || gameState.phase === 'forging' || gameState.phase === 'applying') && gameState.carriedTerm && !this.carriedBubbleView.isBusy() && !this.isSplitting;
+    const isCarryingLike = (gameState.phase === 'carrying' || gameState.phase === 'forging' || gameState.phase === 'applying') && gameState.carriedTerm && !this.carriedBubbleView.isBusy() && !this.isSplitting && !this.isModeBForgeAnimating && !this.isModeBPickupAnimating;
 
     if (isCarryingLike) {
       const bubbleRes = this.carriedBubbleView.update(
@@ -476,7 +589,7 @@ class App {
       } else if (bubbleRes.triggerSplit) {
         this.triggerSplitAndBalance();
       }
-    } else if (!this.carriedBubbleView.isBusy() && !this.isSplitting) {
+    } else if (!this.carriedBubbleView.isBusy() && !this.isSplitting && !this.isModeBForgeAnimating && !this.isModeBPickupAnimating) {
       this.carriedBubbleView.hide();
     }
 
@@ -533,7 +646,7 @@ class App {
     const gameState = this.game.getState();
 
     // 1. Forge Panel on Left (visible during forging or applying in Mode B)
-    const isForgeVisible = gameState.mode === 'mode_b' && (phase === 'forging' || phase === 'applying');
+    const isForgeVisible = gameState.mode === 'mode_b' && phase === 'forging';
     if (isForgeVisible && this.cameraBoxEl && this.forgePanelEl) {
       const cameraRect = this.cameraBoxEl.getBoundingClientRect();
       const columnWidth = 165;
@@ -696,8 +809,12 @@ class App {
       return;
     }
 
-    // 3. Answers Column on Right (visible during question phase)
-    if (phase !== 'question') {
+    // 3. Answers Column on Right (also available during Mode B's parallel cleanup stage)
+    const showModeBAnswer = gameState.mode === 'mode_b'
+      && phase === 'awaiting_cleanup'
+      && !!gameState.balancedDisplay?.rhsActivated
+      && !gameState.balancedDisplay?.rhsSolved;
+    if (phase !== 'question' && !showModeBAnswer) {
       if (this.arrowSvgEl) this.arrowSvgEl.style.display = 'none';
       if (this.answersColumnEl) this.answersColumnEl.style.display = 'none';
       return;

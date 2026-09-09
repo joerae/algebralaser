@@ -10,7 +10,10 @@ import {
   formatEquationLine,
   forgeOpposite,
   applyToBothSides,
-  cancelLhsInverse
+  cancelLhsInverse,
+  revealModeBBalanceSide,
+  finishModeBBalance,
+  activateModeBRhsCalculation
 } from './linearEquation';
 import { 
   BENCHMARK_PUZZLE, 
@@ -224,13 +227,29 @@ describe('Linear Equation Mathematics & State Machine', () => {
     expect(state.balancedDisplay?.fullBalancedLine).toBe('3 x Y − 1 + 1 = 11 + 1');
     expect(state.equationHistory).toEqual(['3 x Y − 1 = 11']);
 
-    // Step 4: Cancel LHS inverse and calculate
+    expect(state.balancedDisplay?.lhsApplied).toBe(false);
+    expect(state.balancedDisplay?.rhsApplied).toBe(false);
+
+    // The power-up reveals one side at a time and cannot finish early.
+    state = revealModeBBalanceSide(state, 'lhs');
+    expect(state.balancedDisplay?.lhsApplied).toBe(true);
+    expect(state.balancedDisplay?.rhsApplied).toBe(false);
+    expect(finishModeBBalance(state).phase).toBe('balancing');
+    state = revealModeBBalanceSide(state, 'rhs');
+    state = finishModeBBalance(state);
+    expect(state.phase).toBe('awaiting_cleanup');
+
+    // Step 4: Blast away the LHS identity; RHS calculation remains available.
     state = cancelLhsInverse(state);
-    expect(state.phase).toBe('question');
+    expect(state.phase).toBe('awaiting_cleanup');
+    expect(state.balancedDisplay?.lhsCleaned).toBe(true);
     expect(state.pendingArithmetic?.operand1).toBe(11);
     expect(state.pendingArithmetic?.operand2).toBe(1);
     expect(state.pendingArithmetic?.operator).toBe('+');
     expect(state.pendingArithmetic?.correctAnswer).toBe(12);
+
+    state = activateModeBRhsCalculation(state);
+    expect(state.balancedDisplay?.rhsActivated).toBe(true);
 
     // Answer 12
     const ans1 = submitAnswer(state, 12);
@@ -263,18 +282,28 @@ describe('Linear Equation Mathematics & State Machine', () => {
     expect(state.phase).toBe('balancing');
     expect(state.equationHistory).toEqual(['3 x Y − 1 = 11', '3 x Y = 11 + 1', '3 x Y = 12']);
 
-    // Cancel LHS inverse
-    state = cancelLhsInverse(state);
-    expect(state.phase).toBe('question');
+    // Reveal both applications. This time solve the RHS first.
+    state = revealModeBBalanceSide(state, 'lhs');
+    state = revealModeBBalanceSide(state, 'rhs');
+    state = finishModeBBalance(state);
+    expect(state.phase).toBe('awaiting_cleanup');
+    state = activateModeBRhsCalculation(state);
+    expect(state.balancedDisplay?.rhsActivated).toBe(true);
     expect(state.pendingArithmetic?.operand1).toBe(12);
     expect(state.pendingArithmetic?.operand2).toBe(3);
     expect(state.pendingArithmetic?.operator).toBe('÷');
     expect(state.pendingArithmetic?.correctAnswer).toBe(4);
 
-    // Answer 4
+    // Answer 4 while the 3/3 cleanup is still available.
     const ans2 = submitAnswer(state, 4);
     expect(ans2.correct).toBe(true);
     state = ans2.state;
+    expect(state.phase).toBe('awaiting_cleanup');
+    expect(state.balancedDisplay?.rhsSolved).toBe(true);
+    expect(state.currentC).toBe(4);
+
+    // Blasting away 3/3 completes the step.
+    state = cancelLhsInverse(state);
     expect(state.currentA).toBe(1);
     expect(state.currentB).toBe(0);
     expect(state.currentC).toBe(4);
@@ -288,4 +317,3 @@ describe('Linear Equation Mathematics & State Machine', () => {
     ]);
   });
 });
-
