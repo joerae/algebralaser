@@ -9,6 +9,7 @@ import {
   BalancedDisplay, 
   OperationSign, 
   SolverStage,
+  GamePhase,
   BlasterType,
   BlasterState,
   ScaleTilt,

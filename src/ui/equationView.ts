@@ -81,6 +81,8 @@ export class EquationView {
           <div id="scale-pan-lhs" class="scale-pan scale-pan-lhs ${lhsInteractive} ${lhsGlow} ${lhsDownGlow}" role="button" title="Left scale pan"></div>
           <div class="scale-beam-bar"></div>
           <div id="scale-pan-rhs" class="scale-pan scale-pan-rhs ${rhsInteractive} ${rhsGlow} ${rhsDownGlow}" role="button" title="Right scale pan"></div>
+          <div id="scale-side-lhs" class="scale-side-target scale-side-lhs ${interactivePans ? 'interactive-scale-side' : ''}" aria-label="Left half of scale"></div>
+          <div id="scale-side-rhs" class="scale-side-target scale-side-rhs ${interactivePans ? 'interactive-scale-side' : ''}" aria-label="Right half of scale"></div>
         </div>
         <div class="scale-fulcrum-pivot">▲</div>
       </div>
@@ -636,6 +638,12 @@ export class EquationView {
       this.container.querySelector('#scale-pan-rhs')?.addEventListener('click', () => {
         this.onBlastModeDSideCallback?.('rhs');
       });
+      this.container.querySelector('#scale-side-lhs')?.addEventListener('click', () => {
+        this.onBlastModeDSideCallback?.('lhs');
+      });
+      this.container.querySelector('#scale-side-rhs')?.addEventListener('click', () => {
+        this.onBlastModeDSideCallback?.('rhs');
+      });
       if (isLhsBlastable) {
         this.container.querySelector('#equation-side-lhs')?.addEventListener('click', () => {
           this.onBlastModeDSideCallback?.('lhs');
@@ -852,6 +860,12 @@ export class EquationView {
     const scalePanRhs = this.container.querySelector<HTMLElement>('#scale-pan-rhs.interactive-pan');
     if (scalePanRhs) targets.push({ id: 'scale-pan-rhs', type: 'destination', element: scalePanRhs });
 
+    const scaleSideLhs = this.container.querySelector<HTMLElement>('#scale-side-lhs.interactive-scale-side');
+    if (scaleSideLhs) targets.push({ id: 'blast-target-scale-lhs', type: 'destination', element: scaleSideLhs });
+
+    const scaleSideRhs = this.container.querySelector<HTMLElement>('#scale-side-rhs.interactive-scale-side');
+    if (scaleSideRhs) targets.push({ id: 'blast-target-scale-rhs', type: 'destination', element: scaleSideRhs });
+
     const blastSideLhs = this.container.querySelector<HTMLElement>('#equation-side-lhs.blast-target-side');
     if (blastSideLhs) targets.push({ id: 'blast-target-lhs', type: 'destination', element: blastSideLhs });
 
@@ -1029,4 +1043,3 @@ export class EquationView {
     };
   }
 }
-

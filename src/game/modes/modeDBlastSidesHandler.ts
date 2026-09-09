@@ -98,8 +98,18 @@ export class ModeDBlastSidesHandler implements ModeInteractionHandler {
         return true;
       }
 
-      const isLhs = hit && (hit.targetId === 'scale-pan-lhs' || hit.targetId === 'blast-target-lhs' || hit.targetId === 'equation-side-lhs');
-      const isRhs = hit && (hit.targetId === 'scale-pan-rhs' || hit.targetId === 'blast-target-rhs' || hit.targetId === 'equation-side-rhs');
+      const isLhs = hit && (
+        hit.targetId === 'scale-pan-lhs' ||
+        hit.targetId === 'blast-target-lhs' ||
+        hit.targetId === 'blast-target-scale-lhs' ||
+        hit.targetId === 'equation-side-lhs'
+      );
+      const isRhs = hit && (
+        hit.targetId === 'scale-pan-rhs' ||
+        hit.targetId === 'blast-target-rhs' ||
+        hit.targetId === 'blast-target-scale-rhs' ||
+        hit.targetId === 'equation-side-rhs'
+      );
       const isBlastTarget = isLhs || isRhs;
 
       if (isBlastTarget && pose.isPointing) {

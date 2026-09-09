@@ -1,3 +1,11 @@
+Version 1.6.0
+Date: 2026-09-09
+
+Release Notes:
+- Completed Mode D: centered/tilting equation and scale, laser-selectable inverse cards, whole-side blast targets, travelling operand bubble, down-side glow, and preserved Y in division fractions.
+- Fixed Mode D build types and stabilized inverse-card DOM so dwell selection remains attached between animation frames.
+- Files: equationView.ts, inversePanelView.ts, canvasOverlay.ts, modeDBlastSidesHandler.ts, rayCaster/types, Mode D/C CSS, linearEquation.ts, and rayCaster.test.ts.
+
 Version 1.5.1
 Date: 2026-09-09
 

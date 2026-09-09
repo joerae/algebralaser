@@ -9,6 +9,7 @@ export class InversePanelView {
   private callbacks: InversePanelCallbacks;
   private cardElements: Map<string, { cardEl: HTMLElement; fillCircle: SVGCircleElement | null }> = new Map();
   private readonly circumference: number = 2 * Math.PI * 18; // ~113.1
+  private renderKey: string | null = null;
 
   constructor(container: HTMLElement, callbacks: InversePanelCallbacks) {
     this.container = container;
@@ -16,15 +17,23 @@ export class InversePanelView {
   }
 
   public render(visible: boolean, choices: InverseChoice[] = [], targetPrompt: string = 'What blasts it away?') {
-    this.cardElements.clear();
-
     if (!visible || choices.length === 0) {
+      this.renderKey = null;
+      this.cardElements.clear();
       this.container.innerHTML = '';
       this.container.style.display = 'none';
       return;
     }
 
     this.container.style.display = 'flex';
+    const nextRenderKey = JSON.stringify({
+      choices: choices.map(choice => [choice.id, choice.displayText]),
+      targetPrompt
+    });
+    if (this.renderKey === nextRenderKey) return;
+
+    this.renderKey = nextRenderKey;
+    this.cardElements.clear();
 
     const cardsHtml = choices.map((choice) => {
       const cardId = `inverse-choice-${choice.id}`;

@@ -1,7 +1,7 @@
 TODO
 
 
-Got halfway through this implementation plan I think! Need to finish it
+[x] Mode D implementation plan completed in v1.6.0.
 
 Mode D Scale Alignment, Blasting Enhancements & Bug Fixes
 This implementation plan addresses the 6 feedback items for Mode D and the balance scale system:

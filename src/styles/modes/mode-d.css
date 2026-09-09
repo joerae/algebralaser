@@ -116,6 +116,29 @@
   transform: scale(1.25);
 }
 
+/* Transparent, forgiving targets covering each complete half of the beam. */
+.scale-side-target {
+  position: absolute;
+  top: -18px;
+  bottom: -18px;
+  width: 50%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.scale-side-lhs {
+  left: 0;
+}
+
+.scale-side-rhs {
+  right: 0;
+}
+
+.scale-side-target.interactive-scale-side {
+  cursor: crosshair;
+  pointer-events: auto;
+}
+
 /* Unmatched Side Pulsing Glow */
 @keyframes unmatchedGlow {
   0%, 100% {
