@@ -4,7 +4,8 @@ import {
   HistorySnapshot, 
   PendingArithmetic, 
   CancellationDisplay, 
-  SolverMode, 
+  SolverMode,
+  DEFAULT_MODE,
   ForgedOperation, 
   BalancedDisplay, 
   OperationSign, 
@@ -74,7 +75,7 @@ export function createInitialModeDState(): ModeDState {
   };
 }
 
-export function createInitialState(problem: LinearEquationDef, mode: SolverMode = 'mode_a'): EquationState {
+export function createInitialState(problem: LinearEquationDef, mode: SolverMode = DEFAULT_MODE): EquationState {
   const stage = problem.b !== 0 
     ? 'undo_constant' 
     : (problem.a > 1 ? 'undo_coefficient' : 'solved');

@@ -1,4 +1,4 @@
-import { LinearEquationDef, EquationState, SolverMode, OperationSign, BlasterType } from '../math/types';
+import { LinearEquationDef, EquationState, SolverMode, DEFAULT_MODE, OperationSign, BlasterType } from '../math/types';
 import { 
   createInitialState, 
   pickUpTerm, 
@@ -35,7 +35,7 @@ export class GameController {
   private cancellationTimeout: number | null = null;
   public reducedMotion: boolean = false;
 
-  constructor(levels?: LinearEquationDef[], initialMode: SolverMode = 'mode_b') {
+  constructor(levels?: LinearEquationDef[], initialMode: SolverMode = DEFAULT_MODE) {
     this.levels = levels || generateCuratedLevelSet();
     this.state = createInitialState(this.levels[0], initialMode);
   }

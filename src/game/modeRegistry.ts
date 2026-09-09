@@ -1,4 +1,4 @@
-import { SolverMode, EquationState } from '../math/types';
+import { SolverMode, EquationState, DEFAULT_MODE } from '../math/types';
 
 export interface ModeDefinition {
   id: SolverMode;
@@ -259,5 +259,5 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
 ];
 
 export function getModeDefinition(mode: SolverMode): ModeDefinition {
-  return MODE_DEFINITIONS.find(m => m.id === mode) || MODE_DEFINITIONS[0];
+  return MODE_DEFINITIONS.find(m => m.id === mode) || MODE_DEFINITIONS.find(m => m.id === DEFAULT_MODE) || MODE_DEFINITIONS[0];
 }

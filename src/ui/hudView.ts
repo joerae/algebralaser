@@ -1,6 +1,6 @@
 import { soundManager } from '../audio/soundEffects';
 import versionText from '../data/version.txt?raw';
-import { SolverMode } from '../math/types';
+import { SolverMode, DEFAULT_MODE } from '../math/types';
 import { MODE_DEFINITIONS } from '../game/modeRegistry';
 
 export interface HudCallbacks {
@@ -24,7 +24,7 @@ export class HudView {
   private bannerEl: HTMLElement;
   private callbacks: HudCallbacks;
 
-  private currentMode: SolverMode = 'mode_a';
+  private currentMode: SolverMode = DEFAULT_MODE;
   private isMuted: boolean = false;
   private isCameraActive: boolean = false;
   private showDebug: boolean = false;
@@ -40,7 +40,7 @@ export class HudView {
     debug: HTMLElement,
     banner: HTMLElement,
     callbacks: HudCallbacks,
-    initialMode: SolverMode = 'mode_b'
+    initialMode: SolverMode = DEFAULT_MODE
   ) {
     this.headerEl = header;
     this.footerEl = footer;

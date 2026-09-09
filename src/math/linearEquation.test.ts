@@ -23,8 +23,8 @@ import {
 } from './puzzleGenerator';
 
 describe('Linear Equation Mathematics & State Machine', () => {
-  it('solves benchmark 3 x Y − 1 = 11 step by step and tracks equationHistory', () => {
-    let state = createInitialState(BENCHMARK_PUZZLE);
+  it('solves benchmark 3 x Y − 1 = 11 step by step and tracks equationHistory (Mode A)', () => {
+    let state = createInitialState(BENCHMARK_PUZZLE, 'mode_a');
     expect(state.phase).toBe('ready');
     expect(state.stage).toBe('undo_constant');
     expect(state.equationHistory).toEqual([]);
@@ -109,7 +109,7 @@ describe('Linear Equation Mathematics & State Machine', () => {
   });
 
   it('handles undo correctly during question and after step completion', () => {
-    let state = createInitialState(TUTORIAL_PUZZLE); // Y + 1 = 3
+    let state = createInitialState(TUTORIAL_PUZZLE, 'mode_a'); // Y + 1 = 3
     state = pickUpTerm(state, 'constant').state;
     state = commitDrop(state).state;
     expect(state.phase).toBe('question');
@@ -315,5 +315,10 @@ describe('Linear Equation Mathematics & State Machine', () => {
       '3 x Y = 12',
       'Y = 12 ÷ 3'
     ]);
+  });
+
+  it('defaults to Mode B when createInitialState is called without a mode argument', () => {
+    const state = createInitialState(BENCHMARK_PUZZLE);
+    expect(state.mode).toBe('mode_b');
   });
 });

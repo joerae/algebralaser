@@ -21,6 +21,7 @@ export type SolverStage =
   | 'solved';           // when a == 1 and b == 0
 
 export type SolverMode = 'mode_a' | 'mode_b' | 'mode_c' | 'mode_d';
+export const DEFAULT_MODE: SolverMode = 'mode_b';
 
 export type GamePhase =
   | 'ready'              // waiting for player to grab a term or fire blaster

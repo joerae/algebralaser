@@ -16,7 +16,7 @@ import { classifyHandPose } from './vision/poseClassifier';
 import { computeLaserRay } from './vision/coordinateTransform';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
 import { LaserRay } from './vision/types';
-import { SolverMode, BlasterType } from './math/types';
+import { SolverMode, DEFAULT_MODE, BlasterType } from './math/types';
 
 class App {
   private game: GameController;
@@ -79,7 +79,7 @@ class App {
     const bannerEl = document.getElementById('camera-banner') as HTMLElement;
 
     // 2. Core Controllers & Services
-    const savedMode = (localStorage.getItem('algebra_solver_mode') as SolverMode) || 'mode_b';
+    const savedMode = (localStorage.getItem('algebra_solver_mode') as SolverMode) || DEFAULT_MODE;
     this.game = new GameController(undefined, savedMode);
     this.interaction = new InteractionController(this.game);
     this.camera = new CameraManager();
