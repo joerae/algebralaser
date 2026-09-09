@@ -9,6 +9,8 @@ export interface EquationViewCallbacks {
   onApplyEquals?: () => void;
   onBlastRhs?: () => void;
   onBlastSimplify?: () => void;
+  onBlastModeDSide?: (side: 'lhs' | 'rhs') => void;
+  onSimplifyModeDSide?: (side: 'lhs' | 'rhs') => void;
 }
 
 export class EquationView {
@@ -21,6 +23,8 @@ export class EquationView {
   private onApplyEqualsCallback?: () => void;
   private onBlastRhsCallback?: () => void;
   private onBlastSimplifyCallback?: () => void;
+  private onBlastModeDSideCallback?: (side: 'lhs' | 'rhs') => void;
+  private onSimplifyModeDSideCallback?: (side: 'lhs' | 'rhs') => void;
 
   constructor(
     container: HTMLElement,
@@ -35,6 +39,8 @@ export class EquationView {
     this.onApplyEqualsCallback = callbacks.onApplyEquals;
     this.onBlastRhsCallback = callbacks.onBlastRhs;
     this.onBlastSimplifyCallback = callbacks.onBlastSimplify;
+    this.onBlastModeDSideCallback = callbacks.onBlastModeDSide;
+    this.onSimplifyModeDSideCallback = callbacks.onSimplifyModeDSide;
   }
 
   private renderHistory(historyLines: string[]): string {
@@ -48,17 +54,33 @@ export class EquationView {
     return `<div class="equation-history-container">${linesHtml}</div>`;
   }
 
-  private renderScale(tilt: ScaleTilt = 'balanced'): string {
-    const tiltClass = tilt === 'lhs_heavy' 
-      ? 'tilt-lhs-heavy' 
-      : (tilt === 'lhs_light' ? 'tilt-lhs-light' : 'tilt-balanced');
+  private renderScale(
+    tilt: ScaleTilt = 'balanced',
+    dynamicAngle?: number,
+    interactivePans: boolean = false,
+    glowingSide?: 'lhs' | 'rhs' | null,
+    downSide?: 'lhs' | 'rhs' | null
+  ): string {
+    const tiltClass = dynamicAngle !== undefined 
+      ? '' 
+      : (tilt === 'lhs_heavy' 
+          ? 'tilt-lhs-heavy' 
+          : (tilt === 'lhs_light' ? 'tilt-lhs-light' : 'tilt-balanced'));
+
+    const dynamicTransform = dynamicAngle !== undefined ? `style="transform: rotate(${dynamicAngle}deg);"` : '';
+    const lhsInteractive = interactivePans ? 'interactive-pan' : '';
+    const rhsInteractive = interactivePans ? 'interactive-pan' : '';
+    const lhsGlow = glowingSide === 'lhs' ? 'unmatched-side-glow' : '';
+    const rhsGlow = glowingSide === 'rhs' ? 'unmatched-side-glow' : '';
+    const lhsDownGlow = downSide === 'lhs' ? 'down-side-glow' : '';
+    const rhsDownGlow = downSide === 'rhs' ? 'down-side-glow' : '';
 
     return `
       <div class="scale-visual-container" aria-label="Balance Scale">
-        <div class="scale-beam-assembly ${tiltClass}">
-          <div class="scale-pan scale-pan-lhs"></div>
+        <div class="scale-beam-assembly mode-d-beam ${tiltClass}" ${dynamicTransform}>
+          <div id="scale-pan-lhs" class="scale-pan scale-pan-lhs ${lhsInteractive} ${lhsGlow} ${lhsDownGlow}" role="button" title="Left scale pan"></div>
           <div class="scale-beam-bar"></div>
-          <div class="scale-pan scale-pan-rhs"></div>
+          <div id="scale-pan-rhs" class="scale-pan scale-pan-rhs ${rhsInteractive} ${rhsGlow} ${rhsDownGlow}" role="button" title="Right scale pan"></div>
         </div>
         <div class="scale-fulcrum-pivot">▲</div>
       </div>
@@ -222,15 +244,82 @@ export class EquationView {
         exprHtml = `<span class="math-symbol ${opClass}" style="font-size: 54px;">${pendingArithmetic.operand1} ${opSymbol} ${pendingArithmetic.operand2}</span>`;
       }
 
-      const scaleHtml = mode === 'mode_c' ? this.renderScale('balanced') : '';
+      let railContentHtml = '';
+      if (mode === 'mode_d') {
+        const isSimplifyingLhs = state.modeDState?.activeSimplifyingSide === 'lhs';
+        if (isSimplifyingLhs) {
+          const isCoeff = state.modeDState?.targetTerm === 'coefficient';
+          const rhsDisplay = state.modeDState?.simplifiedRhs 
+            ? `${currentC}` 
+            : (state.modeDState?.rhsUnsimplified || `${currentC}`);
+
+          let lhsInner = '';
+          if (isCoeff) {
+            lhsInner = `
+              <div id="arithmetic-lhs" class="collapsing-arithmetic-section">
+                <div class="fraction op-divide" style="font-size: 50px;">
+                  <div class="num">${pendingArithmetic.operand1}<span class="term-variable">Y</span></div>
+                  <div class="fraction-bar"></div>
+                  <div class="denom">${pendingArithmetic.operand2}</div>
+                </div>
+              </div>
+            `;
+          } else {
+            const leftVar = currentA > 1 
+              ? `${currentA} <span class="term-times">x</span> <span class="term-variable">Y</span>` 
+              : `<span class="term-variable">Y</span>`;
+            lhsInner = `
+              <div class="math-symbol">${leftVar}</div>
+              <div id="arithmetic-lhs" class="collapsing-arithmetic-section">
+                ${exprHtml}
+              </div>
+            `;
+          }
+
+          railContentHtml = `
+            <div class="equation-side equation-lhs">
+              ${lhsInner}
+            </div>
+            <div class="math-symbol symbol-equals">=</div>
+            <div class="equation-side equation-rhs">
+              <div class="math-symbol">${rhsDisplay}</div>
+            </div>
+          `;
+        } else {
+          const lhsDisplay = state.modeDState?.simplifiedLhs 
+            ? (currentA > 1 ? `${currentA} <span class="term-times">x</span> <span class="term-variable">Y</span>` : `<span class="term-variable">Y</span>`)
+            : (state.modeDState?.lhsUnsimplified || leftSide);
+          railContentHtml = `
+            <div class="equation-side equation-lhs">
+              <div class="math-symbol">${lhsDisplay}</div>
+            </div>
+            <div class="math-symbol symbol-equals">=</div>
+            <div class="equation-side equation-rhs">
+              <div id="arithmetic-rhs" class="collapsing-arithmetic-section">
+                ${exprHtml}
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        railContentHtml = `
+          <div class="equation-side equation-lhs">
+            <div class="math-symbol">${leftSide}</div>
+          </div>
+          <div class="math-symbol symbol-equals">=</div>
+          <div class="equation-side equation-rhs">
+            <div id="arithmetic-rhs" class="collapsing-arithmetic-section">
+              ${exprHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      const scaleHtml = (mode === 'mode_c' || mode === 'mode_d') ? this.renderScale('balanced', 0) : '';
       this.container.innerHTML = `
         ${historyHtml}
-        <div class="equation-rail ${mode === 'mode_c' ? 'mode-c-rail' : ''}">
-          <div class="math-symbol">${leftSide}</div>
-          <div class="math-symbol symbol-equals">=</div>
-          <div id="arithmetic-rhs" class="collapsing-arithmetic-section">
-            ${exprHtml}
-          </div>
+        <div class="equation-rail ${(mode === 'mode_c' || mode === 'mode_d') ? 'mode-c-rail' : ''}">
+          ${railContentHtml}
         </div>
         ${scaleHtml}
       `;
@@ -279,9 +368,13 @@ export class EquationView {
       this.container.innerHTML = `
         ${historyHtml}
         <div id="equation-drop-target" class="equation-rail mode-b-rail ${isApplying ? 'applying-target' : ''} ${isDestinationHovered ? 'active' : ''}">
-          ${leftHtml}
+          <div class="equation-side equation-lhs">
+            ${leftHtml}
+          </div>
           ${equalsTargetHtml}
-          <div id="term-rhs" class="math-symbol">${currentC}</div>
+          <div class="equation-side equation-rhs">
+            <div id="term-rhs" class="math-symbol">${currentC}</div>
+          </div>
         </div>
       `;
 
@@ -314,10 +407,14 @@ export class EquationView {
       this.container.innerHTML = `
         ${historyHtml}
         <div class="equation-rail mode-c-rail">
-          ${leftVar}
+          <div class="equation-side equation-lhs">
+            ${leftVar}
+          </div>
           <div class="math-symbol symbol-equals">=</div>
-          <div id="term-rhs-mode-c" class="math-symbol blast-rhs-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Blast RHS with ${opSign}${opVal}">
-            ${currentC}
+          <div class="equation-side equation-rhs">
+            <div id="term-rhs-mode-c" class="math-symbol blast-rhs-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Blast RHS with ${opSign}${opVal}">
+              ${currentC}
+            </div>
           </div>
         </div>
         ${scaleHtml}
@@ -363,10 +460,14 @@ export class EquationView {
       this.container.innerHTML = `
         ${historyHtml}
         <div class="equation-rail mode-c-rail">
-          ${leftVar}
+          <div class="equation-side equation-lhs">
+            ${leftVar}
+          </div>
           <div class="math-symbol symbol-equals">=</div>
-          <div id="term-simplify-target" class="math-symbol blast-simplify-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Blast with Calculator to simplify">
-            ${rhsDisplay}
+          <div class="equation-side equation-rhs">
+            <div id="term-simplify-target" class="math-symbol blast-simplify-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Blast with Calculator to simplify">
+              ${rhsDisplay}
+            </div>
           </div>
         </div>
         ${scaleHtml}
@@ -377,6 +478,179 @@ export class EquationView {
 
       this.container.querySelector('#term-simplify-target')?.addEventListener('click', () => {
         this.onBlastSimplifyCallback?.();
+      });
+      return;
+    }
+
+    // 5d. Mode D: Blast Sides & Awaiting Simplify Phase
+    if (mode === 'mode_d' && (phase === 'blast_first_side' || phase === 'blast_second_side' || phase === 'awaiting_simplify')) {
+      const modeD = state.modeDState;
+      const op = modeD?.selectedInverse?.operator || '+';
+      const val = modeD?.selectedInverse?.operand || 0;
+      const isCoeff = stage === 'undo_coefficient';
+
+      // 1. Build Left Side HTML
+      let lhsHtml = '';
+      if (phase === 'awaiting_simplify') {
+        if (modeD?.simplifiedLhs) {
+          lhsHtml = isCoeff 
+            ? `<div class="math-symbol term-variable">Y</div>`
+            : (currentA > 1 
+                ? `<div class="math-symbol">${currentA} <span class="term-times op-times">x</span> <span class="term-variable">Y</span></div>` 
+                : `<div class="math-symbol term-variable">Y</div>`);
+        } else {
+          if (isCoeff) {
+            lhsHtml = `
+              <div id="simplify-target-lhs" class="pulsing-simplify-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Click to simplify LHS">
+                <div class="fraction-mode-d op-divide">
+                  <div class="num">${currentA}Y</div>
+                  <div class="fraction-bar"></div>
+                  <div class="denom">${val}</div>
+                </div>
+              </div>
+            `;
+          } else {
+            const leftVar = currentA > 1 ? `${currentA} <span class="term-times op-times">x</span> <span class="term-variable">Y</span>` : `<span class="term-variable">Y</span>`;
+            const origB = currentB < 0 ? `− ${Math.abs(currentB)}` : `+ ${currentB}`;
+            lhsHtml = `
+              <div id="simplify-target-lhs" class="pulsing-simplify-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Click to simplify LHS">
+                <span class="math-symbol">${leftVar} ${origB} ${op} ${val}</span>
+              </div>
+            `;
+          }
+        }
+      } else if (phase === 'blast_second_side' && modeD?.blastedLhs) {
+        if (isCoeff) {
+          lhsHtml = `
+            <div class="fraction-mode-d op-divide">
+              <div class="num">${currentA}Y</div>
+              <div class="fraction-bar"></div>
+              <div class="denom">${val}</div>
+            </div>
+          `;
+        } else {
+          const leftVar = currentA > 1 ? `${currentA} <span class="term-times op-times">x</span> <span class="term-variable">Y</span>` : `<span class="term-variable">Y</span>`;
+          const origB = currentB < 0 ? `− ${Math.abs(currentB)}` : `+ ${currentB}`;
+          lhsHtml = `<div class="math-symbol">${leftVar} ${origB} ${op} ${val}</div>`;
+        }
+      } else {
+        lhsHtml = isCoeff
+          ? `<div class="term-tile op-times">${currentA}</div><div class="math-symbol term-times op-times">x</div><div class="math-symbol term-variable">Y</div>`
+          : (currentA > 1
+              ? `<div class="term-tile op-times">${currentA}</div><div class="math-symbol term-times op-times">x</div><div class="math-symbol term-variable">Y</div><div class="term-tile ${currentB < 0 ? 'op-minus' : 'op-plus'}">${currentB < 0 ? '−' : '+'} ${Math.abs(currentB)}</div>`
+              : `<div class="math-symbol term-variable">Y</div><div class="term-tile ${currentB < 0 ? 'op-minus' : 'op-plus'}">${currentB < 0 ? '−' : '+'} ${Math.abs(currentB)}</div>`);
+      }
+
+      // 2. Equals Sign (dimmed when unbalanced)
+      const isUnbalanced = phase === 'blast_second_side';
+      const equalsHtml = `<div class="math-symbol symbol-equals ${isUnbalanced ? 'dimmed-equals' : ''}">=</div>`;
+
+      // 3. Build Right Side HTML
+      let rhsHtml = '';
+      if (phase === 'awaiting_simplify') {
+        if (modeD?.simplifiedRhs) {
+          rhsHtml = `<div class="math-symbol">${currentC}</div>`;
+        } else {
+          if (isCoeff) {
+            rhsHtml = `
+              <div id="simplify-target-rhs" class="pulsing-simplify-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Click to simplify RHS">
+                <div class="fraction-mode-d op-divide">
+                  <div class="num">${currentC}</div>
+                  <div class="fraction-bar"></div>
+                  <div class="denom">${val}</div>
+                </div>
+              </div>
+            `;
+          } else {
+            rhsHtml = `
+              <div id="simplify-target-rhs" class="pulsing-simplify-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Click to simplify RHS">
+                <span class="math-symbol">${currentC} ${op} ${val}</span>
+              </div>
+            `;
+          }
+        }
+      } else if (phase === 'blast_second_side' && modeD?.blastedRhs) {
+        if (isCoeff) {
+          rhsHtml = `
+            <div class="fraction-mode-d op-divide">
+              <div class="num">${currentC}</div>
+              <div class="fraction-bar"></div>
+              <div class="denom">${val}</div>
+            </div>
+          `;
+        } else {
+          rhsHtml = `<div class="math-symbol">${currentC} ${op} ${val}</div>`;
+        }
+      } else {
+        rhsHtml = `<div class="math-symbol">${currentC}</div>`;
+      }
+
+      // 4. Scale with dynamic tilt & downSide glow
+      const tiltAngle = modeD?.tiltAngle || 0;
+      const isPanBlasting = phase === 'blast_first_side' || phase === 'blast_second_side';
+      const glowingSide: 'lhs' | 'rhs' | null = phase === 'blast_second_side'
+        ? (modeD?.blastedLhs ? 'rhs' : 'lhs')
+        : (phase === 'blast_first_side' ? 'lhs' : null);
+      const downSide: 'lhs' | 'rhs' | null = tiltAngle !== 0 ? (tiltAngle < 0 ? 'lhs' : 'rhs') : null;
+
+      const scaleHtml = this.renderScale('balanced', tiltAngle, isPanBlasting, glowingSide, downSide);
+
+      // Wide blast targets
+      const isLhsBlastable = isPanBlasting && !modeD?.blastedLhs;
+      const isRhsBlastable = isPanBlasting && !modeD?.blastedRhs && !!modeD?.blastedLhs;
+
+      // Dynamic tilt on equation rail matching the scale!
+      const dynamicRailTransform = `style="transform: rotate(${tiltAngle}deg);"`;
+
+      // 5. Operation Banner
+      let bannerText = '';
+      if (phase === 'blast_first_side') {
+        bannerText = `Aim laser anywhere on the left side to blast ${op}${val} onto it! 💥`;
+      } else if (phase === 'blast_second_side') {
+        bannerText = `Scale is unbalanced! Blast ${op}${val} onto the right side to restore balance! ⚖️`;
+      } else {
+        bannerText = `Both sides match! Point at an unsimplified term to calculate and simplify it. 🖩`;
+      }
+
+      this.container.innerHTML = `
+        ${historyHtml}
+        <div class="equation-rail mode-c-rail" ${dynamicRailTransform}>
+          <div id="equation-side-lhs" class="equation-side equation-lhs ${isLhsBlastable ? 'blast-target-side' : ''} ${isLhsBlastable && isDestinationHovered ? 'active' : ''}" role="${isLhsBlastable ? 'button' : ''}" title="${isLhsBlastable ? `Blast left side with ${op}${val}` : ''}">
+            ${lhsHtml}
+          </div>
+          ${equalsHtml}
+          <div id="equation-side-rhs" class="equation-side equation-rhs ${isRhsBlastable ? 'blast-target-side' : ''} ${isRhsBlastable && isDestinationHovered ? 'active' : ''}" role="${isRhsBlastable ? 'button' : ''}" title="${isRhsBlastable ? `Blast right side with ${op}${val}` : ''}">
+            ${rhsHtml}
+          </div>
+        </div>
+        ${scaleHtml}
+        <div class="operation-banner mode-c-banner">
+          ${bannerText}
+        </div>
+      `;
+
+      // Attach click listeners
+      this.container.querySelector('#scale-pan-lhs')?.addEventListener('click', () => {
+        this.onBlastModeDSideCallback?.('lhs');
+      });
+      this.container.querySelector('#scale-pan-rhs')?.addEventListener('click', () => {
+        this.onBlastModeDSideCallback?.('rhs');
+      });
+      if (isLhsBlastable) {
+        this.container.querySelector('#equation-side-lhs')?.addEventListener('click', () => {
+          this.onBlastModeDSideCallback?.('lhs');
+        });
+      }
+      if (isRhsBlastable) {
+        this.container.querySelector('#equation-side-rhs')?.addEventListener('click', () => {
+          this.onBlastModeDSideCallback?.('rhs');
+        });
+      }
+      this.container.querySelector('#simplify-target-lhs')?.addEventListener('click', () => {
+        this.onSimplifyModeDSideCallback?.('lhs');
+      });
+      this.container.querySelector('#simplify-target-rhs')?.addEventListener('click', () => {
+        this.onSimplifyModeDSideCallback?.('rhs');
       });
       return;
     }
@@ -431,14 +705,15 @@ export class EquationView {
       }
     }
 
-    // 7. Ready Phase (Standard equation with spaced interactive tiles)
+    // 7. Ready Phase & Mode D Choose Inverse Phase
     let leftHtml = '';
 
     // Coefficient + multiplication + Y
     if (currentA > 1) {
       const isInteractiveCoeff = stage === 'undo_coefficient';
-      const isNotYet = (mode === 'mode_b' || mode === 'mode_c') && currentB !== 0;
-      const coeffClass = isInteractiveCoeff ? 'interactive' : (isNotYet ? 'not-yet-target' : '');
+      const isNotYet = (mode === 'mode_b' || mode === 'mode_c' || mode === 'mode_d') && currentB !== 0;
+      const isSelected = mode === 'mode_d' && phase === 'choose_inverse' && state.modeDState?.targetTerm === 'coefficient';
+      const coeffClass = isSelected ? 'selected-term' : (isInteractiveCoeff ? 'interactive' : (isNotYet ? 'not-yet-target' : ''));
       leftHtml += `
         <div id="term-coefficient" class="term-tile op-times ${coeffClass}" data-term="coefficient">
           ${currentA}
@@ -455,21 +730,26 @@ export class EquationView {
       const isNeg = currentB < 0;
       const absB = Math.abs(currentB);
       const isInteractiveConst = stage === 'undo_constant';
+      const isSelected = mode === 'mode_d' && phase === 'choose_inverse' && state.modeDState?.targetTerm === 'constant';
       leftHtml += `
-        <div id="term-constant" class="term-tile ${isNeg ? 'op-minus' : 'op-plus'} ${isInteractiveConst ? 'interactive' : ''}" data-term="constant">
+        <div id="term-constant" class="term-tile ${isNeg ? 'op-minus' : 'op-plus'} ${isSelected ? 'selected-term' : (isInteractiveConst ? 'interactive' : '')}" data-term="constant">
           ${isNeg ? '−' : '+'} ${absB}
         </div>
       `;
     }
 
-    const scaleHtml = mode === 'mode_c' ? this.renderScale(state.blasterState?.scaleTilt || 'balanced') : '';
+    const scaleHtml = (mode === 'mode_c' || mode === 'mode_d') ? this.renderScale(state.blasterState?.scaleTilt || 'balanced') : '';
 
     this.container.innerHTML = `
       ${historyHtml}
-      <div class="equation-rail ${mode === 'mode_b' ? 'mode-b-rail' : (mode === 'mode_c' ? 'mode-c-rail' : '')}">
-        ${leftHtml}
+      <div class="equation-rail ${mode === 'mode_b' ? 'mode-b-rail' : ((mode === 'mode_c' || mode === 'mode_d') ? 'mode-c-rail' : '')}">
+        <div class="equation-side equation-lhs">
+          ${leftHtml}
+        </div>
         <div class="math-symbol symbol-equals">=</div>
-        <div class="math-symbol">${currentC}</div>
+        <div class="equation-side equation-rhs">
+          <div class="math-symbol">${currentC}</div>
+        </div>
       </div>
       ${scaleHtml}
       <div id="equation-feedback-banner" class="operation-banner" style="display: ${state.errorMessage ? 'block' : 'none'}; background: rgba(244, 63, 94, 0.18); border-color: #f43f5e; color: #fecdd3;">
@@ -565,6 +845,26 @@ export class EquationView {
     const simplifyTarget = this.container.querySelector<HTMLElement>('#term-simplify-target');
     if (simplifyTarget) targets.push({ id: 'term-simplify-target', type: 'destination', element: simplifyTarget });
 
+    // Mode D: Scale pan and wide equation side targets
+    const scalePanLhs = this.container.querySelector<HTMLElement>('#scale-pan-lhs.interactive-pan');
+    if (scalePanLhs) targets.push({ id: 'scale-pan-lhs', type: 'destination', element: scalePanLhs });
+
+    const scalePanRhs = this.container.querySelector<HTMLElement>('#scale-pan-rhs.interactive-pan');
+    if (scalePanRhs) targets.push({ id: 'scale-pan-rhs', type: 'destination', element: scalePanRhs });
+
+    const blastSideLhs = this.container.querySelector<HTMLElement>('#equation-side-lhs.blast-target-side');
+    if (blastSideLhs) targets.push({ id: 'blast-target-lhs', type: 'destination', element: blastSideLhs });
+
+    const blastSideRhs = this.container.querySelector<HTMLElement>('#equation-side-rhs.blast-target-side');
+    if (blastSideRhs) targets.push({ id: 'blast-target-rhs', type: 'destination', element: blastSideRhs });
+
+    // Mode D: Simplify targets
+    const simpLhs = this.container.querySelector<HTMLElement>('#simplify-target-lhs');
+    if (simpLhs) targets.push({ id: 'simplify-target-lhs', type: 'term', element: simpLhs });
+
+    const simpRhs = this.container.querySelector<HTMLElement>('#simplify-target-rhs');
+    if (simpRhs) targets.push({ id: 'simplify-target-rhs', type: 'term', element: simpRhs });
+
     return targets;
   }
 
@@ -592,6 +892,14 @@ export class EquationView {
     const simplifyTarget = this.container.querySelector('#term-simplify-target');
     if (simplifyTarget) {
       simplifyTarget.classList.toggle('active', isHovered);
+    }
+    const blastTargetLhs = this.container.querySelector('#equation-side-lhs.blast-target-side');
+    if (blastTargetLhs) {
+      blastTargetLhs.classList.toggle('active', isHovered);
+    }
+    const blastTargetRhs = this.container.querySelector('#equation-side-rhs.blast-target-side');
+    if (blastTargetRhs) {
+      blastTargetRhs.classList.toggle('active', isHovered);
     }
   }
 

@@ -6,6 +6,7 @@ import { ModeInteractionHandler, ModeVisionContext, ModeKeyContext, ModeInteract
 import { ModeACarrier } from './modes/modeACarrier';
 import { ModeBForgeHandler } from './modes/modeBForgeHandler';
 import { ModeCBlasterHandler } from './modes/modeCBlasterHandler';
+import { ModeDBlastSidesHandler } from './modes/modeDBlastSidesHandler';
 
 export interface InteractionState {
   laserRay: LaserRay | null;
@@ -57,7 +58,8 @@ export class InteractionController {
     this.modeHandlers = {
       mode_a: new ModeACarrier(),
       mode_b: new ModeBForgeHandler(),
-      mode_c: new ModeCBlasterHandler()
+      mode_c: new ModeCBlasterHandler(),
+      mode_d: new ModeDBlastSidesHandler()
     };
   }
 

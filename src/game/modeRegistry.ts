@@ -182,6 +182,73 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
       }
       return 'Equip a blaster on the left, then blast LHS to smash free and balance.';
     }
+  },
+  {
+    id: 'mode_d',
+    title: 'Mode D: Blast Sides (Select inverse & blast both sides of scale)',
+    label: 'Mode D: Blast Sides',
+    icon: '🎯',
+    description: 'Choose inverse operations and blast whole sides to balance',
+    getInstruction(state: EquationState): string {
+      return this.getPedagogicalHint(state);
+    },
+    getBadgeHint(state: EquationState): string {
+      switch (state.phase) {
+        case 'ready':
+          return 'Identify what to undo ☝️';
+        case 'choose_inverse':
+          return 'Select inverse on left ⚡';
+        case 'blast_first_side':
+          return 'Blast first side 💥';
+        case 'blast_second_side':
+          return 'Balance other side ⚖️';
+        case 'awaiting_simplify':
+          return 'Point to simplify 🖩';
+        case 'question':
+          return 'Aim laser at answer 👉';
+        case 'solved':
+          return 'Show Open Palm 👋 or Point Next';
+        default:
+          return 'Blast Sides 🎯';
+      }
+    },
+    getPedagogicalHint(state: EquationState): string {
+      const { stage, currentB, currentA, phase, pendingArithmetic, modeDState } = state;
+      if (phase === 'question' && pendingArithmetic) {
+        return pendingArithmetic.explanation;
+      }
+      if (phase === 'ready') {
+        if (stage === 'undo_constant') {
+          const signStr = currentB < 0 ? '−' : '+';
+          const val = Math.abs(currentB);
+          return `What should you undo first? Point laser at ${signStr}${val}.`;
+        }
+        if (stage === 'undo_coefficient') {
+          return `What should you undo next? Point laser at ${currentA} in ${currentA}x.`;
+        }
+      }
+      if (phase === 'choose_inverse') {
+        const targetStr = modeDState?.targetTerm === 'constant'
+          ? (currentB < 0 ? `−${Math.abs(currentB)}` : `+${currentB}`)
+          : `×${currentA}`;
+        return `What blasts away ${targetStr}? Choose the inverse operation on the left panel!`;
+      }
+      if (phase === 'blast_first_side') {
+        const opStr = modeDState?.selectedInverse?.displayText || '';
+        return `Blast ${opStr} onto the scale pan to apply it to the whole side!`;
+      }
+      if (phase === 'blast_second_side') {
+        const opStr = modeDState?.selectedInverse?.displayText || '';
+        return `Scale is unbalanced! Blast ${opStr} onto the glowing other side to restore balance!`;
+      }
+      if (phase === 'awaiting_simplify') {
+        return 'Both sides match! Point at an unsimplified term to calculate and simplify it.';
+      }
+      if (phase === 'solved') {
+        return 'Equation balanced and solved! Look at the balance check, then continue.';
+      }
+      return 'Choose the inverse operation and blast both complete sides to balance.';
+    }
   }
 ];
 

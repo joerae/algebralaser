@@ -12,7 +12,11 @@ import {
   equipBlaster,
   blastLhs,
   blastRhs,
-  blastSimplify
+  blastSimplify,
+  identifyModeDTarget,
+  selectModeDInverse,
+  blastModeDSide,
+  activateModeDSimplify
 } from '../math/linearEquation';
 import { soundManager } from '../audio/soundEffects';
 import { generateCuratedLevelSet } from '../math/puzzleGenerator';
@@ -195,6 +199,60 @@ export class GameController {
     }
     this.notify();
     return res.success;
+  }
+
+  public identifyModeDTarget(term: 'constant' | 'coefficient'): boolean {
+    if (this.state.mode !== 'mode_d' || this.state.phase !== 'ready') return false;
+    const res = identifyModeDTarget(this.state, term);
+    this.state = res.state;
+    if (res.success) {
+      soundManager.playPickup();
+    } else if (res.notYet) {
+      soundManager.playNotYet();
+    }
+    this.notify();
+    return res.success;
+  }
+
+  public selectModeDInverse(choiceId: string): boolean {
+    if (this.state.mode !== 'mode_d' || this.state.phase !== 'choose_inverse') return false;
+    const res = selectModeDInverse(this.state, choiceId);
+    this.state = res.state;
+    if (res.success) {
+      soundManager.playBlasterEquip();
+    } else if (res.notYet) {
+      soundManager.playNotYet();
+    }
+    this.notify();
+    return res.success;
+  }
+
+  public blastModeDSide(side: 'lhs' | 'rhs'): boolean {
+    if (this.state.mode !== 'mode_d') return false;
+    const isFirstBlast = this.state.phase === 'blast_first_side';
+    const res = blastModeDSide(this.state, side);
+    if (!res.success) return false;
+
+    this.state = res.state;
+    if (isFirstBlast) {
+      soundManager.playSmashFree();
+      setTimeout(() => soundManager.playScaleTilt(), 100);
+    } else {
+      soundManager.playScaleBalance();
+    }
+    this.notify();
+    return true;
+  }
+
+  public startSimplifyingSide(side: 'lhs' | 'rhs'): boolean {
+    if (this.state.mode !== 'mode_d' || this.state.phase !== 'awaiting_simplify') return false;
+    const res = activateModeDSimplify(this.state, side);
+    if (!res.success) return false;
+
+    this.state = res.state;
+    soundManager.playPickup();
+    this.notify();
+    return true;
   }
 
   public onBeforeCorrectAdvance?: (correctVal: number, done: () => void) => void;

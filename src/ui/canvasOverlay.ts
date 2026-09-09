@@ -260,8 +260,13 @@ export class CanvasOverlay {
     if (blasterInfo?.carriedOperandText) {
       let badgeX = origin.x;
       let badgeY = origin.y;
-      const isTargetingRhs = hit && hit.targetId === 'term-rhs-mode-c';
-      if (isTargetingRhs) {
+      const isTargeting = hit && (
+        hit.targetId === 'term-rhs-mode-c' ||
+        hit.targetId.startsWith('scale-pan-') ||
+        hit.targetId.startsWith('blast-target-') ||
+        hit.targetId.startsWith('equation-side-')
+      );
+      if (isTargeting) {
         const progress = Math.min(1, Math.max(0, blasterInfo.dwellProgress || 0));
         badgeX = origin.x + (endX - origin.x) * progress;
         badgeY = origin.y + (endY - origin.y) * progress;

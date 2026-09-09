@@ -8,6 +8,7 @@ import { AnswersView } from './ui/answersView';
 import { HudView } from './ui/hudView';
 import { ForgePanelView, ForgeSign } from './ui/forgePanelView';
 import { BlasterPanelView } from './ui/blasterPanelView';
+import { InversePanelView } from './ui/inversePanelView';
 import { CarriedBubbleView } from './ui/carriedBubbleView';
 import { runSplitBalanceAnimation } from './ui/animations/splitBalanceAnimation';
 import { getModeDefinition } from './game/modeRegistry';
@@ -27,6 +28,7 @@ class App {
   private answersView: AnswersView;
   private forgePanelView: ForgePanelView;
   private blasterPanelView: BlasterPanelView;
+  private inversePanelView: InversePanelView;
   private carriedBubbleView: CarriedBubbleView;
   private hudView: HudView;
   private raySmoother: RaySmoother;
@@ -40,6 +42,7 @@ class App {
   private answersColumnEl: HTMLElement | null = null;
   private forgePanelEl: HTMLElement | null = null;
   private blasterPanelEl: HTMLElement | null = null;
+  private inversePanelEl: HTMLElement | null = null;
   private isCameraRunning: boolean = false;
   private isSplitting: boolean = false;
   private cachedTargets: InteractiveTarget[] = [];
@@ -59,10 +62,12 @@ class App {
     this.answersColumnEl = document.getElementById('answers-column');
     this.forgePanelEl = document.getElementById('forge-panel');
     this.blasterPanelEl = document.getElementById('blaster-panel');
+    this.inversePanelEl = document.getElementById('inverse-panel');
     const equationArea = document.getElementById('equation-area') as HTMLElement;
     const answersColumn = document.getElementById('answers-column') as HTMLElement;
     const forgePanel = document.getElementById('forge-panel') as HTMLElement;
     const blasterPanel = document.getElementById('blaster-panel') as HTMLElement;
+    const inversePanel = document.getElementById('inverse-panel') as HTMLElement;
     const hudHeader = document.getElementById('hud-header') as HTMLElement;
     const hudFooter = document.getElementById('hud-footer') as HTMLElement;
     const modalEl = document.getElementById('settings-modal') as HTMLElement;
@@ -131,6 +136,9 @@ class App {
         if (this.game.getState().mode === 'mode_c') {
           this.game.shootLhs();
           this.needTargetsRefresh = true;
+        } else if (this.game.getState().mode === 'mode_d') {
+          this.game.identifyModeDTarget(term);
+          this.needTargetsRefresh = true;
         } else {
           this.game.pickup(term);
         }
@@ -147,6 +155,14 @@ class App {
       onBlastSimplify: () => {
         this.game.shootSimplify();
         this.needTargetsRefresh = true;
+      },
+      onBlastModeDSide: (side) => {
+        this.game.blastModeDSide(side);
+        this.needTargetsRefresh = true;
+      },
+      onSimplifyModeDSide: (side) => {
+        this.game.startSimplifyingSide(side);
+        this.needTargetsRefresh = true;
       }
     });
 
@@ -160,6 +176,13 @@ class App {
 
     this.blasterPanelView = new BlasterPanelView(blasterPanel, {
       onSelectBlaster: (blaster) => this.handleSelectBlaster(blaster)
+    });
+
+    this.inversePanelView = new InversePanelView(inversePanel, {
+      onSelectChoice: (choiceId) => {
+        this.game.selectModeDInverse(choiceId);
+        this.needTargetsRefresh = true;
+      }
     });
 
     this.hudView = new HudView(hudHeader, hudFooter, modalEl, debugEl, bannerEl, {
@@ -431,6 +454,7 @@ class App {
     // 60 FPS lightweight updates
     this.forgePanelView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
     this.blasterPanelView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
+    this.inversePanelView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
     this.equationView.setDestinationHovered(interState.isDestinationHovered);
     this.answersView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
 
@@ -443,10 +467,10 @@ class App {
     }
 
     let blasterInfo: BlasterOverlayInfo | undefined = undefined;
-    if (gameState.mode === 'mode_c') {
+    if (gameState.mode === 'mode_c' || gameState.mode === 'mode_d') {
       const operand = gameState.blasterState?.carriedOperand;
       blasterInfo = {
-        type: gameState.blasterState?.equipped || null,
+        type: gameState.blasterState?.equipped || (gameState.modeDState?.selectedInverse?.operator || null),
         carriedOperandText: operand ? `${operand.operator}${operand.value}` : null,
         dwellProgress: interState.dwellProgress
       };
@@ -541,6 +565,69 @@ class App {
     } else {
       if (this.blasterPanelEl) this.blasterPanelEl.style.display = 'none';
       this.blasterPanelView.render(false);
+    }
+
+    // Mode D: Inverse Panel on Left (visible during 'choose_inverse' phase)
+    const isInverseVisible = gameState.mode === 'mode_d' && phase === 'choose_inverse';
+    if (isInverseVisible && this.cameraBoxEl && this.inversePanelEl) {
+      const cameraRect = this.cameraBoxEl.getBoundingClientRect();
+      const columnWidth = 175;
+      let left = cameraRect.left - columnWidth - 18;
+      if (left < 10) left = 10;
+
+      this.inversePanelEl.style.display = 'flex';
+      const prompt = gameState.modeDState?.targetTerm === 'constant'
+        ? `What blasts away ${gameState.currentB < 0 ? `−${Math.abs(gameState.currentB)}` : `+${gameState.currentB}`}?`
+        : `What blasts away ×${gameState.currentA}?`;
+
+      this.inversePanelView.render(true, gameState.modeDState?.inverseChoices || [], prompt);
+
+      const headerEl = this.inversePanelEl.querySelector<HTMLElement>('.inverse-header');
+      const headerHeight = headerEl ? headerEl.offsetHeight + 8 : 50;
+      const top = Math.max(10, cameraRect.top - headerHeight);
+      const totalHeight = cameraRect.height + (cameraRect.top - top);
+
+      this.inversePanelEl.style.left = `${left}px`;
+      this.inversePanelEl.style.top = `${top}px`;
+      this.inversePanelEl.style.width = `${columnWidth}px`;
+      this.inversePanelEl.style.height = `${totalHeight}px`;
+      this.inversePanelEl.style.right = 'auto';
+
+      const cardsContainer = this.inversePanelEl.querySelector<HTMLElement>('.inverse-cards-list');
+      if (cardsContainer) {
+        cardsContainer.style.height = `${cameraRect.height}px`;
+        cardsContainer.style.flex = '0 0 auto';
+      }
+    } else {
+      if (this.inversePanelEl) this.inversePanelEl.style.display = 'none';
+      this.inversePanelView.render(false);
+    }
+
+    // Downward Arrow during Mode D choose_inverse
+    if (gameState.mode === 'mode_d' && phase === 'choose_inverse' && this.inversePanelEl && this.arrowSvgEl && this.arrowPathEl) {
+      const termEl = document.getElementById('term-constant') || document.getElementById('term-coefficient');
+      const headerEl = this.inversePanelEl.querySelector<HTMLElement>('.inverse-header') || this.inversePanelEl;
+
+      if (termEl && headerEl) {
+        const termRect = termEl.getBoundingClientRect();
+        const headerRect = headerEl.getBoundingClientRect();
+
+        const startX = termRect.left + termRect.width / 2;
+        const startY = termRect.bottom + 6;
+        const endX = headerRect.right + 8;
+        const endY = headerRect.top + headerRect.height / 2;
+
+        const cp1X = startX;
+        const cp1Y = startY + (endY - startY) * 0.45;
+        const cp2X = endX + 40;
+        const cp2Y = endY;
+
+        const d = `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+        this.arrowPathEl.setAttribute('d', d);
+        this.arrowSvgEl.style.display = 'block';
+      }
+      if (this.answersColumnEl) this.answersColumnEl.style.display = 'none';
+      return;
     }
 
     // 2. Downward Arrow to Top of Forge Area during 'forging' phase (Mode B)
@@ -687,6 +774,28 @@ class App {
       blasterTargets.forEach(t => {
         const rect = t.element.getBoundingClientRect();
         const pad = 22;
+        targets.push({
+          id: t.id,
+          type: t.type,
+          rect: {
+            left: rect.left - pad,
+            top: rect.top - pad,
+            right: rect.right + pad,
+            bottom: rect.bottom + pad,
+            width: rect.width + pad * 2,
+            height: rect.height + pad * 2
+          },
+          enabled: true,
+          priority: 2
+        });
+      });
+    }
+
+    if (gameState.mode === 'mode_d' && gameState.phase === 'choose_inverse') {
+      const inverseTargets = this.inversePanelView.getInteractiveElements();
+      inverseTargets.forEach(t => {
+        const rect = t.element.getBoundingClientRect();
+        const pad = 16;
         targets.push({
           id: t.id,
           type: t.type,

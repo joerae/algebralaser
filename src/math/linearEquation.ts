@@ -12,9 +12,11 @@ import {
   BlasterType,
   BlasterState,
   ScaleTilt,
-  UnsimplifiedExpression
+  UnsimplifiedExpression,
+  ModeDState,
+  InverseChoice
 } from './types';
-import { createPendingArithmetic } from './puzzleGenerator';
+import { createPendingArithmetic, shuffleArray } from './puzzleGenerator';
 
 export function formatEquationLine(a: number, b: number, c: number): string {
   let left = '';
@@ -55,6 +57,22 @@ export function createInitialBlasterState(): BlasterState {
   };
 }
 
+export function createInitialModeDState(): ModeDState {
+  return {
+    targetTerm: null,
+    inverseChoices: [],
+    selectedInverse: null,
+    blastedLhs: false,
+    blastedRhs: false,
+    tiltAngle: 0,
+    lhsUnsimplified: null,
+    rhsUnsimplified: null,
+    simplifiedLhs: false,
+    simplifiedRhs: false,
+    activeSimplifyingSide: null
+  };
+}
+
 export function createInitialState(problem: LinearEquationDef, mode: SolverMode = 'mode_a'): EquationState {
   const stage = problem.b !== 0 
     ? 'undo_constant' 
@@ -71,7 +89,8 @@ export function createInitialState(problem: LinearEquationDef, mode: SolverMode 
     carriedTerm: null,
     forgedOperation: null,
     balancedDisplay: null,
-    blasterState: mode === 'mode_c' ? createInitialBlasterState() : undefined,
+    blasterState: (mode === 'mode_c' || mode === 'mode_d') ? createInitialBlasterState() : undefined,
+    modeDState: mode === 'mode_d' ? createInitialModeDState() : undefined,
     pendingArithmetic: null,
     cancellation: null,
     errorMessage: null,
@@ -92,10 +111,15 @@ function saveSnapshot(state: EquationState): HistorySnapshot {
     forgedOperation: state.forgedOperation ? { ...state.forgedOperation } : null,
     balancedDisplay: state.balancedDisplay ? { ...state.balancedDisplay } : null,
     blasterState: state.blasterState ? { ...state.blasterState } : undefined,
+    modeDState: state.modeDState ? {
+      ...state.modeDState,
+      inverseChoices: [...state.modeDState.inverseChoices]
+    } : undefined,
     pendingArithmetic: state.pendingArithmetic ? { ...state.pendingArithmetic } : null,
     equationHistory: [...state.equationHistory]
   };
 }
+
 
 export function pickUpTerm(
   state: EquationState, 
@@ -513,6 +537,385 @@ export function blastSimplify(
   };
 }
 
+export function generateModeDInverseChoices(
+  targetTerm: 'constant' | 'coefficient',
+  currentA: number,
+  currentB: number,
+  currentC: number,
+  rng: () => number = Math.random
+): InverseChoice[] {
+  let correctOp: OperationSign;
+  let correctVal: number;
+  let sameOp: OperationSign;
+  const rhsVal = Math.abs(currentC);
+
+  if (targetTerm === 'constant') {
+    const isNeg = currentB < 0;
+    const absB = Math.abs(currentB);
+    correctOp = isNeg ? '+' : '−';
+    sameOp = isNeg ? '−' : '+';
+    correctVal = absB;
+  } else {
+    correctOp = '÷';
+    sameOp = '×';
+    correctVal = currentA;
+  }
+
+  const choices: InverseChoice[] = [
+    {
+      id: 'inv-correct',
+      operator: correctOp,
+      operand: correctVal,
+      displayText: `${correctOp}${correctVal}`,
+      isCorrect: true
+    },
+    {
+      id: 'inv-distractor-same-op',
+      operator: sameOp,
+      operand: correctVal,
+      displayText: `${sameOp}${correctVal}`,
+      isCorrect: false
+    },
+    {
+      id: 'inv-distractor-rhs-inv',
+      operator: correctOp,
+      operand: rhsVal,
+      displayText: `${correctOp}${rhsVal}`,
+      isCorrect: false
+    },
+    {
+      id: 'inv-distractor-rhs-same',
+      operator: sameOp,
+      operand: rhsVal,
+      displayText: `${sameOp}${rhsVal}`,
+      isCorrect: false
+    }
+  ];
+
+  // If distractor operand duplicates correct choice, adjust distractor operand so all 4 choices are unique
+  const seen = new Set<string>();
+  for (let i = 0; i < choices.length; i++) {
+    let key = choices[i].displayText;
+    if (seen.has(key)) {
+      const newOperand = choices[i].operand + 2;
+      choices[i].operand = newOperand;
+      choices[i].displayText = `${choices[i].operator}${newOperand}`;
+    }
+    seen.add(choices[i].displayText);
+  }
+
+  return shuffleArray(choices, rng);
+}
+
+export function identifyModeDTarget(
+  state: EquationState,
+  term: 'constant' | 'coefficient',
+  rng: () => number = Math.random
+): { state: EquationState; success: boolean; notYet?: boolean; guideMessage?: string } {
+  if (state.mode !== 'mode_d' || state.phase !== 'ready') {
+    return { state, success: false };
+  }
+
+  if (term === 'coefficient' && state.currentB !== 0) {
+    const signStr = state.currentB < 0 ? '−' : '+';
+    const val = Math.abs(state.currentB);
+    const msg = `NOT YET — Undo ${signStr}${val} first!`;
+    return {
+      state: { ...state, errorMessage: msg },
+      success: false,
+      notYet: true,
+      guideMessage: msg
+    };
+  }
+
+  const choices = generateModeDInverseChoices(
+    term,
+    state.currentA,
+    state.currentB,
+    state.currentC,
+    rng
+  );
+
+  const history = [...state.history, saveSnapshot(state)];
+
+  return {
+    state: {
+      ...state,
+      history,
+      phase: 'choose_inverse',
+      errorMessage: null,
+      modeDState: {
+        ...(state.modeDState || createInitialModeDState()),
+        targetTerm: term,
+        inverseChoices: choices,
+        selectedInverse: null,
+        blastedLhs: false,
+        blastedRhs: false,
+        tiltAngle: 0,
+        lhsUnsimplified: null,
+        rhsUnsimplified: null,
+        simplifiedLhs: false,
+        simplifiedRhs: false,
+        activeSimplifyingSide: null
+      }
+    },
+    success: true
+  };
+}
+
+export function selectModeDInverse(
+  state: EquationState,
+  choiceId: string
+): { state: EquationState; success: boolean; notYet?: boolean; guideMessage?: string } {
+  if (state.mode !== 'mode_d' || state.phase !== 'choose_inverse' || !state.modeDState) {
+    return { state, success: false };
+  }
+
+  const choice = state.modeDState.inverseChoices.find(c => c.id === choiceId);
+  if (!choice) return { state, success: false };
+
+  if (!choice.isCorrect) {
+    const targetStr = state.modeDState.targetTerm === 'constant'
+      ? (state.currentB < 0 ? `−${Math.abs(state.currentB)}` : `+${state.currentB}`)
+      : `×${state.currentA}`;
+    const msg = `Not quite! ${choice.displayText} does not blast away ${targetStr}. Try another choice!`;
+    return {
+      state: { ...state, errorMessage: msg },
+      success: false,
+      notYet: true,
+      guideMessage: msg
+    };
+  }
+
+  const history = [...state.history, saveSnapshot(state)];
+
+  return {
+    state: {
+      ...state,
+      history,
+      phase: 'blast_first_side',
+      errorMessage: null,
+      modeDState: {
+        ...state.modeDState,
+        selectedInverse: choice
+      },
+      blasterState: {
+        equipped: choice.operator as BlasterType,
+        scaleTilt: 'balanced',
+        carriedOperand: {
+          operator: choice.operator,
+          value: choice.operand
+        },
+        rhsUnsimplified: null
+      }
+    },
+    success: true
+  };
+}
+
+export function calculateModeDTiltAngle(
+  blastedSide: 'lhs' | 'rhs',
+  operator: OperationSign,
+  operand: number
+): number {
+  let magnitude: number;
+  if (operator === '+' || operator === '-' || operator === '−') {
+    magnitude = Math.min(24, 10 + (operand - 1) * 2);
+  } else {
+    magnitude = Math.min(30, 16 + (operand - 2) * 4);
+  }
+
+  const isHeavier = operator === '+' || operator === '×';
+  if (blastedSide === 'lhs') {
+    return isHeavier ? magnitude : -magnitude;
+  } else {
+    return isHeavier ? -magnitude : magnitude;
+  }
+}
+
+export function blastModeDSide(
+  state: EquationState,
+  side: 'lhs' | 'rhs'
+): { state: EquationState; success: boolean; alreadyBlasted?: boolean } {
+  if (state.mode !== 'mode_d' || !state.modeDState || !state.modeDState.selectedInverse) {
+    return { state, success: false };
+  }
+
+  const { selectedInverse, blastedLhs, blastedRhs } = state.modeDState;
+
+  if ((side === 'lhs' && blastedLhs) || (side === 'rhs' && blastedRhs)) {
+    return { state, success: false, alreadyBlasted: true };
+  }
+
+  if (state.phase === 'blast_first_side') {
+    const history = [...state.history, saveSnapshot(state)];
+    const tiltAngle = calculateModeDTiltAngle(side, selectedInverse.operator, selectedInverse.operand);
+
+    let lhsUnsimplified = state.modeDState.lhsUnsimplified;
+    let rhsUnsimplified = state.modeDState.rhsUnsimplified;
+
+    if (side === 'lhs') {
+      if (selectedInverse.operator === '÷') {
+        lhsUnsimplified = `(${state.currentA}/${selectedInverse.operand})Y`;
+      } else {
+        const leftVar = state.currentA > 1 ? `${state.currentA} x Y` : 'Y';
+        const origB = state.currentB < 0 ? `− ${Math.abs(state.currentB)}` : `+ ${state.currentB}`;
+        lhsUnsimplified = `${leftVar} ${origB} ${selectedInverse.operator} ${selectedInverse.operand}`;
+      }
+    } else {
+      if (selectedInverse.operator === '÷') {
+        rhsUnsimplified = `${state.currentC}/${selectedInverse.operand}`;
+      } else {
+        rhsUnsimplified = `${state.currentC} ${selectedInverse.operator} ${selectedInverse.operand}`;
+      }
+    }
+
+    return {
+      state: {
+        ...state,
+        history,
+        phase: 'blast_second_side',
+        errorMessage: null,
+        modeDState: {
+          ...state.modeDState,
+          blastedLhs: side === 'lhs',
+          blastedRhs: side === 'rhs',
+          tiltAngle,
+          lhsUnsimplified,
+          rhsUnsimplified
+        },
+        blasterState: {
+          ...(state.blasterState || createInitialBlasterState()),
+          scaleTilt: tiltAngle > 0 ? 'lhs_heavy' : 'lhs_light',
+          carriedOperand: {
+            operator: selectedInverse.operator,
+            value: selectedInverse.operand
+          }
+        }
+      },
+      success: true
+    };
+  }
+
+  if (state.phase === 'blast_second_side') {
+    const history = [...state.history, saveSnapshot(state)];
+
+    let lhsUnsimplified = state.modeDState.lhsUnsimplified;
+    let rhsUnsimplified = state.modeDState.rhsUnsimplified;
+
+    if (side === 'lhs') {
+      if (selectedInverse.operator === '÷') {
+        lhsUnsimplified = `(${state.currentA}/${selectedInverse.operand})Y`;
+      } else {
+        const leftVar = state.currentA > 1 ? `${state.currentA} x Y` : 'Y';
+        const origB = state.currentB < 0 ? `− ${Math.abs(state.currentB)}` : `+ ${state.currentB}`;
+        lhsUnsimplified = `${leftVar} ${origB} ${selectedInverse.operator} ${selectedInverse.operand}`;
+      }
+    } else {
+      if (selectedInverse.operator === '÷') {
+        rhsUnsimplified = `${state.currentC}/${selectedInverse.operand}`;
+      } else {
+        rhsUnsimplified = `${state.currentC} ${selectedInverse.operator} ${selectedInverse.operand}`;
+      }
+    }
+
+    return {
+      state: {
+        ...state,
+        history,
+        phase: 'awaiting_simplify',
+        errorMessage: null,
+        modeDState: {
+          ...state.modeDState,
+          blastedLhs: true,
+          blastedRhs: true,
+          tiltAngle: 0,
+          lhsUnsimplified,
+          rhsUnsimplified,
+          simplifiedLhs: false,
+          simplifiedRhs: false,
+          activeSimplifyingSide: null
+        },
+        blasterState: {
+          equipped: null,
+          scaleTilt: 'balanced',
+          carriedOperand: null,
+          rhsUnsimplified: null
+        }
+      },
+      success: true
+    };
+  }
+
+  return { state, success: false };
+}
+
+export function activateModeDSimplify(
+  state: EquationState,
+  side: 'lhs' | 'rhs',
+  rng: () => number = Math.random
+): { state: EquationState; success: boolean } {
+  if (state.mode !== 'mode_d' || state.phase !== 'awaiting_simplify' || !state.modeDState) {
+    return { state, success: false };
+  }
+
+  if (side === 'lhs' && state.modeDState.simplifiedLhs) {
+    return { state, success: false };
+  }
+  if (side === 'rhs' && state.modeDState.simplifiedRhs) {
+    return { state, success: false };
+  }
+
+  const history = [...state.history, saveSnapshot(state)];
+  const selectedInverse = state.modeDState.selectedInverse!;
+  let pendingArithmetic: PendingArithmetic;
+
+  if (side === 'lhs') {
+    if (state.modeDState.targetTerm === 'constant') {
+      const absB = Math.abs(state.currentB);
+      pendingArithmetic = {
+        operand1: absB,
+        operand2: absB,
+        operator: selectedInverse.operator === '+' ? '-' : '+',
+        correctAnswer: 0,
+        choices: shuffleArray([0, absB, -absB], rng),
+        explanation: `${absB} − ${absB} = 0 (Cancels to zero!)`,
+        wrongHint: `Adding and subtracting the same number cancels to zero.`
+      };
+    } else {
+      const a = state.currentA;
+      pendingArithmetic = {
+        operand1: a,
+        operand2: a,
+        operator: '÷',
+        correctAnswer: 1,
+        choices: shuffleArray([1, a, 0], rng),
+        explanation: `${a} ÷ ${a} = 1 (1 x Y is just Y!)`,
+        wrongHint: `Any number divided by itself is 1.`
+      };
+    }
+  } else {
+    const c = state.currentC;
+    const val = selectedInverse.operand;
+    const op = selectedInverse.operator;
+    pendingArithmetic = createPendingArithmetic(c, val, op, rng);
+  }
+
+  return {
+    state: {
+      ...state,
+      history,
+      phase: 'question',
+      pendingArithmetic,
+      modeDState: {
+        ...state.modeDState,
+        activeSimplifyingSide: side
+      }
+    },
+    success: true
+  };
+}
+
 export function cancelCarry(state: EquationState): EquationState {
   if (state.phase !== 'carrying' && state.phase !== 'forging') return state;
   return {
@@ -632,6 +1035,84 @@ export function submitAnswer(
     };
   }
 
+  const history = [...state.history, saveSnapshot(state)];
+
+  // Mode D two-step simplification handling
+  if (state.mode === 'mode_d' && state.modeDState && state.modeDState.activeSimplifyingSide) {
+    const side = state.modeDState.activeSimplifyingSide;
+    const isLhs = side === 'lhs';
+    const newSimplifiedLhs = isLhs ? true : state.modeDState.simplifiedLhs;
+    const newSimplifiedRhs = !isLhs ? true : state.modeDState.simplifiedRhs;
+    const bothSimplified = newSimplifiedLhs && newSimplifiedRhs;
+
+    let newC = state.currentC;
+    let newA = state.currentA;
+    let newB = state.currentB;
+
+    if (!isLhs) {
+      newC = state.pendingArithmetic.correctAnswer;
+    }
+
+    if (bothSimplified) {
+      if (state.stage === 'undo_constant') {
+        newB = 0;
+      } else if (state.stage === 'undo_coefficient') {
+        newA = 1;
+      }
+    }
+
+    const nextStage = newB !== 0
+      ? 'undo_constant'
+      : (newA > 1 ? 'undo_coefficient' : 'solved');
+
+    const nextPhase: GamePhase = bothSimplified
+      ? (nextStage === 'solved' ? 'solved' : 'ready')
+      : 'awaiting_simplify';
+
+    const updatedEquationHistory = [...state.equationHistory];
+    if (bothSimplified) {
+      const line = formatEquationLine(newA, newB, newC);
+      if (!updatedEquationHistory.includes(line)) {
+        updatedEquationHistory.push(line);
+      }
+    }
+
+    return {
+      state: {
+        ...state,
+        history,
+        equationHistory: updatedEquationHistory,
+        currentA: newA,
+        currentB: newB,
+        currentC: newC,
+        stage: nextStage,
+        phase: nextPhase,
+        modeDState: {
+          ...state.modeDState,
+          simplifiedLhs: newSimplifiedLhs,
+          simplifiedRhs: newSimplifiedRhs,
+          activeSimplifyingSide: null,
+          targetTerm: bothSimplified ? null : state.modeDState.targetTerm,
+          selectedInverse: bothSimplified ? null : state.modeDState.selectedInverse,
+          blastedLhs: bothSimplified ? false : state.modeDState.blastedLhs,
+          blastedRhs: bothSimplified ? false : state.modeDState.blastedRhs,
+          lhsUnsimplified: bothSimplified ? null : state.modeDState.lhsUnsimplified,
+          rhsUnsimplified: bothSimplified ? null : state.modeDState.rhsUnsimplified,
+          tiltAngle: 0
+        },
+        blasterState: {
+          equipped: null,
+          scaleTilt: 'balanced',
+          carriedOperand: null,
+          rhsUnsimplified: null
+        },
+        pendingArithmetic: null,
+        errorMessage: null
+      },
+      correct: true
+    };
+  }
+
   // Record completed line before simplifying state
   let completedLine: string;
   if ((state.mode === 'mode_b' || state.mode === 'mode_c') && state.pendingArithmetic) {
@@ -649,7 +1130,6 @@ export function submitAnswer(
     : [...state.equationHistory, completedLine];
 
   // Correct answer! Advance equation
-  const history = [...state.history, saveSnapshot(state)];
   const newC = state.pendingArithmetic.correctAnswer;
   let newA = state.currentA;
   let newB = state.currentB;
@@ -717,7 +1197,11 @@ export function undo(state: EquationState): { state: EquationState; success: boo
       carriedTerm: last.carriedTerm,
       forgedOperation: last.forgedOperation,
       balancedDisplay: last.balancedDisplay,
-      blasterState: last.blasterState ? { ...last.blasterState } : (state.mode === 'mode_c' ? createInitialBlasterState() : undefined),
+      blasterState: last.blasterState ? { ...last.blasterState } : ((state.mode === 'mode_c' || state.mode === 'mode_d') ? createInitialBlasterState() : undefined),
+      modeDState: last.modeDState ? {
+        ...last.modeDState,
+        inverseChoices: [...last.modeDState.inverseChoices]
+      } : (state.mode === 'mode_d' ? createInitialModeDState() : undefined),
       pendingArithmetic: last.pendingArithmetic,
       equationHistory: last.equationHistory || [],
       cancellation: null,
