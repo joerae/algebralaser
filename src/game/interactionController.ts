@@ -397,9 +397,9 @@ export class InteractionController {
       }
     }
 
-    // Story Mode: Equation Choice Keyboard (1, 2, 3, 4)
+    // Story Mode: Equation Choice Keyboard (1, 2, 3)
     if (this.isStoryChoosingEquation) {
-      if (['1', '2', '3', '4'].includes(e.key)) {
+      if (['1', '2', '3'].includes(e.key)) {
         const idx = Number(e.key) - 1;
         this.onEquationChoiceRequested?.(`story-choice-${idx}`);
         return true;

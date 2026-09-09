@@ -1,7 +1,7 @@
 import { LinearEquationDef } from '../math/types';
 import { MagicItem, hashString } from '../data/magicItems';
 import { EquationCandidate } from './types';
-import { FEEDBACK_TEMPLATES } from '../data/storyTemplates';
+import { FEEDBACK_TEMPLATES, getChargeReason } from '../data/storyTemplates';
 
 interface RawCandidate {
   a: number;
@@ -50,7 +50,7 @@ export function generateEquationChoices(
       misconception: 'wrong_sign',
       feedback: isDiscount 
         ? FEEDBACK_TEMPLATES.wrong_sign_discount(absB)
-        : FEEDBACK_TEMPLATES.wrong_sign_charge(absB),
+        : FEEDBACK_TEMPLATES.wrong_sign_charge(absB, getChargeReason(equation.id)),
       highlightTarget: 'modifier'
     });
   }
@@ -145,7 +145,7 @@ export function generateEquationChoices(
 
   for (const cand of rawCandidates) {
     if (cand.isCorrect) continue;
-    if (validCandidates.length >= 4) break;
+    if (validCandidates.length >= 3) break;
 
     const key = `${cand.a}:${cand.b}:${cand.c}`;
     if (seenCanonical.has(key)) continue;

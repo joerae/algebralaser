@@ -12,26 +12,41 @@ import { StoryBeat, VerificationData } from '../story/types';
  * 4. Never reveal the unknown price (solution) in the story or questions.
  */
 
+export const CHARGE_REASONS = ['delivery', 'gift wrapping', 'express delivery', 'packaging'] as const;
+export type ChargeReason = typeof CHARGE_REASONS[number];
+
+export function getChargeReason(equationId: string): ChargeReason {
+  let hash = 0;
+  for (let i = 0; i < equationId.length; i++) {
+    hash = ((hash << 5) - hash + equationId.charCodeAt(i)) | 0;
+  }
+  const idx = Math.abs(hash) % CHARGE_REASONS.length;
+  return CHARGE_REASONS[idx];
+}
+
 export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
   beats: StoryBeat[];
   shortQuestion: string;
   modifierType: 'extra_charge' | 'discount' | 'none';
   modifierAmount: number;
+  modifierReason?: string;
 } {
-  const { family, a, b, c } = equation;
+  const { family, a, b, c, id } = equation;
   const absB = Math.abs(b);
+  const reason = getChargeReason(id);
 
   switch (family) {
     case 'x_plus_b':
       return {
         modifierType: 'extra_charge',
         modifierAmount: absB,
+        modifierReason: reason,
         shortQuestion: `How much did the ${item.singular} cost?`,
         beats: [
           { type: 'objects', text: `I bought a ${item.singular}.`, highlightTarget: 'objects' },
-          { type: 'modifier', text: `There was an extra charge of ${absB} gold.`, highlightTarget: 'modifier' },
+          { type: 'modifier', text: `There was a ${reason} fee of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold altogether.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did the ${item.singular} cost before the extra charge?` }
+          { type: 'question', text: `How much did the ${item.singular} cost?` }
         ]
       };
 
@@ -44,7 +59,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
           { type: 'objects', text: `I bought a ${item.singular}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `I got a discount of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold altogether.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did the ${item.singular} cost before the discount?` }
+          { type: 'question', text: `How much did the ${item.singular} cost?` }
         ]
       };
 
@@ -64,12 +79,13 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
       return {
         modifierType: 'extra_charge',
         modifierAmount: absB,
+        modifierReason: reason,
         shortQuestion: `How much did each ${item.singular} cost?`,
         beats: [
           { type: 'objects', text: `I bought ${a} identical ${item.plural} for the same price each.`, highlightTarget: 'objects' },
-          { type: 'modifier', text: `There was an extra charge of ${absB} gold.`, highlightTarget: 'modifier' },
+          { type: 'modifier', text: `There was a ${reason} fee of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold altogether.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did each ${item.singular} cost before the extra charge?` }
+          { type: 'question', text: `How much did each ${item.singular} cost?` }
         ]
       };
 
@@ -82,7 +98,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
           { type: 'objects', text: `I bought ${a} identical ${item.plural} for the same price each.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `I got a discount of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold altogether.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did each ${item.singular} cost before the discount?` }
+          { type: 'question', text: `How much did each ${item.singular} cost?` }
         ]
       };
   }
@@ -91,9 +107,10 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
 /**
  * Builds the completed purchase verification breakdown once solved.
  */
-export function buildVerification(equation: LinearEquationDef, item: MagicItem): VerificationData {
-  const { a, b, c, solution } = equation;
+export function buildVerification(equation: LinearEquationDef, item: MagicItem, modifierReason?: string): VerificationData {
+  const { a, b, c, solution, id } = equation;
   const absB = Math.abs(b);
+  const reason = modifierReason || getChargeReason(id);
 
   const unitPriceLine = a === 1
     ? `The ${item.singular} costs ${solution} gold.`
@@ -105,7 +122,7 @@ export function buildVerification(equation: LinearEquationDef, item: MagicItem):
 
   let modifierLine: string | undefined = undefined;
   if (b > 0) {
-    modifierLine = `${a * solution} gold + ${absB} gold extra charge = ${c} gold paid.`;
+    modifierLine = `${a * solution} gold + ${absB} gold ${reason} = ${c} gold paid.`;
   } else if (b < 0) {
     modifierLine = `${a * solution} gold − ${absB} gold discount = ${c} gold paid.`;
   }
@@ -135,7 +152,7 @@ export function buildVerification(equation: LinearEquationDef, item: MagicItem):
  */
 export const FEEDBACK_TEMPLATES = {
   wrong_sign_discount: (absB: number) => `A discount of ${absB} gold takes money off the price, so we subtract (−).`,
-  wrong_sign_charge: (absB: number) => `An extra charge of ${absB} gold adds money to the price, so we add (+).`,
+  wrong_sign_charge: (absB: number, reason: string = 'delivery') => `The ${reason} fee of ${absB} gold adds money to the price, so we add (+).`,
   omit_coefficient: (a: number, plural: string) => `You bought ${a} ${plural}, so multiply the item price by ${a}.`,
   wrong_coefficient: (expectedA: number, chosenA: number, plural: string) => `You bought ${expectedA} ${plural}, not ${chosenA}.`,
   wrong_total: (expectedC: number, chosenC: number) => `The story says you paid ${expectedC} gold altogether, not ${chosenC}.`,

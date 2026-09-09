@@ -1,3 +1,21 @@
+Version 1.9.1
+Date: 2026-09-09
+
+Release Notes:
+- Story Mode Polish & Gameplay Tuning:
+  - Narrowed equation candidates down to 3 in a single horizontal row directly above the camera box for effortless pointer targeting (1A).
+  - Fixed coefficient and times scaling inside equation choice cards to normal compact size (1B).
+  - Replaced generic "extra charge" with realistic reasons (delivery, gift wrapping, express courier, packaging) (1C).
+  - Streamlined stories: removed duplicate question beats ("before the extra charge?"), leaving only the clean question (1D).
+  - Shortened equation prompt to "Which equation matches?" (1E).
+  - Pre-allocated story card height (min-height) to completely prevent the camera box from shifting down as story lines appear (1F).
+  - Omitted the concrete equation diagram from the story card during reading and choosing phases to prevent spoiling the answer (1G).
+  - Substantially enlarged the "3 - 1" RHS arithmetic hitbox and font size in Mode B (min-height 78px, min-width 120px, pad 32) (2a).
+  - Moved "Show Story" button to the bottom of the screen with a floating dwell pill, allowing pointing down to view story without interfering with equation targets (2b).
+  - Scaled magical item icon ~80% larger (68px) in the equation rail and solved screen to match large equation numbers (2c).
+  - Rendered magical item icons instead of text [item] in the perspective history rail (2d).
+- Files: src/data/storyTemplates.ts, src/story/buildConcreteStory.ts, src/story/equationChoices.ts, src/ui/storyView.ts, src/ui/equationChoiceView.ts, src/ui/mathItemView.ts, src/styles/story.css, src/styles/modes/mode-b.css, src/main.ts, src/game/interactionController.ts, index.html, and tests.
+
 Version 1.9.0
 Date: 2026-09-09
 

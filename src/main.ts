@@ -386,7 +386,7 @@ class App {
       if (storyState.phase === 'reading') {
         this.hudView.updateInstruction('🧙‍♂️ Read the Magic Shop purchase...');
       } else if (storyState.phase === 'choosing_equation') {
-        this.hudView.updateInstruction('🧙‍♂️ Which equation matches this purchase? Point laser or press 1–4');
+        this.hudView.updateInstruction('🧙‍♂️ Which equation matches? Point laser or press 1–3');
       } else if (storyState.phase === 'condensing') {
         this.hudView.updateInstruction('✨ Writing down the equation...');
       } else if (storyState.phase === 'completed') {
@@ -1107,7 +1107,9 @@ class App {
 
     eqTargets.forEach(t => {
       const rect = t.element.getBoundingClientRect();
-      const pad = 24;
+      const isModeBAction = t.id === 'mode-b-rhs-target' || t.id === 'mode-b-cleanup-target';
+      const pad = isModeBAction ? 32 : 24;
+      const priority = isModeBAction ? 2 : 1;
       targets.push({
         id: t.id,
         type: t.type,
@@ -1120,7 +1122,7 @@ class App {
           height: rect.height + pad * 2
         },
         enabled: true,
-        priority: 1
+        priority
       });
     });
 
@@ -1224,7 +1226,7 @@ class App {
             height: rect.height + pad * 2
           },
           enabled: true,
-          priority: 2
+          priority: 1
         });
       });
     }

@@ -18,6 +18,47 @@
   box-sizing: border-box;
 }
 
+/* Scaled ~80% larger in equation rail & solved celebration */
+.equation-rail .math-item-token,
+.solved-line-wrap .math-item-token {
+  width: 68px;
+  height: 68px;
+  min-width: 68px;
+  min-height: 68px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(251, 191, 36, 0.45);
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.3);
+}
+
+.equation-rail .term-tile .math-item-token {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  min-height: 58px;
+}
+
+/* History line math item icon token */
+.history-line .history-math-item {
+  width: 1.25em;
+  height: 1.25em;
+  min-width: 0;
+  min-height: 0;
+  padding: 1px;
+  border-radius: 5px;
+  vertical-align: middle;
+  display: inline-flex;
+  margin: 0 4px;
+  box-shadow: none;
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.history-line .history-math-item .math-item-icon {
+  width: 100%;
+  height: 100%;
+}
+
 .math-item-icon {
   width: 100%;
   height: 100%;
@@ -77,6 +118,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 15px rgba(251, 191, 36, 0.15);
   backdrop-filter: blur(12px);
   box-sizing: border-box;
+  min-height: 195px;
 }
 
 .story-card-header {
@@ -105,7 +147,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 52px;
+  min-height: 125px;
 }
 
 .story-sentence {
@@ -131,6 +173,13 @@
   border-left: 3px solid #fbbf24;
   padding: 4px 8px;
   border-radius: 0 6px 6px 0;
+}
+
+.story-sentence.story-question-beat {
+  font-weight: 700;
+  color: #fbbf24;
+  margin-top: 4px;
+  padding-top: 4px;
 }
 
 /* Concrete Scene Visualization */
@@ -341,7 +390,7 @@
 
 .story-equation-cards-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
@@ -351,14 +400,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 14px 12px;
+  padding: 16px 10px 14px;
   background: rgba(30, 41, 59, 0.85);
   border: 1.5px solid rgba(148, 163, 184, 0.25);
   border-radius: 12px;
   cursor: pointer;
   outline: none;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  min-height: 72px;
+  min-height: 76px;
 }
 
 .story-equation-card:hover,
@@ -393,7 +442,7 @@
 .choice-equation-expr {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 1.25rem;
   color: #f1f5f9;
@@ -402,7 +451,59 @@
 .choice-lhs {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+}
+
+/* Choice card coefficient & times sizing (prevents giant 76px equation rail tile) */
+.story-equation-card .choice-coeff-tile {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #f87171;
+  min-width: 0;
+  min-height: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+
+.story-equation-card .choice-times-symbol {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f87171;
+  padding: 0 2px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.story-equation-card .term-tile {
+  font-size: 1.35rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 2px 6px;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.story-equation-card .math-symbol {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.story-equation-card .math-item-token {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 3px;
 }
 
 .choice-op {
@@ -446,65 +547,88 @@
   40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
-/* Solving Phase: Compact Story Bar */
+/* Solving Phase: Centered Goal Bar at Top */
 .story-solving-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
   max-width: 680px;
   margin: 0 auto 8px auto;
-  padding: 6px 14px;
+  padding: 8px 18px;
   background: rgba(15, 23, 42, 0.75);
   border: 1px solid rgba(251, 191, 36, 0.25);
-  border-radius: 8px;
+  border-radius: 12px;
   box-sizing: border-box;
 }
 
 .story-solving-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .story-solving-icon {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
 }
 
 .story-solving-question {
   font-family: 'Outfit', sans-serif;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: #f1f5f9;
 }
 
-.btn-show-story {
+/* Bottom dock for Show Story button (point down to see story) */
+.story-bottom-dock {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.story-bottom-dock .btn-show-story {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  background: rgba(30, 41, 59, 0.9);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  border-radius: 6px;
+  gap: 10px;
+  padding: 8px 22px;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1.5px solid rgba(56, 189, 248, 0.5);
+  border-radius: 9999px;
   color: #38bdf8;
   font-family: 'Outfit', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.2);
+  backdrop-filter: blur(12px);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 42px;
 }
 
-.btn-show-story:hover,
-.btn-show-story.dwell-active {
-  background: rgba(56, 189, 248, 0.15);
+.story-bottom-dock .btn-show-story:hover,
+.story-bottom-dock .btn-show-story.dwell-active {
+  background: rgba(56, 189, 248, 0.22);
   border-color: #38bdf8;
-  color: #e0f2fe;
+  color: #ffffff;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.6), 0 0 25px rgba(56, 189, 248, 0.45);
 }
 
-.btn-show-story .dwell-svg {
-  width: 18px;
-  height: 18px;
+.story-bottom-dock .btn-show-story .dwell-svg {
+  position: relative;
+  right: auto;
+  top: auto;
+  transform: rotate(-90deg);
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
 }
 
 /* Story Popover Modal */

@@ -31,7 +31,10 @@ export class EquationChoiceView {
       const keyNum = index + 1;
 
       // Render the candidate equation expression: a × [icon] (+/- b) = c
-      const productHtml = renderProduct(cand.a, item);
+      const productHtml = renderProduct(cand.a, item, {
+        tileClass: 'choice-coeff-tile',
+        timesClass: 'choice-times-symbol'
+      });
       let modifierHtml = '';
       if (cand.b > 0) {
         modifierHtml = `<span class="choice-op op-plus">+</span> <span class="choice-num">${cand.b}</span>`;
@@ -70,7 +73,7 @@ export class EquationChoiceView {
     this.container.innerHTML = `
       <div class="story-equation-choices-panel">
         <div class="choices-prompt">
-          <span>Which equation matches this purchase? Point laser or press 1–4:</span>
+          <span>Which equation matches?</span>
         </div>
         ${feedbackHtml}
         <div class="story-equation-cards-grid">

@@ -5,14 +5,14 @@ import { generatePuzzle, generateCuratedLevelSet } from '../math/puzzleGenerator
 import { EquationFamily } from '../math/types';
 
 describe('equationChoices', () => {
-  it('generates exactly 4 choices with exactly 1 correct choice', () => {
+  it('generates exactly 3 choices with exactly 1 correct choice', () => {
     const levels = generateCuratedLevelSet();
 
     for (const lvl of levels) {
       const item = MAGIC_ITEMS[0];
       const choices = generateEquationChoices(lvl, item);
 
-      expect(choices).toHaveLength(4);
+      expect(choices).toHaveLength(3);
       const correctChoices = choices.filter(c => c.isCorrect);
       expect(correctChoices).toHaveLength(1);
 
@@ -33,7 +33,7 @@ describe('equationChoices', () => {
         const item = MAGIC_ITEMS[seed % MAGIC_ITEMS.length];
         const choices = generateEquationChoices(puzzle, item);
 
-        expect(choices).toHaveLength(4);
+        expect(choices).toHaveLength(3);
 
         for (const choice of choices) {
           if (!choice.isCorrect) {
@@ -55,7 +55,7 @@ describe('equationChoices', () => {
 
       const keys = choices.map(c => `${c.a}:${c.b}:${c.c}`);
       const uniqueKeys = new Set(keys);
-      expect(uniqueKeys.size).toBe(4);
+      expect(uniqueKeys.size).toBe(3);
 
       for (const c of choices) {
         expect(c.a).toBeGreaterThanOrEqual(1);
@@ -64,15 +64,14 @@ describe('equationChoices', () => {
     }
   });
 
-  it('assigns stable sequential IDs story-choice-0 to story-choice-3', () => {
+  it('assigns stable sequential IDs story-choice-0 to story-choice-2', () => {
     const puzzle = generatePuzzle('ax_minus_b', 99);
     const choices = generateEquationChoices(puzzle, MAGIC_ITEMS[0]);
 
     expect(choices.map(c => c.id)).toEqual([
       'story-choice-0',
       'story-choice-1',
-      'story-choice-2',
-      'story-choice-3'
+      'story-choice-2'
     ]);
   });
 });

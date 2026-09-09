@@ -11,9 +11,9 @@ export function buildConcreteStory(
   equation: LinearEquationDef,
   item: MagicItem
 ): ConcreteStory {
-  const { beats, shortQuestion, modifierType, modifierAmount } = buildStoryBeats(equation, item);
+  const { beats, shortQuestion, modifierType, modifierAmount, modifierReason } = buildStoryBeats(equation, item);
   const fullStoryText = beats.map(b => b.text).join(' ');
-  const verification = buildVerification(equation, item);
+  const verification = buildVerification(equation, item, modifierReason);
 
   return {
     equation,
@@ -23,6 +23,7 @@ export function buildConcreteStory(
     shortQuestion,
     modifierType,
     modifierAmount,
+    modifierReason,
     objectCount: equation.a,
     totalPaid: equation.c,
     verification

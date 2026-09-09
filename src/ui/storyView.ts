@@ -18,6 +18,11 @@ export class StoryView {
   public render(state: StoryPresentationState) {
     if (!state.enabled) {
       this.container.innerHTML = '';
+      const bottomDock = document.getElementById('story-bottom-dock');
+      if (bottomDock) {
+        bottomDock.style.display = 'none';
+        bottomDock.innerHTML = '';
+      }
       return;
     }
 
@@ -53,10 +58,16 @@ export class StoryView {
       `;
     }
 
-    // 1. Reading & Choosing Equation: show rich story card & concrete scene
+    // Clean up bottom dock if not in solving phase
+    const bottomDock = document.getElementById('story-bottom-dock');
+    if (bottomDock && phase !== 'solving') {
+      bottomDock.style.display = 'none';
+      bottomDock.innerHTML = '';
+    }
+
+    // 1. Reading & Choosing Equation: show rich story card & concise question
     if (phase === 'reading' || phase === 'choosing_equation') {
       const visibleBeats = beats.slice(0, revealedSentenceCount);
-      const isCompleteReveal = revealedSentenceCount >= beats.length;
 
       this.container.innerHTML = `
         <div class="story-presentation-panel">
@@ -68,26 +79,13 @@ export class StoryView {
             <div class="story-beats-container">
               ${visibleBeats.map((b: StoryBeat, idx: number) => {
                 const isHighlighted = highlightedBeat === b.highlightTarget;
+                const isQuestion = b.type === 'question';
                 return `
-                  <p class="story-sentence sentence-revealed ${isHighlighted ? 'sentence-highlight' : ''}" data-index="${idx}">
+                  <p class="story-sentence sentence-revealed ${isHighlighted ? 'sentence-highlight' : ''} ${isQuestion ? 'story-question-beat' : ''}" data-index="${idx}">
                     ${b.text}
                   </p>
                 `;
               }).join('')}
-            </div>
-
-            <div class="concrete-scene-wrap ${isCompleteReveal ? 'scene-visible' : ''}">
-              <div class="concrete-scene-row ${highlightedBeat === 'objects' ? 'highlight-objects' : ''}">
-                ${this.renderConcreteObjects(objectCount, item)}
-                ${this.renderModifierBadge(modifierType, modifierAmount, highlightedBeat === 'modifier')}
-                <span class="concrete-equals">=</span>
-                <span class="concrete-total ${highlightedBeat === 'total' ? 'highlight-total' : ''}">
-                  ${totalPaid} gold
-                </span>
-              </div>
-              <div class="concrete-scene-caption">
-                ${shortQuestion}
-              </div>
             </div>
           </div>
 
@@ -123,7 +121,7 @@ export class StoryView {
       return;
     }
 
-    // 3. Solving: display compact story prompt + Show Story button
+    // 3. Solving: display compact story prompt at top + Show Story button docked at bottom
     if (phase === 'solving') {
       this.container.innerHTML = `
         <div class="story-solving-bar">
@@ -131,6 +129,13 @@ export class StoryView {
             <span class="story-solving-icon">${item.emojiFallback}</span>
             <span class="story-solving-question">${shortQuestion}</span>
           </div>
+        </div>
+        ${popoverHtml}
+      `;
+
+      if (bottomDock) {
+        bottomDock.style.display = 'flex';
+        bottomDock.innerHTML = `
           <button id="btn-show-story" class="btn-show-story action-btn-dwell" title="Show original story (Hotkey: S)">
             <span class="btn-text">📖 Show Story</span>
             <svg class="dwell-svg btn-dwell-svg" viewBox="0 0 44 44">
@@ -138,13 +143,12 @@ export class StoryView {
               <circle class="dwell-fill" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"></circle>
             </svg>
           </button>
-        </div>
-        ${popoverHtml}
-      `;
+        `;
 
-      this.container.querySelector('#btn-show-story')?.addEventListener('click', () => {
-        this.callbacks.onShowStoryRequested();
-      });
+        bottomDock.querySelector('#btn-show-story')?.addEventListener('click', () => {
+          this.callbacks.onShowStoryRequested();
+        });
+      }
 
       this.wirePopoverListeners();
       return;
@@ -218,7 +222,7 @@ export class StoryView {
 
   public getInteractiveElements(): { id: string; element: HTMLElement; type: 'utility' }[] {
     const targets: { id: string; element: HTMLElement; type: 'utility' }[] = [];
-    const btnShowStory = this.container.querySelector<HTMLElement>('#btn-show-story');
+    const btnShowStory = document.getElementById('btn-show-story');
     if (btnShowStory && btnShowStory.offsetParent !== null) {
       targets.push({ id: 'btn-show-story', element: btnShowStory, type: 'utility' });
     }

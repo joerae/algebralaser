@@ -533,16 +533,32 @@
 
 .mode-b-solve-target {
   cursor: pointer;
-  border-color: rgba(56, 189, 248, 0.72);
-  box-shadow: 0 0 24px rgba(56, 189, 248, 0.34);
+  border: 2px dashed rgba(56, 189, 248, 0.85);
+  background: rgba(56, 189, 248, 0.16);
+  box-shadow: 0 0 28px rgba(56, 189, 248, 0.45);
   animation: modeBSolveTargetPulse 1.2s ease-in-out infinite;
+  min-height: 78px;
+  min-width: 120px;
+  padding: 8px 24px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  box-sizing: border-box;
+}
+
+.mode-b-solve-target .math-symbol {
+  font-size: 48px;
 }
 
 .mode-b-solve-target.active,
 .mode-b-solve-target:hover {
+  border-style: solid;
   border-color: var(--cyan-bright);
-  transform: scale(1.06);
-  box-shadow: 0 0 38px rgba(56, 189, 248, 0.78);
+  background: rgba(56, 189, 248, 0.28);
+  transform: scale(1.08);
+  box-shadow: 0 0 46px rgba(56, 189, 248, 0.9);
 }
 
 @keyframes modeBSolveTargetPulse {

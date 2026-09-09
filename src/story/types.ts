@@ -25,6 +25,7 @@ export interface ConcreteStory {
   shortQuestion: string;
   modifierType: 'extra_charge' | 'discount' | 'none';
   modifierAmount: number;
+  modifierReason?: string;
   objectCount: number;
   totalPaid: number;
   verification: VerificationData;

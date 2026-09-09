@@ -56,7 +56,8 @@ describe('buildConcreteStory', () => {
 
     expect(story.modifierType).toBe('extra_charge');
     expect(story.modifierAmount).toBe(5);
-    expect(story.fullStoryText).toContain('extra charge of 5 gold');
+    expect(story.modifierReason).toBeDefined();
+    expect(story.fullStoryText).toContain(`${story.modifierReason} fee of 5 gold`);
   });
 
   it('produces accurate verification lines on solve', () => {

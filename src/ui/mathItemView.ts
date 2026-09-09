@@ -59,8 +59,9 @@ export function renderProduct(
  */
 export function formatHistoryWithItem(rawHistory: string, item: MagicItem): string {
   if (!rawHistory) return '';
+  const iconHtml = renderItemIcon(item, 'history-math-item');
   // Replace standalone Y or Y followed by operators
   return rawHistory
-    .replace(/\bY\b/g, `[${item.singular}]`)
-    .replace(/\by\b/g, `[${item.singular}]`);
+    .replace(/\bY\b/g, iconHtml)
+    .replace(/\by\b/g, iconHtml);
 }
