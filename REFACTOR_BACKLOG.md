@@ -21,64 +21,33 @@ Adding any new mode should require:
 
 These 4 items directly unblock clean, rapid development of Mode 4 and eliminate the most severe bottlenecks.
 
-### 1. [ ] Modularize Monolithic `src/styles/index.css` (2,215 lines, 49.5 KB)
-* **Problem**: Editing styles currently requires reading or modifying a 2,200+ line stylesheet. Every mode's CSS has been appended to the bottom, causing token bloat and collision risk.
-* **Target**: Split into modular stylesheets loaded via CSS `@import` or Vite imports:
-  * `src/styles/base.css` (CSS variables, resets, typography, layout grid)
-  * `src/styles/hud.css` (header, footer, camera box, modal dialogs, status badges)
-  * `src/styles/equation.css` (equation rail, terms, fractions, history stack)
-  * `src/styles/modes/mode-a.css` (landing slot, bubble popping animations)
-  * `src/styles/modes/mode-b.css` (forge panel, split clone bubbles, cancel flashes)
-  * `src/styles/modes/mode-c.css` (blaster cards, balance scale beam & tilt physics)
-* **Iteration Speed Impact**: Mode 4 styles go into a brand-new `src/styles/modes/mode-d.css`. Zero risk of corrupting existing mode styles.
-* **Effort**: ~20 mins.
+### 1. [x] [COMPLETED] Modularize Monolithic `src/styles/index.css` (Reduced from 2,215 lines to 15-line importer)
+* Extracted modular stylesheets:
+  * [`src/styles/base.css`](file:///c:/Users/jraeb/algebra/src/styles/base.css) (CSS variables, resets, typography, layout grid)
+  * [`src/styles/hud.css`](file:///c:/Users/jraeb/algebra/src/styles/hud.css) (header, footer, camera box, modal dialogs, status badges)
+  * [`src/styles/equation.css`](file:///c:/Users/jraeb/algebra/src/styles/equation.css) (equation rail, terms, fractions, history stack)
+  * [`src/styles/modes/mode-a.css`](file:///c:/Users/jraeb/algebra/src/styles/modes/mode-a.css) (landing slot, bubble popping animations)
+  * [`src/styles/modes/mode-b.css`](file:///c:/Users/jraeb/algebra/src/styles/modes/mode-b.css) (forge panel, split clone bubbles, cancel flashes)
+  * [`src/styles/modes/mode-c.css`](file:///c:/Users/jraeb/algebra/src/styles/modes/mode-c.css) (blaster cards, balance scale beam & tilt physics)
+* Mode 4 styles can now be written in an isolated `src/styles/modes/mode-d.css`.
 
-### 2. [ ] Data-Driven Mode Registry & Header Switcher (`src/ui/hudView.ts`)
-* **Problem**: [`src/ui/hudView.ts`](file:///c:/Users/jraeb/algebra/src/ui/hudView.ts#L145-L186) hardcodes `#btn-mode-a`, `#btn-mode-b`, `#btn-mode-c` in HTML and binds individual click listeners. Adding Mode 4 requires modifying HTML markup and handler bindings.
-* **Target**: Create `src/game/modeRegistry.ts` with a `ModeDefinition` list:
-  ```typescript
-  export interface ModeDefinition {
-    id: SolverMode;
-    title: string;
-    label: string;
-    icon: string;
-    description: string;
-    getInstruction(state: EquationState): string;
-    getBadgeHint(state: EquationState): string;
-    getPedagogicalHint(state: EquationState): string;
-  }
-  ```
-  `HudView` iterates over `MODE_REGISTRY` to render toggle buttons dynamically.
-* **Iteration Speed Impact**: Adding Mode 4 to the UI header becomes a single config entry in `modeRegistry.ts`.
-* **Effort**: ~25 mins.
+### 2. [x] [COMPLETED] Data-Driven Mode Registry & Header Switcher
+* Created [`src/game/modeRegistry.ts`](file:///c:/Users/jraeb/algebra/src/game/modeRegistry.ts) defining `ModeDefinition` interface, registry array, and pedagogical/badge hints.
+* Refactored [`src/ui/hudView.ts`](file:///c:/Users/jraeb/algebra/src/ui/hudView.ts) to dynamically render mode toggle buttons via `MODE_DEFINITIONS.map(...)` with delegated event handling.
+* Simplified [`GameController.getHint()`](file:///c:/Users/jraeb/algebra/src/game/gameController.ts) from a 40-line nested conditional down to 3 lines delegating to the active mode definition.
 
-### 3. [ ] Extract Bubble Physics & Split Animation from `src/main.ts` (1,263 lines)
-* **Problem**: `main.ts` contains:
-  * 100+ lines of nested `setTimeout` callbacks for Mode B's split animation ([`triggerSplitAndBalance`](file:///c:/Users/jraeb/algebra/src/main.ts#L234-L328)).
-  * 150+ lines of magnetic snapping, hold duration math, audio tick throttling, and SVG progress ring offset calculation ([`main.ts:loop`](file:///c:/Users/jraeb/algebra/src/main.ts#L546-L797)).
-* **Target**:
-  * Extract Mode B split animation into `src/ui/animations/splitBalanceAnimation.ts`.
-  * Extract floating bubble tracking, magnetic snapping, and progress rings into `src/ui/carriedBubbleView.ts`.
-* **Iteration Speed Impact**: Cuts ~300 lines from `main.ts`, reducing it from 1,263 to <900 lines and eliminating animation side-effects from the core game loop.
-* **Effort**: ~35 mins.
+### 3. [x] [COMPLETED] Extract Bubble Physics & Split Animation from `src/main.ts` (Reduced from 1,263 to 877 lines)
+* Extracted Mode B multi-stage timed animation into [`src/ui/animations/splitBalanceAnimation.ts`](file:///c:/Users/jraeb/algebra/src/ui/animations/splitBalanceAnimation.ts).
+* Extracted floating bubble tracking, magnetic snapping, audio throttling, and popping burst into [`src/ui/carriedBubbleView.ts`](file:///c:/Users/jraeb/algebra/src/ui/carriedBubbleView.ts).
+* Eliminated over 380 lines of nested timeouts and DOM state from `main.ts`.
 
-### 4. [ ] Extract Mode Interaction Handlers from `src/game/interactionController.ts` (717 lines)
-* **Problem**: [`src/game/interactionController.ts`](file:///c:/Users/jraeb/algebra/src/game/interactionController.ts) contains deeply interleaved `if (gameState.mode === ...)` branches across vision frame processing, dwell confirmation, palm detection, and keyboard shortcuts. Adding Mode 4 adds more conditionals to a 700-line method.
-* **Target**:
-  * Define `ModeInteractionHandler` interface:
-    ```typescript
-    export interface ModeInteractionHandler {
-      onVisionFrame?(ctx: VisionInteractionContext): boolean;
-      onKeyDown?(e: KeyboardEvent, state: EquationState, game: GameController): boolean;
-      resetDwell?(): void;
-    }
-    ```
-  * Delegate to isolated handlers:
-    * `src/game/modes/modeACarrier.ts` (Mode A carrying, curl drop, landing slot)
-    * `src/game/modes/modeBForgeHandler.ts` (Mode B forging dwell, equals apply)
-    * `src/game/modes/modeCBlasterHandler.ts` (Mode C blaster equip, LHS smash, RHS blast, calc simplify)
-* **Iteration Speed Impact**: Mode 4 interaction is authored in `src/game/modes/modeDHandler.ts` with zero risk of breaking existing modes.
-* **Effort**: ~45 mins.
+### 4. [x] [COMPLETED] Extract Mode Interaction Handlers from `src/game/interactionController.ts` (Reduced from 717 to 280 lines)
+* Defined `ModeInteractionHandler` interface and contexts in [`src/game/modes/types.ts`](file:///c:/Users/jraeb/algebra/src/game/modes/types.ts).
+* Implemented isolated mode handlers:
+  * [`src/game/modes/modeACarrier.ts`](file:///c:/Users/jraeb/algebra/src/game/modes/modeACarrier.ts) (carrying, index curl drop, slot hover, escape cancel)
+  * [`src/game/modes/modeBForgeHandler.ts`](file:///c:/Users/jraeb/algebra/src/game/modes/modeBForgeHandler.ts) (forge dwell, equals balance application, forge keys)
+  * [`src/game/modes/modeCBlasterHandler.ts`](file:///c:/Users/jraeb/algebra/src/game/modes/modeCBlasterHandler.ts) (blaster equip, LHS smash, RHS blast, calc simplify, blaster keys)
+* Refactored [`src/game/interactionController.ts`](file:///c:/Users/jraeb/algebra/src/game/interactionController.ts) into a lean coordinator maintaining only shared tracking, question card dwell, and solved advance.
 
 ---
 
@@ -129,9 +98,8 @@ Lower urgency refactorings that can be tackled once Mode 4 is playable.
 * **Problem**: Current tests only cover pure math state machine (`linearEquation.test.ts`, `linearEquationModeC.test.ts`). Testing gestures or keyboard shortcuts requires opening a browser.
 * **Target**: Add Vitest tests for `InteractionController` and `ModeHandler`s using synthetic laser ray and keyboard events.
 
-### 11. [ ] Add `typecheck` Script to `package.json`
-* **Problem**: Currently `package.json` only has `"test": "vitest run"` and `"build": "tsc && vite build"`. Fast headless type verification requires running `npx tsc --noEmit`.
-* **Target**: Add `"typecheck": "tsc --noEmit"` to `package.json` scripts.
+### 11. [x] [COMPLETED] Add `typecheck` Script to `package.json`
+* Added `"typecheck": "tsc --noEmit"` to `package.json` scripts for zero-lag TypeScript validation.
 
 ---
 

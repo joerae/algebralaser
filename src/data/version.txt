@@ -1,3 +1,26 @@
+Version 1.5.1
+Date: 2026-09-09
+
+Release Notes:
+- Architecture: Phase 0 Refactoring Backlog (Pre-Mode-4 Decoupling) ⚡:
+  * CSS Modularization: Split 2,215-line index.css into base.css, hud.css, equation.css, and modes/mode-{a,b,c}.css.
+  * Data-Driven Mode Registry: Created modeRegistry.ts with ModeDefinition interface; dynamically rendered header toggles in hudView.ts.
+  * Extracted Bubble Physics & Animations: Extracted splitBalanceAnimation.ts and carriedBubbleView.ts from main.ts (reduced main.ts from 1,263 to 877 lines).
+  * Extracted Mode Interaction Handlers: Extracted modeACarrier.ts, modeBForgeHandler.ts, and modeCBlasterHandler.ts from interactionController.ts (reduced interactionController.ts from 717 to 280 lines).
+  * Added "typecheck" script to package.json.
+- Files Edited / Created:
+  * src/styles/base.css, src/styles/hud.css, src/styles/equation.css, src/styles/modes/mode-a.css, src/styles/modes/mode-b.css, src/styles/modes/mode-c.css: [NEW] Modular stylesheets.
+  * src/styles/index.css: Master stylesheet with clean imports.
+  * src/game/modeRegistry.ts: [NEW] Mode definitions and hints registry.
+  * src/ui/animations/splitBalanceAnimation.ts: [NEW] Mode B split animation stages.
+  * src/ui/carriedBubbleView.ts: [NEW] Floating bubble tracking, snapping, and popping.
+  * src/game/modes/types.ts, src/game/modes/modeACarrier.ts, src/game/modes/modeBForgeHandler.ts, src/game/modes/modeCBlasterHandler.ts: [NEW] Mode interaction handlers.
+  * src/game/interactionController.ts: Refactored to delegate to active mode handler.
+  * src/main.ts: Decoupled bubble physics, split animations, and mode hints.
+  * src/ui/hudView.ts: Data-driven header mode switcher.
+  * src/game/gameController.ts: Hint delegation to mode registry.
+  * package.json: Added typecheck script.
+
 Version 1.5.0
 Date: 2026-09-09
 

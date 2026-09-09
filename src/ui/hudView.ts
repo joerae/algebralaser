@@ -1,6 +1,7 @@
 import { soundManager } from '../audio/soundEffects';
 import versionText from '../data/version.txt?raw';
 import { SolverMode } from '../math/types';
+import { MODE_DEFINITIONS } from '../game/modeRegistry';
 
 export interface HudCallbacks {
   onEnableCamera: () => void;
@@ -54,12 +55,9 @@ export class HudView {
 
   public setMode(mode: SolverMode) {
     this.currentMode = mode;
-    const btnA = this.headerEl.querySelector('#btn-mode-a');
-    const btnB = this.headerEl.querySelector('#btn-mode-b');
-    const btnC = this.headerEl.querySelector('#btn-mode-c');
-    btnA?.classList.toggle('active', mode === 'mode_a');
-    btnB?.classList.toggle('active', mode === 'mode_b');
-    btnC?.classList.toggle('active', mode === 'mode_c');
+    this.headerEl.querySelectorAll<HTMLButtonElement>('.mode-toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
   }
 
 
@@ -144,18 +142,12 @@ export class HudView {
         <span class="brand-badge">Laser Powered</span>
       </div>
       <div class="mode-toggle-group" role="group" aria-label="Equation interaction mode">
-        <button id="btn-mode-a" class="mode-toggle-btn ${this.currentMode === 'mode_a' ? 'active' : ''}" title="Mode A: Move Across (Drag across =)">
-          <span class="mode-icon">⇄</span>
-          <span class="mode-label">Mode A: Move Across</span>
-        </button>
-        <button id="btn-mode-b" class="mode-toggle-btn ${this.currentMode === 'mode_b' ? 'active' : ''}" title="Mode B: Balance Both Sides (Forge & Apply to Both Sides)">
-          <span class="mode-icon">⚖️</span>
-          <span class="mode-label">Mode B: Balance Both Sides</span>
-        </button>
-        <button id="btn-mode-c" class="mode-toggle-btn ${this.currentMode === 'mode_c' ? 'active' : ''}" title="Mode C: Blast Balance (Shoot inverse blasters & balance the scale)">
-          <span class="mode-icon">💥</span>
-          <span class="mode-label">Mode C: Blast Balance</span>
-        </button>
+        ${MODE_DEFINITIONS.map(m => `
+          <button id="btn-${m.id.replace('_', '-')}" data-mode="${m.id}" class="mode-toggle-btn ${this.currentMode === m.id ? 'active' : ''}" title="${m.title}">
+            <span class="mode-icon">${m.icon}</span>
+            <span class="mode-label">${m.label}</span>
+          </button>
+        `).join('')}
       </div>
       <div class="header-controls">
         <div class="level-indicator">Level ${level} of ${total}</div>
@@ -165,24 +157,13 @@ export class HudView {
       </div>
     `;
 
-    this.headerEl.querySelector('#btn-mode-a')?.addEventListener('click', () => {
-      if (this.currentMode !== 'mode_a') {
-        this.setMode('mode_a');
-        this.callbacks.onModeChange('mode_a');
-      }
-    });
-
-    this.headerEl.querySelector('#btn-mode-b')?.addEventListener('click', () => {
-      if (this.currentMode !== 'mode_b') {
-        this.setMode('mode_b');
-        this.callbacks.onModeChange('mode_b');
-      }
-    });
-
-    this.headerEl.querySelector('#btn-mode-c')?.addEventListener('click', () => {
-      if (this.currentMode !== 'mode_c') {
-        this.setMode('mode_c');
-        this.callbacks.onModeChange('mode_c');
+    this.headerEl.querySelector('.mode-toggle-group')?.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.mode-toggle-btn');
+      if (!btn) return;
+      const mode = btn.dataset.mode as SolverMode;
+      if (mode && this.currentMode !== mode) {
+        this.setMode(mode);
+        this.callbacks.onModeChange(mode);
       }
     });
 
@@ -212,7 +193,7 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.5.0</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.5.1</button>
       </div>
     `;
 

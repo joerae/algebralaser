@@ -8,11 +8,13 @@ import { AnswersView } from './ui/answersView';
 import { HudView } from './ui/hudView';
 import { ForgePanelView, ForgeSign } from './ui/forgePanelView';
 import { BlasterPanelView } from './ui/blasterPanelView';
+import { CarriedBubbleView } from './ui/carriedBubbleView';
+import { runSplitBalanceAnimation } from './ui/animations/splitBalanceAnimation';
+import { getModeDefinition } from './game/modeRegistry';
 import { classifyHandPose } from './vision/poseClassifier';
 import { computeLaserRay } from './vision/coordinateTransform';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
 import { LaserRay } from './vision/types';
-import { soundManager } from './audio/soundEffects';
 import { SolverMode, BlasterType } from './math/types';
 
 class App {
@@ -25,11 +27,11 @@ class App {
   private answersView: AnswersView;
   private forgePanelView: ForgePanelView;
   private blasterPanelView: BlasterPanelView;
+  private carriedBubbleView: CarriedBubbleView;
   private hudView: HudView;
   private raySmoother: RaySmoother;
 
   private videoEl: HTMLVideoElement;
-  private bubbleEl: HTMLElement | null = null;
   private splitLeftEl: HTMLElement | null = null;
   private splitRightEl: HTMLElement | null = null;
   private arrowSvgEl: SVGSVGElement | null = null;
@@ -39,10 +41,6 @@ class App {
   private forgePanelEl: HTMLElement | null = null;
   private blasterPanelEl: HTMLElement | null = null;
   private isCameraRunning: boolean = false;
-  private wasSnapped: boolean = false;
-  private wasCrossed: boolean = false;
-  private snapStartTime: number | null = null;
-  private isPopping: boolean = false;
   private isSplitting: boolean = false;
   private cachedTargets: InteractiveTarget[] = [];
   private needTargetsRefresh: boolean = true;
@@ -51,7 +49,8 @@ class App {
     // 1. Initialize DOM references
     const canvasEl = document.getElementById('canvas-overlay') as HTMLCanvasElement;
     this.videoEl = document.getElementById('webcam-video') as HTMLVideoElement;
-    this.bubbleEl = document.getElementById('carried-bubble');
+    const bubbleEl = document.getElementById('carried-bubble');
+    this.carriedBubbleView = new CarriedBubbleView(bubbleEl);
     this.splitLeftEl = document.getElementById('split-bubble-left');
     this.splitRightEl = document.getElementById('split-bubble-right');
     this.arrowSvgEl = document.getElementById('equation-arrow-svg') as unknown as SVGSVGElement | null;
@@ -217,12 +216,7 @@ class App {
       this.needTargetsRefresh = true;
     } else {
       this.forgePanelView.triggerShake(sign);
-      if (this.bubbleEl) {
-        this.bubbleEl.classList.remove('shake-nah-uh');
-        void this.bubbleEl.offsetWidth;
-        this.bubbleEl.classList.add('shake-nah-uh');
-        window.setTimeout(() => this.bubbleEl?.classList.remove('shake-nah-uh'), 450);
-      }
+      this.carriedBubbleView.triggerNahUhShake();
     }
   }
 
@@ -234,7 +228,7 @@ class App {
   private triggerSplitAndBalance() {
     if (this.isSplitting) return;
     this.isSplitting = true;
-    if (this.bubbleEl) this.bubbleEl.style.display = 'none';
+    this.carriedBubbleView.hide();
 
     const targets = this.equationView.getSplitTargets();
     const eqRect = this.equationView.getEqualsRect();
@@ -249,82 +243,23 @@ class App {
 
     const eqCenter = { x: eqRect.left + eqRect.width / 2, y: eqRect.top + eqRect.height / 2 };
     const state = this.game.getState();
-    const forgedOp = state.forgedOperation;
-    const symbol = forgedOp 
-      ? `${forgedOp.forgedOperator === '-' ? '−' : forgedOp.forgedOperator}${forgedOp.forgedOperand}` 
-      : '';
-    const opClass = forgedOp?.forgedOperator === '+' ? 'op-plus' : (forgedOp?.forgedOperator === '-' ? 'op-minus' : (forgedOp?.forgedOperator === '×' ? 'op-times' : 'op-divide'));
 
-    [this.splitLeftEl, this.splitRightEl].forEach(el => {
-      el.className = `carried-bubble split-clone ${opClass}`;
-      el.style.display = 'flex';
-      el.style.left = `${eqCenter.x}px`;
-      el.style.top = `${eqCenter.y}px`;
-      el.style.transform = 'translate(-50%, -50%) scale(1)';
-      const term = el.querySelector('.bubble-term');
-      if (term) term.textContent = symbol;
-    });
-
-    soundManager.playSplit();
-
-    // Stage 1: Float up above both sides (LHS & RHS)
-    window.requestAnimationFrame(() => {
-      if (this.splitLeftEl && this.splitRightEl) {
-        this.splitLeftEl.classList.add('hovering');
-        this.splitRightEl.classList.add('hovering');
-        this.splitLeftEl.style.left = `${targets.left.hover.x}px`;
-        this.splitLeftEl.style.top = `${targets.left.hover.y}px`;
-        this.splitRightEl.style.left = `${targets.right.hover.x}px`;
-        this.splitRightEl.style.top = `${targets.right.hover.y}px`;
+    runSplitBalanceAnimation({
+      splitLeftEl: this.splitLeftEl,
+      splitRightEl: this.splitRightEl,
+      forgedOp: state.forgedOperation,
+      targets,
+      eqCenter,
+      onLhsImpact: () => {
+        this.equationView.triggerLhsCancelFlash();
+      },
+      onComplete: () => {
+        this.isSplitting = false;
+        this.game.applyBalance();
+        this.game.cancelLhs();
+        this.needTargetsRefresh = true;
       }
     });
-
-    // Stage 2: Smash Side 1 (LHS) into term
-    window.setTimeout(() => {
-      if (!this.splitLeftEl) return;
-      this.splitLeftEl.classList.remove('hovering');
-      this.splitLeftEl.classList.add('smashing');
-      this.splitLeftEl.style.left = `${targets.left.smash.x}px`;
-      this.splitLeftEl.style.top = `${targets.left.smash.y}px`;
-
-      // Impact on LHS
-      window.setTimeout(() => {
-        soundManager.playPop();
-        this.equationView.triggerLhsCancelFlash();
-        if (this.splitLeftEl) {
-          this.splitLeftEl.classList.add('smashed');
-          window.setTimeout(() => {
-            if (this.splitLeftEl) this.splitLeftEl.style.display = 'none';
-          }, 180);
-        }
-
-        // Stage 3: Smash Side 2 (RHS) into constant
-        window.setTimeout(() => {
-          if (!this.splitRightEl) return;
-          this.splitRightEl.classList.remove('hovering');
-          this.splitRightEl.classList.add('smashing');
-          this.splitRightEl.style.left = `${targets.right.smash.x}px`;
-          this.splitRightEl.style.top = `${targets.right.smash.y}px`;
-
-          // Impact on RHS
-          window.setTimeout(() => {
-            soundManager.playSnap();
-            if (this.splitRightEl) {
-              this.splitRightEl.classList.add('smashed');
-              window.setTimeout(() => {
-                if (this.splitRightEl) this.splitRightEl.style.display = 'none';
-              }, 180);
-            }
-
-            // Stage 4: Transition directly into Question phase & arrow
-            this.isSplitting = false;
-            this.game.applyBalance();
-            this.game.cancelLhs(); // Directly advances state to 'question' phase!
-            this.needTargetsRefresh = true;
-          }, 240);
-        }, 220);
-      }, 240);
-    }, 450);
   }
 
   private updateView(state = this.game.getState(), extra = { currentLevel: this.game.getCurrentLevelNumber(), totalLevels: this.game.getTotalLevels() }) {
@@ -333,90 +268,17 @@ class App {
     this.hudView.updateProgress(extra.currentLevel, extra.totalLevels);
     this.needTargetsRefresh = true;
 
-    // Contextual instruction
-    let instr = 'Get Y on its own.';
-    if (state.mode === 'mode_c') {
-      instr = this.game.getHint();
-      if (state.phase === 'question') {
-        this.updateArrowAndLayout(state.phase);
-      }
-    } else if (state.mode === 'mode_b') {
-      if (state.phase === 'ready') {
-        if (state.stage === 'undo_constant') {
-          const sign = state.currentB < 0 ? '−' : '+';
-          instr = `Point laser at ${sign}${Math.abs(state.currentB)} or click to pick it up.`;
-        } else if (state.stage === 'undo_coefficient') {
-          instr = `Point laser at ${state.currentA} in ${state.currentA}x or click to pick it up.`;
-        }
-      } else if (state.phase === 'forging') {
-        instr = 'Hold bubble on the opposite sign (+, −, ×, ÷) for 1s to forge it, or click.';
-      } else if (state.phase === 'applying') {
-        instr = 'Pull forged bubble up to the equation to balance both sides!';
-      } else if (state.phase === 'balancing') {
-        instr = 'Opposites balance! Cancelling inverse operations on variable side...';
-      } else if (state.phase === 'question') {
-        instr = 'Aim laser at an answer card and hold to confirm, or click.';
-        this.updateArrowAndLayout(state.phase);
-      } else if (state.phase === 'solved') {
-        instr = 'Equation balanced! Aim at Next Puzzle → or hold Open Palm 👋 to continue.';
-      }
-    } else {
-      if (state.phase === 'ready') {
-        if (state.stage === 'undo_constant') {
-          const sign = state.currentB < 0 ? '−' : '+';
-          instr = `Point laser at ${sign}${Math.abs(state.currentB)} or drag it across = to undo it.`;
-        } else if (state.stage === 'undo_coefficient') {
-          instr = `Point laser at ${state.currentA} or drag it beneath = to divide.`;
-        }
-      } else if (state.phase === 'carrying') {
-        instr = 'Drag across = to the drop zone and hold to pop the bubble!';
-      } else if (state.phase === 'question') {
-        instr = 'Aim laser at an answer card and hold to confirm, or click.';
-        this.updateArrowAndLayout(state.phase);
-      } else if (state.phase === 'solved') {
-        instr = 'Equation balanced! Aim at Next Puzzle → or hold Open Palm 👋 to continue.';
-      }
-    }
-    this.hudView.updateInstruction(instr);
+    // Data-driven contextual instructions and camera badge hints
+    const modeDef = getModeDefinition(state.mode);
+    this.hudView.updateInstruction(modeDef.getInstruction(state));
 
-    // Contextual camera badge hint
     const hintBadge = document.getElementById('camera-hint-badge');
     if (hintBadge) {
-      if (state.mode === 'mode_c') {
-        if (state.phase === 'ready') {
-          hintBadge.textContent = state.blasterState?.equipped ? 'Shoot LHS Term 💥' : 'Equip Blaster 🔫';
-        } else if (state.phase === 'blasting_rhs') {
-          hintBadge.textContent = 'Blast RHS to Balance 🎯';
-        } else if (state.phase === 'awaiting_simplify') {
-          hintBadge.textContent = 'Equip Calculator 🖩 & Blast';
-        } else if (state.phase === 'question') {
-          hintBadge.textContent = 'Aim laser at answer 👉';
-        } else if (state.phase === 'solved') {
-          hintBadge.textContent = 'Show Open Palm 👋 or Point Next';
-        }
-      } else if (state.mode === 'mode_b') {
-        if (state.phase === 'ready') {
-          hintBadge.textContent = 'Point up at equation ☝️';
-        } else if (state.phase === 'forging') {
-          hintBadge.textContent = 'Forge opposite sign ⚡';
-        } else if (state.phase === 'applying') {
-          hintBadge.textContent = 'Aim at equation to balance ⚖️';
-        } else if (state.phase === 'question') {
-          hintBadge.textContent = 'Aim laser at answer 👉';
-        } else if (state.phase === 'solved') {
-          hintBadge.textContent = 'Show Open Palm 👋 or Point Next';
-        }
-      } else {
-        if (state.phase === 'ready') {
-          hintBadge.textContent = 'Point up at equation ☝️';
-        } else if (state.phase === 'carrying') {
-          hintBadge.textContent = 'Drag term to drop slot 🧲';
-        } else if (state.phase === 'question') {
-          hintBadge.textContent = 'Aim laser at answer 👉';
-        } else if (state.phase === 'solved') {
-          hintBadge.textContent = 'Show Open Palm 👋 or Point Next';
-        }
-      }
+      hintBadge.textContent = modeDef.getBadgeHint(state);
+    }
+
+    if (state.phase === 'question') {
+      this.updateArrowAndLayout(state.phase);
     }
   }
 
@@ -543,257 +405,27 @@ class App {
     const gameState = this.game.getState();
 
     // Process Carried Bubble Position & Magnetic Snapping
-    if ((gameState.phase === 'carrying' || gameState.phase === 'forging' || gameState.phase === 'applying') && gameState.carriedTerm && !this.isPopping && !this.isSplitting) {
-      let targetX = interState.carriedPosition?.x || (window.innerWidth / 2);
-      let targetY = interState.carriedPosition?.y || 160;
-      let isSnapped = false;
+    const isCarryingLike = (gameState.phase === 'carrying' || gameState.phase === 'forging' || gameState.phase === 'applying') && gameState.carriedTerm && !this.carriedBubbleView.isBusy() && !this.isSplitting;
 
-      // Mode A: Destination Slot Snapping
-      if (gameState.phase === 'carrying') {
-        const destEl = document.getElementById('drop-destination');
-        if (destEl) {
-          const destRect = destEl.getBoundingClientRect();
-          const destCenter = {
-            x: destRect.left + destRect.width / 2,
-            y: destRect.top + destRect.height / 2
-          };
+    if (isCarryingLike) {
+      const bubbleRes = this.carriedBubbleView.update(
+        gameState,
+        interState.carriedPosition,
+        laserRay,
+        this.equationView.getEqualsX(),
+        now
+      );
 
-          if (laserRay && laserRay.active) {
-            const t = (destCenter.y - laserRay.origin.y) / laserRay.direction.y;
-            if (t > 0) {
-              targetX = laserRay.origin.x + t * laserRay.direction.x;
-              targetY = destCenter.y;
-            }
-          }
+      interState.carriedPosition = bubbleRes.targetPos;
+      interState.isDestinationHovered = bubbleRes.isDestinationHovered;
 
-          const dist = Math.hypot(targetX - destCenter.x, targetY - destCenter.y);
-          isSnapped = dist < 120;
-
-          if (isSnapped) {
-            targetX = destCenter.x;
-            targetY = destCenter.y;
-            interState.isDestinationHovered = true;
-            if (!this.wasSnapped) {
-              soundManager.playSnap();
-              this.wasSnapped = true;
-            }
-          } else {
-            interState.isDestinationHovered = false;
-            this.wasSnapped = false;
-          }
-        }
+      if (bubbleRes.triggerPop) {
+        this.popBubbleAndDrop();
+      } else if (bubbleRes.triggerSplit) {
+        this.triggerSplitAndBalance();
       }
-
-      // Mode B: Whole Equation Rail Snapping during 'applying'
-      if (gameState.phase === 'applying') {
-        const dropTargetEl = document.getElementById('equation-drop-target') || document.getElementById('eq-equals-target');
-        if (dropTargetEl) {
-          const rect = dropTargetEl.getBoundingClientRect();
-          const targetCenterY = rect.top + rect.height / 2;
-
-          if (laserRay && laserRay.active) {
-            const t = (targetCenterY - laserRay.origin.y) / laserRay.direction.y;
-            if (t > 0) {
-              targetX = laserRay.origin.x + t * laserRay.direction.x;
-              targetY = targetCenterY;
-            }
-          }
-
-          const isNearRail = (
-            targetX >= rect.left - 40 &&
-            targetX <= rect.right + 40 &&
-            targetY >= rect.top - 45 &&
-            targetY <= rect.bottom + 45
-          );
-
-          isSnapped = isNearRail;
-
-          if (isSnapped) {
-            targetY = targetCenterY;
-            targetX = Math.max(rect.left + 35, Math.min(rect.right - 35, targetX));
-            interState.isDestinationHovered = true;
-            if (!this.wasSnapped) {
-              soundManager.playSnap();
-              this.wasSnapped = true;
-            }
-          } else {
-            interState.isDestinationHovered = false;
-            this.wasSnapped = false;
-          }
-        }
-      }
-
-      interState.carriedPosition = { x: targetX, y: targetY };
-
-      // Update DOM Floating Bubble
-      if (this.bubbleEl) {
-        this.bubbleEl.style.display = 'flex';
-        this.bubbleEl.style.left = `${targetX}px`;
-        this.bubbleEl.style.top = `${targetY}px`;
-        this.bubbleEl.classList.toggle('snapped', isSnapped);
-
-        const caption = this.bubbleEl.querySelector('.bubble-caption');
-        const termEl = this.bubbleEl.querySelector('.bubble-term');
-        const ringFill = this.bubbleEl.querySelector<SVGCircleElement>('.bubble-ring-fill');
-        const circumference = 2 * Math.PI * 45; // ~283
-
-        this.bubbleEl.classList.remove('op-plus', 'op-minus', 'op-times', 'op-divide');
-
-        // 1. Mode B: Forging Phase
-        if (gameState.phase === 'forging') {
-          this.bubbleEl.classList.remove('crossed');
-          if (termEl) {
-            if (gameState.carriedTerm === 'constant') {
-              const isNeg = gameState.currentB < 0;
-              const absB = Math.abs(gameState.currentB);
-              termEl.textContent = `${isNeg ? '−' : '+'}${absB}`;
-              this.bubbleEl.classList.add(isNeg ? 'op-minus' : 'op-plus');
-            } else if (gameState.carriedTerm === 'coefficient') {
-              termEl.textContent = `x ${gameState.currentA}`;
-              this.bubbleEl.classList.add('op-times');
-            }
-          }
-          if (caption) {
-            caption.textContent = 'Hold on opposite sign ⚡';
-          }
-          if (ringFill) {
-            ringFill.style.strokeDashoffset = `${circumference}`;
-          }
-        }
-
-        // 2. Mode B: Applying Phase
-        else if (gameState.phase === 'applying') {
-          this.bubbleEl.classList.remove('crossed');
-          const forged = gameState.forgedOperation;
-          if (forged && termEl) {
-            const opSymbol = forged.forgedOperator === '-' ? '−' : forged.forgedOperator;
-            termEl.textContent = `${opSymbol}${forged.forgedOperand}`;
-            const opClass = forged.forgedOperator === '+' ? 'op-plus' : (forged.forgedOperator === '-' ? 'op-minus' : (forged.forgedOperator === '×' ? 'op-times' : 'op-divide'));
-            this.bubbleEl.classList.add(opClass);
-          }
-
-          if (isSnapped) {
-            if (!this.snapStartTime) {
-              this.snapStartTime = now;
-            }
-            const holdDuration = now - this.snapStartTime;
-            const progress = Math.min(1.0, holdDuration / 450);
-
-            if (ringFill) {
-              ringFill.style.strokeDashoffset = `${circumference * (1 - progress)}`;
-            }
-
-            if (progress > 0.15 && holdDuration % 120 < 18) {
-              soundManager.playDwellTick(progress);
-            }
-
-            if (caption) {
-              caption.textContent = progress >= 0.9 ? 'SPLIT!' : 'Hold to balance ⚖️';
-            }
-
-            if (progress >= 1.0) {
-              this.triggerSplitAndBalance();
-            }
-          } else {
-            this.snapStartTime = null;
-            if (ringFill) {
-              ringFill.style.strokeDashoffset = `${circumference}`;
-            }
-            if (caption) {
-              caption.textContent = 'Drag to equation ☝️';
-            }
-          }
-        }
-
-        // 3. Mode A: Carrying Phase
-        else if (gameState.phase === 'carrying') {
-          const equalsX = this.equationView.getEqualsX();
-          const isCrossed = targetX >= equalsX;
-
-          if (isCrossed && !this.wasCrossed) {
-            soundManager.playSnap();
-            this.wasCrossed = true;
-          } else if (!isCrossed && this.wasCrossed) {
-            soundManager.playSnap();
-            this.wasCrossed = false;
-          }
-
-          this.bubbleEl.classList.toggle('crossed', isCrossed);
-
-          if (termEl) {
-            if (gameState.carriedTerm === 'constant') {
-              const isNeg = gameState.currentB < 0;
-              const absB = Math.abs(gameState.currentB);
-              if (isCrossed) {
-                const flippedSign = isNeg ? '+' : '−';
-                termEl.textContent = `${flippedSign}${absB}`;
-                this.bubbleEl.classList.add(isNeg ? 'op-plus' : 'op-minus');
-              } else {
-                const origSign = isNeg ? '−' : '+';
-                termEl.textContent = `${origSign}${absB}`;
-                this.bubbleEl.classList.add(isNeg ? 'op-minus' : 'op-plus');
-              }
-            } else if (gameState.carriedTerm === 'coefficient') {
-              if (isCrossed) {
-                termEl.textContent = `÷ ${gameState.currentA}`;
-                this.bubbleEl.classList.add('op-divide');
-              } else {
-                termEl.textContent = `x ${gameState.currentA}`;
-                this.bubbleEl.classList.add('op-times');
-              }
-            }
-          }
-
-          const HOLD_DURATION_MS = 1000;
-          if (isSnapped) {
-            if (!this.snapStartTime) {
-              this.snapStartTime = now;
-            }
-            const holdDuration = now - this.snapStartTime;
-            const progress = Math.min(1.0, holdDuration / HOLD_DURATION_MS);
-
-            if (ringFill) {
-              const offset = circumference * (1 - progress);
-              ringFill.style.strokeDashoffset = `${offset}`;
-            }
-
-            if (progress > 0.15 && holdDuration % 120 < 18) {
-              soundManager.playDwellTick(progress);
-            }
-
-            if (caption) {
-              if (progress < 0.5) {
-                caption.textContent = 'Hold...';
-              } else if (progress < 0.85) {
-                caption.textContent = 'Almost...';
-              } else {
-                caption.textContent = 'POP!';
-              }
-            }
-
-            if (progress >= 1.0) {
-              this.popBubbleAndDrop();
-            }
-          } else {
-            this.snapStartTime = null;
-            if (ringFill) {
-              ringFill.style.strokeDashoffset = `${circumference}`;
-            }
-            if (caption) {
-              caption.textContent = isCrossed ? 'Drag to Landing Slot' : 'Move across =';
-            }
-          }
-        }
-      }
-    } else if (!this.isPopping && !this.isSplitting) {
-      if (this.bubbleEl) {
-        this.bubbleEl.style.display = 'none';
-        const ringFill = this.bubbleEl.querySelector<SVGCircleElement>('.bubble-ring-fill');
-        if (ringFill) ringFill.style.strokeDashoffset = `${2 * Math.PI * 45}`;
-      }
-      this.wasSnapped = false;
-      this.wasCrossed = false;
-      this.snapStartTime = null;
+    } else if (!this.carriedBubbleView.isBusy() && !this.isSplitting) {
+      this.carriedBubbleView.hide();
     }
 
     // 60 FPS lightweight updates
@@ -990,30 +622,12 @@ class App {
   }
 
   private popBubbleAndDrop() {
-    if (this.isPopping) return;
-    this.isPopping = true;
-    this.snapStartTime = null;
-    this.wasSnapped = false;
-    soundManager.playPop();
-
-    if (this.bubbleEl) {
-      this.bubbleEl.classList.add('popping');
-    }
-
-    // Match the bubbleBurst animation duration (350ms)
-    window.setTimeout(() => {
-      if (this.bubbleEl) {
-        this.bubbleEl.style.display = 'none';
-        this.bubbleEl.classList.remove('popping', 'snapped', 'crossed');
-        const ringFill = this.bubbleEl.querySelector<SVGCircleElement>('.bubble-ring-fill');
-        if (ringFill) ringFill.style.strokeDashoffset = `${2 * Math.PI * 45}`;
-      }
-      this.isPopping = false;
+    this.carriedBubbleView.popAndDrop(() => {
       const interState = this.interaction.getState();
       interState.carriedPosition = null;
       interState.isDestinationHovered = false;
       this.game.drop();
-    }, 350);
+    });
   }
 
   private collectTargets(): InteractiveTarget[] {
@@ -1165,7 +779,7 @@ class App {
     // Mouse Dragging for Carried / Forging / Applying Term
     window.addEventListener('mousemove', (e) => {
       const gameState = this.game.getState();
-      const isCarryingLike = (gameState.phase === 'carrying' || gameState.phase === 'forging' || gameState.phase === 'applying') && !this.isPopping && !this.isSplitting;
+      const isCarryingLike = (gameState.phase === 'carrying' || gameState.phase === 'forging' || gameState.phase === 'applying') && !this.carriedBubbleView.isBusy() && !this.isSplitting;
 
       if (isCarryingLike) {
         let isDestHovered = false;
@@ -1209,7 +823,7 @@ class App {
         if (interState.isDestinationHovered) {
           this.triggerSplitAndBalance();
         }
-      } else if (gameState.phase === 'carrying' && !this.isPopping) {
+      } else if (gameState.phase === 'carrying' && !this.carriedBubbleView.isBusy()) {
         if (interState.isDestinationHovered) {
           this.popBubbleAndDrop();
         } else {

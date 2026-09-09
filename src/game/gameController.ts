@@ -16,6 +16,7 @@ import {
 } from '../math/linearEquation';
 import { soundManager } from '../audio/soundEffects';
 import { generateCuratedLevelSet } from '../math/puzzleGenerator';
+import { getModeDefinition } from './modeRegistry';
 
 export type StateListener = (state: EquationState, extra?: { currentLevel: number; totalLevels: number }) => void;
 
@@ -256,46 +257,7 @@ export class GameController {
   }
 
   public getHint(): string {
-    const { mode, stage, currentB, currentA, currentC, phase, pendingArithmetic } = this.state;
-    if (phase === 'question' && pendingArithmetic) {
-      return pendingArithmetic.explanation;
-    }
-    if (phase === 'forging') {
-      return 'Hold your bubble on the opposite mathematical sign for 1 second.';
-    }
-    if (phase === 'applying') {
-      return 'Pull the forged bubble up to the = sign to balance both sides!';
-    }
-    if (stage === 'undo_constant') {
-      const absB = Math.abs(currentB);
-      if (mode === 'mode_c') {
-        const blasterSign = currentB < 0 ? '+' : '−';
-        return `Equip the ${blasterSign} blaster on the left, then blast ${currentB < 0 ? '−' : '+'}${absB} to smash it free!`;
-      }
-      if (mode === 'mode_b') {
-        return currentB < 0
-          ? `Point at −${absB} to pick it up, then forge +${absB} and apply to both sides.`
-          : `Point at +${absB} to pick it up, then forge −${absB} and apply to both sides.`;
-      }
-      if (currentB < 0) {
-        return `Point your finger at −${absB} and carry it across the = sign to add ${absB} to ${currentC}.`;
-      } else {
-        return `Point your finger at +${absB} and carry it across the = sign to subtract ${absB} from ${currentC}.`;
-      }
-    }
-    if (stage === 'undo_coefficient') {
-      if (mode === 'mode_c') {
-        return `Equip the ÷ blaster on the left, then blast ${currentA} to divide both sides by ${currentA}!`;
-      }
-      if (mode === 'mode_b') {
-        return `Point at ${currentA} to pick it up, forge ÷${currentA} and apply to both sides.`;
-      }
-      return `Point your finger at the ${currentA} in ${currentA}x and carry it below ${currentC} to divide both sides by ${currentA}.`;
-    }
-    if (stage === 'solved') {
-      return `Solved! Look at the balance check, then click Next.`;
-    }
-    return 'Get Y on its own by undoing operations with inverse steps.';
+    return getModeDefinition(this.state.mode).getPedagogicalHint(this.state);
   }
 }
 

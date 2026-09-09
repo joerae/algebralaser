@@ -1,0 +1,284 @@
+/* ==========================================================================
+   MODE C: BLAST BALANCE STYLES
+   ========================================================================== */
+
+#blaster-panel {
+  position: fixed;
+  z-index: 40;
+  display: none;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  padding: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 0 16px rgba(255, 255, 255, 0.03);
+}
+
+.blaster-header {
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.blaster-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.blaster-caption {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.blaster-cards-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.blaster-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  overflow: hidden;
+}
+
+.blaster-card:hover {
+  background: rgba(51, 65, 85, 0.85);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateX(4px);
+}
+
+.blaster-icon-wrap {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.blaster-symbol {
+  font-size: 20px;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  z-index: 2;
+}
+
+.blaster-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #f1f5f9;
+}
+
+/* Dwell SVG for laser dwell timer */
+.blaster-dwell-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 38px;
+  height: 38px;
+  transform: rotate(-90deg);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.blaster-dwell-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 4;
+}
+
+.blaster-dwell-fill {
+  fill: none;
+  stroke: #38bdf8;
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.05s linear;
+}
+
+/* Color theme variations */
+.blaster-plus .blaster-symbol { color: #10b981; }
+.blaster-plus .blaster-dwell-fill { stroke: #10b981; }
+.blaster-plus.equipped-active {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.22);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5), inset 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.blaster-minus .blaster-symbol { color: #f43f5e; }
+.blaster-minus .blaster-dwell-fill { stroke: #f43f5e; }
+.blaster-minus.equipped-active {
+  border-color: #f43f5e;
+  background: rgba(244, 63, 94, 0.22);
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.5), inset 0 0 12px rgba(244, 63, 94, 0.2);
+}
+
+.blaster-times .blaster-symbol { color: #f59e0b; }
+.blaster-times .blaster-dwell-fill { stroke: #f59e0b; }
+.blaster-times.equipped-active {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.22);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5), inset 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.blaster-divide .blaster-symbol { color: #a855f7; }
+.blaster-divide .blaster-dwell-fill { stroke: #a855f7; }
+.blaster-divide.equipped-active {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.22);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.5), inset 0 0 12px rgba(168, 85, 247, 0.2);
+}
+
+.blaster-calc .blaster-symbol { color: #38bdf8; }
+.blaster-calc .blaster-dwell-fill { stroke: #38bdf8; }
+.blaster-calc.equipped-active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.22);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.55), inset 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+/* Recommended pulse guidance */
+@keyframes recommendedBlasterGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+    border-color: rgba(251, 191, 36, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.85);
+    border-color: #fbbf24;
+    transform: scale(1.03);
+  }
+}
+
+.blaster-card.calc-guide-pulse {
+  animation: recommendedBlasterGlow 1.4s infinite ease-in-out;
+}
+
+/* Balance Scale Component under Equation */
+.scale-visual-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 14px;
+  width: 100%;
+  max-width: 480px;
+  pointer-events: none;
+}
+
+.scale-beam-assembly {
+  position: relative;
+  width: 100%;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transform-origin: 50% 50%;
+  transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.scale-beam-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 5px;
+  background: linear-gradient(90deg, #38bdf8, #fbbf24, #38bdf8);
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+
+.scale-pan {
+  position: relative;
+  z-index: 2;
+  width: 32px;
+  height: 10px;
+  background: rgba(30, 41, 59, 0.9);
+  border: 2px solid #38bdf8;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.scale-fulcrum-pivot {
+  font-size: 22px;
+  line-height: 1;
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.7);
+  margin-top: -6px;
+}
+
+/* Tilt States */
+.scale-beam-assembly.tilt-balanced {
+  transform: rotate(0deg);
+}
+
+.scale-beam-assembly.tilt-lhs-heavy {
+  transform: rotate(6.5deg);
+}
+
+.scale-beam-assembly.tilt-lhs-light {
+  transform: rotate(-6.5deg);
+}
+
+/* Mode C Equation Rail and Blast Targets */
+.mode-c-rail {
+  position: relative;
+}
+
+.blast-rhs-target,
+.blast-simplify-target {
+  position: relative;
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 12px;
+  border: 2px dashed rgba(56, 189, 248, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.blast-rhs-target:hover,
+.blast-simplify-target:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  transform: scale(1.05);
+}
+
+.blast-rhs-target.active,
+.blast-simplify-target.active {
+  background: rgba(56, 189, 248, 0.28);
+  border-color: #38bdf8;
+  border-style: solid;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.8), inset 0 0 14px rgba(56, 189, 248, 0.4);
+  transform: scale(1.08);
+}
+
+.mode-c-banner {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #bae6fd;
+}
+
+.calc-prompt-banner {
+  animation: pulseGuide 1.6s infinite ease-in-out;
+  border-color: #38bdf8;
+  color: #e0f2fe;
+}
