@@ -17,10 +17,18 @@ import { computeLaserRay } from './vision/coordinateTransform';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
 import { LaserRay } from './vision/types';
 import { SolverMode, DEFAULT_MODE, BlasterType } from './math/types';
+import { StoryController } from './game/storyController';
+import { StoryView } from './ui/storyView';
+import { EquationChoiceView } from './ui/equationChoiceView';
+import { soundManager } from './audio/soundEffects';
+import { StoryPresentationState } from './story/types';
 
 class App {
   private game: GameController;
   private interaction: InteractionController;
+  private storyController: StoryController;
+  private storyView!: StoryView;
+  private equationChoiceView: EquationChoiceView | null = null;
   private camera: CameraManager;
   private landmarker: HandLandmarkerService;
   private canvasOverlay: CanvasOverlay;
@@ -34,6 +42,8 @@ class App {
   private raySmoother: RaySmoother;
 
   private videoEl: HTMLVideoElement;
+  private storyAreaEl: HTMLElement | null = null;
+  private equationAreaEl: HTMLElement | null = null;
   private splitLeftEl: HTMLElement | null = null;
   private splitRightEl: HTMLElement | null = null;
   private arrowSvgEl: SVGSVGElement | null = null;
@@ -51,11 +61,14 @@ class App {
   private isModeDForgeAnimating: boolean = false;
   private cachedTargets: InteractiveTarget[] = [];
   private needTargetsRefresh: boolean = true;
+  private lastLevelId: string = '';
 
   constructor() {
     // 1. Initialize DOM references
     const canvasEl = document.getElementById('canvas-overlay') as HTMLCanvasElement;
     this.videoEl = document.getElementById('webcam-video') as HTMLVideoElement;
+    this.storyAreaEl = document.getElementById('story-area');
+    this.equationAreaEl = document.getElementById('equation-area');
     const bubbleEl = document.getElementById('carried-bubble');
     this.carriedBubbleView = new CarriedBubbleView(bubbleEl);
     this.splitLeftEl = document.getElementById('split-bubble-left');
@@ -79,9 +92,18 @@ class App {
     const bannerEl = document.getElementById('camera-banner') as HTMLElement;
 
     // 2. Core Controllers & Services
+    const urlParams = new URLSearchParams(window.location.search);
+    const storyParam = urlParams.get('story');
+    const initialStoryMode = storyParam !== null
+      ? storyParam !== 'false'
+      : localStorage.getItem('algebra_story_mode') !== 'false';
+
     const savedMode = (localStorage.getItem('algebra_solver_mode') as SolverMode) || DEFAULT_MODE;
     this.game = new GameController(undefined, savedMode);
     this.interaction = new InteractionController(this.game);
+    this.storyController = new StoryController(this.game.getCurrentLevel(), initialStoryMode);
+    this.storyController.reducedMotion = this.game.reducedMotion;
+    this.lastLevelId = this.game.getCurrentLevel().id;
     this.camera = new CameraManager();
     this.landmarker = new HandLandmarkerService();
     this.canvasOverlay = new CanvasOverlay(canvasEl);
@@ -143,11 +165,37 @@ class App {
       this.needTargetsRefresh = true;
     };
 
+    // Wire Story Mode callbacks
+    this.interaction.onEquationChoiceRequested = (choiceId) => {
+      this.handleStoryEquationChoice(choiceId);
+    };
+    this.interaction.onShowStoryToggleRequested = () => {
+      this.storyController.togglePopover();
+      this.needTargetsRefresh = true;
+    };
+    this.interaction.onCloseStoryRequested = () => {
+      this.storyController.closePopover();
+      this.needTargetsRefresh = true;
+    };
+
     window.addEventListener('resize', () => {
       this.needTargetsRefresh = true;
     });
 
     // 3. UI Views
+    if (this.storyAreaEl) {
+      this.storyView = new StoryView(this.storyAreaEl, {
+        onShowStoryRequested: () => {
+          this.storyController.openPopover();
+          this.needTargetsRefresh = true;
+        },
+        onCloseStoryRequested: () => {
+          this.storyController.closePopover();
+          this.needTargetsRefresh = true;
+        }
+      });
+    }
+
     this.equationView = new EquationView(equationArea, {
       onPickup: (term) => {
         if (this.game.getState().mode === 'mode_c') {
@@ -161,8 +209,14 @@ class App {
         }
       },
       onDrop: () => this.popBubbleAndDrop(),
-      onNext: () => this.game.nextLevel(),
-      onReplay: () => this.game.restartLevel(),
+      onNext: () => {
+        this.game.nextLevel();
+        this.storyController.initLevel(this.game.getCurrentLevel());
+      },
+      onReplay: () => {
+        this.game.restartLevel();
+        this.storyController.restartLevel();
+      },
       onNotYet: () => this.equationView.triggerNotYet(),
       onApplyEquals: () => this.triggerSplitAndBalance(),
       onModeBCleanup: () => this.triggerModeBCleanup(),
@@ -222,21 +276,34 @@ class App {
       },
       onToggleReducedMotion: () => {
         this.game.reducedMotion = !this.game.reducedMotion;
+        this.storyController.reducedMotion = this.game.reducedMotion;
       },
       onDwellChange: (dwellMs) => {
         this.interaction.dwellDurationMs = dwellMs;
       },
       onUndo: () => this.game.performUndo(),
       onHint: () => alert(this.game.getHint()),
-      onRestart: () => this.game.restartLevel(),
+      onRestart: () => {
+        this.game.restartLevel();
+        this.storyController.restartLevel();
+      },
       onModeChange: (mode) => {
         try {
           localStorage.setItem('algebra_solver_mode', mode);
         } catch {}
         this.game.setMode(mode);
+        this.storyController.handleModeSwitch();
         this.needTargetsRefresh = true;
+      },
+      onToggleStoryMode: (enabled) => {
+        this.handleToggleStoryMode(enabled);
       }
-    }, savedMode);
+    }, savedMode, initialStoryMode);
+
+    // Wire Story Presentation updates
+    this.storyController.subscribe((storyState) => {
+      this.renderStory(storyState);
+    });
 
     // 4. Connect State Updates
     this.game.subscribe((state, extra) => {
@@ -251,6 +318,83 @@ class App {
 
     // 7. Start Animation & Vision Loop
     requestAnimationFrame((t) => this.loop(t));
+  }
+
+  private handleToggleStoryMode(enabled: boolean) {
+    try {
+      localStorage.setItem('algebra_story_mode', enabled ? 'true' : 'false');
+      const url = new URL(window.location.href);
+      url.searchParams.set('story', enabled ? 'true' : 'false');
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+    this.storyController.setEnabled(enabled);
+    this.hudView.setStoryMode(enabled);
+    this.renderStory();
+    this.needTargetsRefresh = true;
+  }
+
+  private handleStoryEquationChoice(choiceId: string) {
+    const res = this.storyController.selectEquationChoice(choiceId);
+    if (!res.success) return;
+    if (!res.isCorrect) {
+      soundManager.playIncorrect();
+      this.equationChoiceView?.triggerShake(choiceId);
+    } else {
+      soundManager.playCorrect();
+    }
+    this.needTargetsRefresh = true;
+  }
+
+  private renderStory(storyState: StoryPresentationState = this.storyController.getState()) {
+    if (!this.storyAreaEl) return;
+    this.storyView.render(storyState);
+
+    const choicesMount = document.getElementById('story-equation-choices-container');
+    if (choicesMount) {
+      this.equationChoiceView = new EquationChoiceView(choicesMount, {
+        onSelectChoice: (choiceId) => this.handleStoryEquationChoice(choiceId)
+      });
+      if (storyState.phase === 'choosing_equation') {
+        this.equationChoiceView.render(
+          storyState.candidates,
+          storyState.story.item,
+          storyState.lastFeedback,
+          storyState.selectedCandidateId
+        );
+      }
+    } else {
+      this.equationChoiceView = null;
+    }
+
+    if (this.equationAreaEl) {
+      const isIntro = storyState.enabled && (
+        storyState.phase === 'reading' ||
+        storyState.phase === 'choosing_equation' ||
+        storyState.phase === 'condensing'
+      );
+      this.equationAreaEl.style.display = isIntro ? 'none' : 'flex';
+    }
+
+    const activeItem = storyState.enabled ? storyState.story.item : null;
+    this.equationView.setMagicItem(activeItem);
+    this.answersView.setMagicItem(activeItem);
+
+    this.interaction.isStoryChoosingEquation = storyState.enabled && storyState.phase === 'choosing_equation';
+    this.interaction.isStoryBlockingSolver = this.storyController.blocksSolverInteraction();
+
+    if (storyState.enabled) {
+      if (storyState.phase === 'reading') {
+        this.hudView.updateInstruction('🧙‍♂️ Read the Magic Shop purchase...');
+      } else if (storyState.phase === 'choosing_equation') {
+        this.hudView.updateInstruction('🧙‍♂️ Which equation matches this purchase? Point laser or press 1–4');
+      } else if (storyState.phase === 'condensing') {
+        this.hudView.updateInstruction('✨ Writing down the equation...');
+      } else if (storyState.phase === 'completed') {
+        this.hudView.updateInstruction('✨ Purchase verified! Open palm or dwell on Next to continue');
+      }
+    }
+
+    this.needTargetsRefresh = true;
   }
 
   private handleForgeSign(sign: ForgeSign) {
@@ -424,6 +568,16 @@ class App {
   }
 
   private updateView(state = this.game.getState(), extra = { currentLevel: this.game.getCurrentLevelNumber(), totalLevels: this.game.getTotalLevels() }) {
+    const currentEquation = this.game.getCurrentLevel();
+    if (this.lastLevelId !== currentEquation.id) {
+      this.lastLevelId = currentEquation.id;
+      this.storyController.initLevel(currentEquation);
+    }
+
+    if (state.phase === 'solved') {
+      this.storyController.handlePuzzleSolved();
+    }
+
     this.equationView.render(state);
     const showModeBAnswer = state.mode === 'mode_b'
       && state.phase === 'awaiting_cleanup'
@@ -434,12 +588,15 @@ class App {
     this.needTargetsRefresh = true;
 
     // Data-driven contextual instructions and camera badge hints
-    const modeDef = getModeDefinition(state.mode);
-    this.hudView.updateInstruction(modeDef.getInstruction(state));
+    const storyState = this.storyController.getState();
+    if (!storyState.enabled || (storyState.phase === 'solving' && !storyState.isPopoverOpen)) {
+      const modeDef = getModeDefinition(state.mode);
+      this.hudView.updateInstruction(modeDef.getInstruction(state));
 
-    const hintBadge = document.getElementById('camera-hint-badge');
-    if (hintBadge) {
-      hintBadge.textContent = modeDef.getBadgeHint(state);
+      const hintBadge = document.getElementById('camera-hint-badge');
+      if (hintBadge) {
+        hintBadge.textContent = modeDef.getBadgeHint(state);
+      }
     }
 
     if (state.phase === 'question' || showModeBAnswer) {
@@ -600,6 +757,31 @@ class App {
     this.equationView.setDestinationHovered(interState.isDestinationHovered);
     this.answersView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
 
+    if (this.storyController.isEnabled()) {
+      if (this.storyController.getState().phase === 'choosing_equation' && this.equationChoiceView) {
+        this.equationChoiceView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
+      }
+      const btnShowStory = document.getElementById('btn-show-story');
+      if (btnShowStory) {
+        const fill = btnShowStory.querySelector<SVGCircleElement>('.dwell-fill');
+        if (interState.hoveredTargetId === 'btn-show-story') {
+          btnShowStory.classList.add('dwell-active');
+          if (fill) fill.style.strokeDashoffset = `${113.1 * (1 - Math.max(0, Math.min(1, interState.dwellProgress)))}`;
+        } else {
+          btnShowStory.classList.remove('dwell-active');
+          if (fill) fill.style.strokeDashoffset = '113.1';
+        }
+      }
+      const btnCloseStory = document.getElementById('btn-close-story');
+      if (btnCloseStory) {
+        if (interState.hoveredTargetId === 'btn-close-story') {
+          btnCloseStory.classList.add('dwell-active');
+        } else {
+          btnCloseStory.classList.remove('dwell-active');
+        }
+      }
+    }
+
     if (gameState.phase === 'solved') {
       this.equationView.updateSolvedDwell(
         interState.hoveredTargetId,
@@ -755,48 +937,24 @@ class App {
       this.inversePanelView.render(false);
     }
 
-    // Downward Arrow during Mode D choose_inverse
-    if (gameState.mode === 'mode_d' && phase === 'choose_inverse' && this.inversePanelEl && this.arrowSvgEl && this.arrowPathEl) {
-      const termEl = document.getElementById('term-constant') || document.getElementById('term-coefficient');
-      const headerEl = this.inversePanelEl.querySelector<HTMLElement>('.inverse-header') || this.inversePanelEl;
+    // Mode D: Inverse operation blast arrow from left panel to targeted side
+    if (isInverseVisible && this.cameraBoxEl && gameState.modeDState?.selectedInverse) {
+      const activeCard = this.inversePanelEl?.querySelector<HTMLElement>('.inverse-card.active');
+      const targetedSide: 'lhs' | 'rhs' = 'lhs';
+      const targetSideEl = targetedSide === 'lhs' 
+        ? (document.getElementById('term-group-a') || document.getElementById('equation-lhs'))
+        : (document.getElementById('term-rhs') || document.getElementById('equation-rhs'));
 
-      if (termEl && headerEl) {
-        const termRect = termEl.getBoundingClientRect();
-        const headerRect = headerEl.getBoundingClientRect();
+      if (activeCard && targetSideEl && this.arrowSvgEl && this.arrowPathEl) {
+        const sourceRect = activeCard.getBoundingClientRect();
+        const targetRect = targetSideEl.getBoundingClientRect();
 
-        const startX = termRect.left + termRect.width / 2;
-        const startY = termRect.bottom + 6;
-        const endX = headerRect.right + 8;
-        const endY = headerRect.top + headerRect.height / 2;
+        const startX = sourceRect.right + 6;
+        const startY = sourceRect.top + sourceRect.height / 2;
+        const endX = targetRect.left - 10;
+        const endY = targetRect.top + targetRect.height / 2;
 
-        const cp1X = startX;
-        const cp1Y = startY + (endY - startY) * 0.45;
-        const cp2X = endX + 40;
-        const cp2Y = endY;
-
-        const d = `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-        this.arrowPathEl.setAttribute('d', d);
-        this.arrowSvgEl.style.display = 'block';
-      }
-      if (this.answersColumnEl) this.answersColumnEl.style.display = 'none';
-      return;
-    }
-
-    // 2. Downward Arrow to Top of Forge Area during 'forging' phase (Mode B)
-    if (gameState.mode === 'mode_b' && phase === 'forging' && this.forgePanelEl && this.arrowSvgEl && this.arrowPathEl) {
-      const termEl = document.getElementById('term-constant') || document.getElementById('term-coefficient');
-      const headerEl = this.forgePanelEl.querySelector<HTMLElement>('.forge-header') || this.forgePanelEl;
-
-      if (termEl && headerEl) {
-        const termRect = termEl.getBoundingClientRect();
-        const headerRect = headerEl.getBoundingClientRect();
-
-        const startX = termRect.left + termRect.width / 2;
-        const startY = termRect.bottom + 6;
-        const endX = headerRect.right + 8;
-        const endY = headerRect.top + headerRect.height / 2;
-
-        const cp1X = startX;
+        const cp1X = startX + (endX - startX) * 0.45;
         const cp1Y = startY + (endY - startY) * 0.45;
         const cp2X = endX + 40;
         const cp2Y = endY;
@@ -875,12 +1033,73 @@ class App {
 
   private collectTargets(): InteractiveTarget[] {
     const gameState = this.game.getState();
-    const isDynamicPhase = gameState.phase === 'question' || gameState.phase === 'solved' || gameState.phase === 'forging' || gameState.phase === 'applying' || gameState.phase === 'blasting_rhs' || gameState.phase === 'awaiting_simplify';
+    const storyState = this.storyController.getState();
+    const isDynamicPhase = gameState.phase === 'question' ||
+      gameState.phase === 'solved' ||
+      gameState.phase === 'forging' ||
+      gameState.phase === 'applying' ||
+      gameState.phase === 'blasting_rhs' ||
+      gameState.phase === 'awaiting_simplify' ||
+      (storyState.enabled && (storyState.phase === 'choosing_equation' || storyState.isPopoverOpen));
+
     if (!this.needTargetsRefresh && this.cachedTargets.length > 0 && !isDynamicPhase) {
       return this.cachedTargets;
     }
 
     const targets: InteractiveTarget[] = [];
+
+    // If Story Mode is blocking solver interactions (reading, choosing, condensing, or popover open)
+    if (this.storyController.blocksSolverInteraction()) {
+      if (storyState.phase === 'choosing_equation' && this.equationChoiceView) {
+        const choiceTargets = this.equationChoiceView.getInteractiveElements();
+        choiceTargets.forEach(t => {
+          const rect = t.element.getBoundingClientRect();
+          const pad = 16;
+          targets.push({
+            id: t.id,
+            type: 'equation_choice',
+            rect: {
+              left: rect.left - pad,
+              top: rect.top - pad,
+              right: rect.right + pad,
+              bottom: rect.bottom + pad,
+              width: rect.width + pad * 2,
+              height: rect.height + pad * 2
+            },
+            enabled: true,
+            priority: 2
+          });
+        });
+      }
+
+      if (this.storyView) {
+        const storyUtility = this.storyView.getInteractiveElements();
+        storyUtility.forEach(t => {
+          const rect = t.element.getBoundingClientRect();
+          const pad = 16;
+          targets.push({
+            id: t.id,
+            type: t.type,
+            rect: {
+              left: rect.left - pad,
+              top: rect.top - pad,
+              right: rect.right + pad,
+              bottom: rect.bottom + pad,
+              width: rect.width + pad * 2,
+              height: rect.height + pad * 2
+            },
+            enabled: true,
+            priority: 3
+          });
+        });
+      }
+
+      this.cachedTargets = targets;
+      this.needTargetsRefresh = false;
+      return targets;
+    }
+
+    // Normal solver targets:
     const eqTargets = this.equationView.getInteractiveElements();
     const ansTargets = this.answersView.getInteractiveElements();
     const forgeTargets = this.forgePanelView.getInteractiveElements();
@@ -988,6 +1207,28 @@ class App {
       });
     });
 
+    if (storyState.enabled && this.storyView) {
+      const storyUtility = this.storyView.getInteractiveElements();
+      storyUtility.forEach(t => {
+        const rect = t.element.getBoundingClientRect();
+        const pad = 16;
+        targets.push({
+          id: t.id,
+          type: t.type,
+          rect: {
+            left: rect.left - pad,
+            top: rect.top - pad,
+            right: rect.right + pad,
+            bottom: rect.bottom + pad,
+            width: rect.width + pad * 2,
+            height: rect.height + pad * 2
+          },
+          enabled: true,
+          priority: 2
+        });
+      });
+    }
+
     // Solved Next button
     const nextBtn = document.getElementById('btn-next');
     if (nextBtn) {
@@ -1043,6 +1284,7 @@ class App {
 
     // Mouse Dragging for Carried / Forging / Applying Term
     window.addEventListener('mousemove', (e) => {
+      if (this.storyController.blocksSolverInteraction()) return;
       const gameState = this.game.getState();
       const isCarryingLike = (gameState.phase === 'carrying' || gameState.phase === 'forging' || gameState.phase === 'applying') && !this.carriedBubbleView.isBusy() && !this.isSplitting;
 
@@ -1081,6 +1323,7 @@ class App {
     });
 
     window.addEventListener('mouseup', () => {
+      if (this.storyController.blocksSolverInteraction()) return;
       const gameState = this.game.getState();
       const interState = this.interaction.getState();
 

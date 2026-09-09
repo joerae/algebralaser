@@ -1,3 +1,47 @@
+Version 1.9.0
+Date: 2026-09-09
+
+Release Notes:
+- Implemented Concrete Story Mode: contextual Magic Shop word problems preceding each equation puzzle.
+- Supported 4 magical shop items (Wands, Broomsticks, Cauldrons, Spell Books) with custom SVG icons replacing the variable letter across all 4 solver modes.
+- Equation choice phase presenting 4 deterministic candidates with pedagogical feedback and beat highlighting for misconceptions.
+- Condensing transition animation from repeated concrete items into coefficient + persistent item icon.
+- Added solving-phase "Show Story" button and modal popover (hotkey 'S', laser dwell, mouse click, Esc to close).
+- Full 4-line purchase verification on solve screen with unit price, subtotal, modifier, and numeric arithmetic check.
+- Feature flag toggle in HUD header and Settings modal, with localStorage persistence and '?story=true|false' URL query support.
+- Files: src/data/magicItems.ts, src/story/types.ts, src/data/storyTemplates.ts, src/story/buildConcreteStory.ts, src/story/equationChoices.ts, src/game/storyController.ts, src/ui/mathItemView.ts, src/ui/storyView.ts, src/ui/equationChoiceView.ts, src/styles/story.css, src/ui/hudView.ts, src/ui/equationView.ts, src/ui/answersView.ts, src/game/modeRegistry.ts, src/game/interactionController.ts, src/main.ts, index.html.
+
+Version 1.8.3
+Date: 2026-09-09
+
+Release Notes:
+- Mode B's paired forged charges now leave the fingertip together, settle beneath the LHS and RHS, then apply sequentially while the second charge waits in place.
+- Files: splitBalanceAnimation.ts, equationView.ts, Mode B CSS, and hudView.ts.
+
+Version 1.8.2
+Date: 2026-09-09
+
+Release Notes:
+- Simplified Mode B's carried inverse into two equal caption-free fingertip bubbles and made the whole equation rail the roomy highlighted apply target.
+- RHS answer choices now stay hidden until the learner points at the unsimplified RHS expression; LHS cleanup remains available before or after that calculation.
+- Files: linearEquation.ts/tests/types, GameController, Mode B handler/registry, main.ts, EquationView, CarriedBubbleView, Mode B CSS, and hudView.ts.
+
+Version 1.8.1
+Date: 2026-09-09
+
+Release Notes:
+- Mode B now lets learners simplify either side first: sweep the LHS identity or answer the RHS calculation, then complete the remaining side.
+- Forging pulls the carried bubble into the selected forge during dwell, creates two inverse charges, and fires them from the fingertip to the LHS and RHS in sequence without parking a bubble on the equals sign.
+- Files: linearEquation.ts/tests/types, GameController, Mode B handler, main.ts, EquationView, CarriedBubbleView, splitBalanceAnimation.ts, index.html, and Mode B CSS.
+
+Version 1.8.0
+Date: 2026-09-09
+
+Release Notes:
+- Upgraded Mode B with fingertip-carried bubbles, forge round trips, sequential one-side-at-a-time balancing, required laser-sweep identity cleanup, smoke VFX, and wider collision-free equation rails.
+- Mode B cleanup now rearms whenever the laser leaves its current cleanup target, including when it moves directly across another part of the equation.
+- Files: linearEquation.ts/tests/types, GameController, Mode B interaction, main.ts, EquationView, CarriedBubbleView, ForgePanelView, splitBalanceAnimation.ts, Mode B/equation CSS, and modeRegistry.ts.
+
 Version 1.7.1
 Date: 2026-09-09
 
@@ -30,6 +74,29 @@ Release Notes:
 - Completed Mode D: centered/tilting equation and scale, laser-selectable inverse cards, whole-side blast targets, travelling operand bubble, down-side glow, and preserved Y in division fractions.
 - Fixed Mode D build types and stabilized inverse-card DOM so dwell selection remains attached between animation frames.
 - Files: equationView.ts, inversePanelView.ts, canvasOverlay.ts, modeDBlastSidesHandler.ts, rayCaster/types, Mode D/C CSS, linearEquation.ts, and rayCaster.test.ts.
+
+Version 1.5.1
+Date: 2026-09-09
+
+Release Notes:
+- Architecture: Phase 0 Refactoring Backlog (Pre-Mode-4 Decoupling) ⚡:
+  * CSS Modularization: Split 2,215-line index.css into base.css, hud.css, equation.css, and modes/mode-{a,b,c}.css.
+  * Data-Driven Mode Registry: Created modeRegistry.ts with ModeDefinition interface; dynamically rendered header toggles in hudView.ts.
+  * Extracted Bubble Physics & Animations: Extracted splitBalanceAnimation.ts and carriedBubbleView.ts from main.ts (reduced main.ts from 1,263 to 877 lines).
+  * Extracted Mode Interaction Handlers: Extracted modeACarrier.ts, modeBForgeHandler.ts, and modeCBlasterHandler.ts from interactionController.ts (reduced interactionController.ts from 717 to 280 lines).
+  * Added "typecheck" script to package.json.
+- Files Edited / Created:
+  * src/styles/base.css, src/styles/hud.css, src/styles/equation.css, src/styles/modes/mode-a.css, src/styles/modes/mode-b.css, src/styles/modes/mode-c.css: [NEW] Modular stylesheets.
+  * src/styles/index.css: Master stylesheet with clean imports.
+  * src/game/modeRegistry.ts: [NEW] Mode definitions and hints registry.
+  * src/ui/animations/splitBalanceAnimation.ts: [NEW] Mode B split animation stages.
+  * src/ui/carriedBubbleView.ts: [NEW] Floating bubble tracking, snapping, and popping.
+  * src/game/modes/types.ts, src/game/modes/modeACarrier.ts, src/game/modes/modeBForgeHandler.ts, src/game/modes/modeCBlasterHandler.ts: [NEW] Mode interaction handlers.
+  * src/game/interactionController.ts: Refactored to delegate to active mode handler.
+  * src/main.ts: Decoupled bubble physics, split animations, and mode hints.
+  * src/ui/hudView.ts: Data-driven header mode switcher.
+  * src/game/gameController.ts: Hint delegation to mode registry.
+  * package.json: Added typecheck script.
 
 Version 1.5.0
 Date: 2026-09-09

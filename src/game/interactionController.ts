@@ -48,6 +48,14 @@ export class InteractionController {
   public onBlastSimplifyRequested?: () => void;
   public onModeDInverseRequested?: (choiceId: string) => void;
 
+  // Story Mode callbacks & flags
+  public onEquationChoiceRequested?: (choiceId: string) => void;
+  public onShowStoryToggleRequested?: () => void;
+  public onCloseStoryRequested?: () => void;
+
+  public isStoryChoosingEquation: boolean = false;
+  public isStoryBlockingSolver: boolean = false;
+
   private lastDwellTargetId: string | null = null;
   private lastDwellTime: number = 0;
   private openPalmStartTime: number = 0;
@@ -117,6 +125,27 @@ export class InteractionController {
 
     this.state.trackingLostTimer = null;
 
+    // Story Mode: Utility dwell for Show/Close story buttons (always responsive)
+    if (ray && ray.active && hit && hit.targetType === 'utility' && pose.isPointing) {
+      if (hit.targetId === 'btn-show-story' || hit.targetId === 'btn-close-story') {
+        this.handleStoryUtilityDwell(hit.targetId, now);
+        return;
+      }
+    }
+
+    // Story Mode: choosing equation phase
+    if (this.isStoryChoosingEquation) {
+      this.handleStoryChoicePhase(ray, pose, hit, now);
+      return;
+    }
+
+    // Story Mode: if blocking solver interactions (reading, condensing, modal open, solve verification)
+    if (this.isStoryBlockingSolver) {
+      this.state.hoveredTargetId = null;
+      this.resetDwell();
+      return;
+    }
+
     // Shared Phase: QUESTION (Dwell confirmation on answer cards)
     if (gameState.phase === 'question') {
       this.handleQuestionPhase(ray, pose, hit, now);
@@ -154,6 +183,78 @@ export class InteractionController {
     const handler = this.modeHandlers[gameState.mode];
     if (handler) {
       handler.onVisionFrame(ctx);
+    }
+  }
+
+  private handleStoryChoicePhase(
+    ray: LaserRay | null,
+    pose: ClassifiedPose,
+    hit: RayHitResult | null,
+    now: number
+  ) {
+    this.state.carriedPosition = null;
+    this.state.isDestinationHovered = false;
+    this.openPalmStartTime = 0;
+    this.state.openPalmProgress = 0;
+
+    if (!ray || !ray.active) {
+      this.state.hoveredTargetId = null;
+      this.resetDwell();
+      return;
+    }
+
+    if (hit && (hit.targetType === 'equation_choice' || hit.targetId.startsWith('story-choice-')) && pose.isPointing) {
+      this.state.hoveredTargetId = hit.targetId;
+
+      if (this.lastDwellTargetId !== hit.targetId) {
+        this.lastDwellTargetId = hit.targetId;
+        this.lastDwellTime = now;
+        this.state.dwellProgress = 0;
+        this.state.dwellTargetId = hit.targetId;
+      } else {
+        const elapsed = now - this.lastDwellTime;
+        const progress = Math.min(1.0, elapsed / this.dwellDurationMs);
+        this.state.dwellProgress = progress;
+
+        if (progress > 0.2 && Math.random() < 0.2) {
+          soundManager.playDwellTick(progress);
+        }
+
+        if (progress >= 1.0) {
+          this.onEquationChoiceRequested?.(hit.targetId);
+          this.resetDwell();
+        }
+      }
+    } else {
+      this.state.hoveredTargetId = null;
+      this.resetDwell();
+    }
+  }
+
+  private handleStoryUtilityDwell(targetId: string, now: number) {
+    this.state.hoveredTargetId = targetId;
+    if (this.lastDwellTargetId !== targetId) {
+      this.lastDwellTargetId = targetId;
+      this.lastDwellTime = now;
+      this.state.dwellProgress = 0;
+      this.state.dwellTargetId = targetId;
+    } else {
+      const elapsed = now - this.lastDwellTime;
+      const progress = Math.min(1.0, elapsed / this.dwellDurationMs);
+      this.state.dwellProgress = progress;
+
+      if (progress > 0.2 && Math.random() < 0.2) {
+        soundManager.playDwellTick(progress);
+      }
+
+      if (progress >= 1.0) {
+        if (targetId === 'btn-show-story') {
+          this.onShowStoryToggleRequested?.();
+        } else if (targetId === 'btn-close-story') {
+          this.onCloseStoryRequested?.();
+        }
+        this.resetDwell();
+      }
     }
   }
 
@@ -281,6 +382,39 @@ export class InteractionController {
   // Keyboard navigation
   public handleKeyDown(e: KeyboardEvent): boolean {
     const gameState = this.game.getState();
+
+    // Story Mode: Toggle / Close Popover
+    if (e.key === 's' || e.key === 'S') {
+      if (this.onShowStoryToggleRequested) {
+        this.onShowStoryToggleRequested();
+        return true;
+      }
+    }
+    if (e.key === 'Escape') {
+      if (this.onCloseStoryRequested) {
+        this.onCloseStoryRequested();
+        return true;
+      }
+    }
+
+    // Story Mode: Equation Choice Keyboard (1, 2, 3, 4)
+    if (this.isStoryChoosingEquation) {
+      if (['1', '2', '3', '4'].includes(e.key)) {
+        const idx = Number(e.key) - 1;
+        this.onEquationChoiceRequested?.(`story-choice-${idx}`);
+        return true;
+      }
+      return true; // Block other solver hotkeys while choosing equation
+    }
+
+    // Story Mode: Block other interactions while reading, condensing, or in modal
+    if (this.isStoryBlockingSolver) {
+      if (gameState.phase === 'solved' && (e.key === 'Enter' || e.key === ' ')) {
+        this.game.nextLevel();
+        return true;
+      }
+      return true;
+    }
 
     // Shared Undo: 'u' or Ctrl+Z
     if (e.key === 'u' || e.key === 'U' || (e.ctrlKey && e.key === 'z')) {

@@ -1,4 +1,15 @@
 import { SolverMode, EquationState, DEFAULT_MODE } from '../math/types';
+import { MagicItem } from '../data/magicItems';
+
+export function formatItemInstruction(text: string, item?: MagicItem | null): string {
+  if (!item) return text;
+  return text
+    .replace(/\bGet Y on its own\b/g, `Find the price of one ${item.singular}`)
+    .replace(/\bGet Y\b/g, `Find the ${item.singular}'s price`)
+    .replace(/\bin (\d+)x\b/g, `for $1 ${item.plural}`)
+    .replace(/\bin (\d+)Y\b/g, `for $1 ${item.plural}`)
+    .replace(/\b(\d+)Y\b/g, `$1 × ${item.singular}`);
+}
 
 export interface ModeDefinition {
   id: SolverMode;
@@ -6,9 +17,9 @@ export interface ModeDefinition {
   label: string;
   icon: string;
   description: string;
-  getInstruction(state: EquationState): string;
+  getInstruction(state: EquationState, item?: MagicItem | null): string;
   getBadgeHint(state: EquationState): string;
-  getPedagogicalHint(state: EquationState): string;
+  getPedagogicalHint(state: EquationState, item?: MagicItem | null): string;
 }
 
 export const MODE_DEFINITIONS: ModeDefinition[] = [
@@ -259,5 +270,14 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
 ];
 
 export function getModeDefinition(mode: SolverMode): ModeDefinition {
-  return MODE_DEFINITIONS.find(m => m.id === mode) || MODE_DEFINITIONS.find(m => m.id === DEFAULT_MODE) || MODE_DEFINITIONS[0];
+  const baseDef = MODE_DEFINITIONS.find(m => m.id === mode) || MODE_DEFINITIONS.find(m => m.id === DEFAULT_MODE) || MODE_DEFINITIONS[0];
+  return {
+    ...baseDef,
+    getInstruction(state: EquationState, item?: MagicItem | null): string {
+      return formatItemInstruction(baseDef.getInstruction(state), item);
+    },
+    getPedagogicalHint(state: EquationState, item?: MagicItem | null): string {
+      return formatItemInstruction(baseDef.getPedagogicalHint(state), item);
+    }
+  };
 }

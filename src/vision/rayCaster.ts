@@ -2,7 +2,7 @@ import { LaserRay, RayHitResult } from './types';
 
 export interface InteractiveTarget {
   id: string;
-  type: 'term' | 'destination' | 'answer' | 'utility' | 'forge' | 'blaster' | 'inverse_choice';
+  type: 'term' | 'destination' | 'answer' | 'utility' | 'forge' | 'blaster' | 'inverse_choice' | 'equation_choice';
   rect: { left: number; top: number; right: number; bottom: number; width: number; height: number };
   enabled: boolean;
   priority?: number;

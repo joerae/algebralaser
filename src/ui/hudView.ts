@@ -14,6 +14,7 @@ export interface HudCallbacks {
   onHint: () => void;
   onRestart: () => void;
   onModeChange: (mode: SolverMode) => void;
+  onToggleStoryMode: (enabled: boolean) => void;
 }
 
 export class HudView {
@@ -32,6 +33,7 @@ export class HudView {
   private reducedMotion: boolean = false;
   private dwellMs: number = 450;
   private isModalOpen: boolean = false;
+  private storyModeEnabled: boolean = true;
 
   constructor(
     header: HTMLElement,
@@ -40,7 +42,8 @@ export class HudView {
     debug: HTMLElement,
     banner: HTMLElement,
     callbacks: HudCallbacks,
-    initialMode: SolverMode = DEFAULT_MODE
+    initialMode: SolverMode = DEFAULT_MODE,
+    initialStoryMode: boolean = true
   ) {
     this.headerEl = header;
     this.footerEl = footer;
@@ -49,8 +52,22 @@ export class HudView {
     this.bannerEl = banner;
     this.callbacks = callbacks;
     this.currentMode = initialMode;
+    this.storyModeEnabled = initialStoryMode;
     this.renderHeader(1, 5);
     this.renderFooter('Get Y on its own.');
+  }
+
+  public setStoryMode(enabled: boolean) {
+    this.storyModeEnabled = enabled;
+    const btn = this.headerEl.querySelector<HTMLButtonElement>('#btn-toggle-story');
+    if (btn) {
+      btn.classList.toggle('active', enabled);
+      btn.innerHTML = `📖 Story: ${enabled ? 'ON' : 'OFF'}`;
+    }
+    const chk = this.modalEl.querySelector<HTMLInputElement>('#chk-story-mode');
+    if (chk) {
+      chk.checked = enabled;
+    }
   }
 
   public setMode(mode: SolverMode) {
@@ -151,6 +168,7 @@ export class HudView {
       </div>
       <div class="header-controls">
         <div class="level-indicator">Level ${level} of ${total}</div>
+        <button id="btn-toggle-story" class="icon-btn story-toggle-btn ${this.storyModeEnabled ? 'active' : ''}" title="Toggle Concrete Story Mode">📖 Story: ${this.storyModeEnabled ? 'ON' : 'OFF'}</button>
         <button id="btn-toggle-camera" class="icon-btn">📷 Enable Camera</button>
         <button id="btn-mute" class="icon-btn">${this.isMuted ? '🔇' : '🔊'}</button>
         <button id="btn-settings" class="icon-btn">⚙️ Settings</button>
@@ -165,6 +183,12 @@ export class HudView {
         this.setMode(mode);
         this.callbacks.onModeChange(mode);
       }
+    });
+
+    this.headerEl.querySelector('#btn-toggle-story')?.addEventListener('click', () => {
+      const next = !this.storyModeEnabled;
+      this.setStoryMode(next);
+      this.callbacks.onToggleStoryMode(next);
     });
 
     this.headerEl.querySelector('#btn-toggle-camera')?.addEventListener('click', () => {
@@ -193,7 +217,7 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.8.3</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.9.0</button>
       </div>
     `;
 
@@ -236,6 +260,16 @@ export class HudView {
         </div>
         <div class="setting-row">
           <div>
+            <div class="setting-label">Story Mode</div>
+            <div class="setting-desc">Concrete magic shop situations, item variables & equation choice task</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="chk-story-mode" ${this.storyModeEnabled ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
             <div class="setting-label">Hands-Only View</div>
             <div class="setting-desc">Hides webcam background video, shows only glowing skeleton</div>
           </div>
@@ -275,6 +309,11 @@ export class HudView {
     `;
 
     this.modalEl.querySelector('#modal-close')?.addEventListener('click', () => this.toggleSettingsModal());
+    this.modalEl.querySelector('#chk-story-mode')?.addEventListener('change', (e) => {
+      const val = (e.target as HTMLInputElement).checked;
+      this.setStoryMode(val);
+      this.callbacks.onToggleStoryMode(val);
+    });
     this.modalEl.querySelector('#chk-hands-only')?.addEventListener('change', (e) => {
       this.handsOnly = (e.target as HTMLInputElement).checked;
       this.callbacks.onToggleHandsOnly();

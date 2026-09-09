@@ -1,17 +1,24 @@
 import { PendingArithmetic } from '../math/types';
+import { MagicItem } from '../data/magicItems';
 
 export class AnswersView {
   private container: HTMLElement;
   private onSelectCallback: (choice: number) => void;
   private cardElements: Map<string, { cardEl: HTMLElement; fillCircle: SVGCircleElement | null }> = new Map();
   private readonly circumference: number = 2 * Math.PI * 18; // ~113.1
+  private magicItem: MagicItem | null = null;
 
   constructor(container: HTMLElement, onSelect: (choice: number) => void) {
     this.container = container;
     this.onSelectCallback = onSelect;
   }
 
-  public render(arithmetic: PendingArithmetic | null) {
+  public setMagicItem(item: MagicItem | null) {
+    this.magicItem = item;
+  }
+
+  public render(arithmetic: PendingArithmetic | null, item?: MagicItem | null) {
+    const activeItem = item !== undefined ? item : this.magicItem;
     this.cardElements.clear();
 
     if (!arithmetic) {
@@ -21,9 +28,10 @@ export class AnswersView {
     }
 
     this.container.style.display = 'flex';
+    const shopBadge = activeItem ? `<span class="answers-shop-badge" title="${activeItem.singular}">${activeItem.emojiFallback}</span> ` : '';
     const questionText = arithmetic.operator === '÷'
-      ? `What is ${arithmetic.operand1} ÷ ${arithmetic.operand2}?`
-      : `What is ${arithmetic.operand1} ${arithmetic.operator === '+' ? '+' : '−'} ${arithmetic.operand2}?`;
+      ? `${shopBadge}What is ${arithmetic.operand1} ÷ ${arithmetic.operand2}?`
+      : `${shopBadge}What is ${arithmetic.operand1} ${arithmetic.operator === '+' ? '+' : '−'} ${arithmetic.operand2}?`;
 
     const cardsHtml = arithmetic.choices.map((choice) => {
       const cardId = `answer-choice-${choice}`;

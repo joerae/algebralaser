@@ -1,3 +1,16 @@
+Version 1.9.0
+Date: 2026-09-09
+
+Release Notes:
+- Implemented Concrete Story Mode: contextual Magic Shop word problems preceding each equation puzzle.
+- Supported 4 magical shop items (Wands, Broomsticks, Cauldrons, Spell Books) with custom SVG icons replacing the variable letter across all 4 solver modes.
+- Equation choice phase presenting 4 deterministic candidates with pedagogical feedback and beat highlighting for misconceptions.
+- Condensing transition animation from repeated concrete items into coefficient + persistent item icon.
+- Added solving-phase "Show Story" button and modal popover (hotkey 'S', laser dwell, mouse click, Esc to close).
+- Full 4-line purchase verification on solve screen with unit price, subtotal, modifier, and numeric arithmetic check.
+- Feature flag toggle in HUD header and Settings modal, with localStorage persistence and '?story=true|false' URL query support.
+- Files: src/data/magicItems.ts, src/story/types.ts, src/data/storyTemplates.ts, src/story/buildConcreteStory.ts, src/story/equationChoices.ts, src/game/storyController.ts, src/ui/mathItemView.ts, src/ui/storyView.ts, src/ui/equationChoiceView.ts, src/styles/story.css, src/ui/hudView.ts, src/ui/equationView.ts, src/ui/answersView.ts, src/game/modeRegistry.ts, src/game/interactionController.ts, src/main.ts, index.html.
+
 Version 1.8.3
 Date: 2026-09-09
 
