@@ -1,3 +1,20 @@
+Version 1.7.1
+Date: 2026-09-09
+
+Release Notes:
+- Widened every Mode D equation rail to 680px while preserving equal LHS/RHS halves and centered equals/fulcrum alignment.
+- Prevented Mode D term tiles and simplify targets from shrinking or wrapping vertically.
+- Files: equationView.ts, equation.css, mode-d.css, and hudView.ts.
+
+Version 1.7.0
+Date: 2026-09-09
+
+Release Notes:
+- Mode D writes coefficients conventionally as 3Y, then visibly extracts 3× to the fingertip and carries it into the inverse forge.
+- Correct inverse choices flip into the forged operation; division uses a horizontal fraction bar over the denominator.
+- Added a 0.9s laser recharge, aim-away rearm, and longer simplify dwell to prevent accidental simplification after the second blast.
+- Files: main.ts, linearEquation.ts, equationView.ts, inversePanelView.ts, canvasOverlay.ts, interaction handlers/types, Mode D CSS, modeRegistry.ts, and Mode D tests.
+
 Version 1.6.1
 Date: 2026-09-09
 

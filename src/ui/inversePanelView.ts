@@ -111,6 +111,37 @@ export class InversePanelView {
     }
   }
 
+  public triggerForge(
+    choiceId: string,
+    sourceText: string,
+    choice: InverseChoice,
+    onComplete: () => void,
+    reducedMotion: boolean = false
+  ) {
+    const entry = this.cardElements.get(`inverse-choice-${choiceId}`);
+    const valueEl = entry?.cardEl.querySelector<HTMLElement>('.inverse-val');
+    if (!entry || !valueEl || reducedMotion) {
+      onComplete();
+      return;
+    }
+
+    entry.cardEl.classList.add('forge-impact');
+    valueEl.textContent = sourceText;
+
+    window.setTimeout(() => {
+      valueEl.classList.add('forge-flipping');
+    }, 90);
+
+    window.setTimeout(() => {
+      valueEl.innerHTML = choice.operator === '÷'
+        ? `<span class="flat-division"><span class="flat-division-bar"></span><span>${choice.operand}</span></span>`
+        : choice.displayText;
+      valueEl.classList.add('forged-result');
+    }, 280);
+
+    window.setTimeout(onComplete, 720);
+  }
+
   public getInteractiveElements(): Array<{ id: string; type: 'inverse_choice'; element: HTMLElement }> {
     const result: Array<{ id: string; type: 'inverse_choice'; element: HTMLElement }> = [];
     for (const [cardId, { cardEl }] of this.cardElements) {

@@ -2,11 +2,32 @@ import { ModeInteractionHandler, ModeVisionContext, ModeKeyContext } from './typ
 import { soundManager } from '../../audio/soundEffects';
 
 export class ModeDBlastSidesHandler implements ModeInteractionHandler {
+  private simplifyRearmRequired = false;
+  private simplifyRechargeUntil = 0;
+  private lastObservedPhase: string | null = null;
+
   public onVisionFrame(ctx: ModeVisionContext): boolean {
     const { ray, pose, hit, now, gameState, interState, game } = ctx;
     const modeDState = gameState.modeDState;
 
     if (!modeDState) return false;
+
+    if (gameState.phase === 'ready') {
+      this.simplifyRearmRequired = false;
+      this.simplifyRechargeUntil = 0;
+    }
+
+    // Covers laser, mouse, and keyboard blasts: entering simplify directly
+    // from the second blast always starts a fresh recharge/rearm cycle.
+    if (
+      this.lastObservedPhase === 'blast_second_side' &&
+      gameState.phase === 'awaiting_simplify' &&
+      !this.simplifyRearmRequired
+    ) {
+      this.simplifyRearmRequired = true;
+      this.simplifyRechargeUntil = now + 900;
+    }
+    this.lastObservedPhase = gameState.phase;
 
     // 1. READY (Identify what to undo)
     if (gameState.phase === 'ready') {
@@ -77,7 +98,11 @@ export class ModeDBlastSidesHandler implements ModeInteractionHandler {
 
           if (progress >= 1.0) {
             const choiceId = hit.targetId.replace('inverse-choice-', '');
-            game.selectModeDInverse(choiceId);
+            if (ctx.callbacks.onModeDInverseRequested) {
+              ctx.callbacks.onModeDInverseRequested(choiceId);
+            } else {
+              game.selectModeDInverse(choiceId);
+            }
             ctx.resetDwell();
           }
         }
@@ -139,7 +164,12 @@ export class ModeDBlastSidesHandler implements ModeInteractionHandler {
           }
 
           if (progress >= 1.0) {
-            game.blastModeDSide(side);
+            const wasSecondBlast = gameState.phase === 'blast_second_side';
+            const didBlast = game.blastModeDSide(side);
+            if (wasSecondBlast && didBlast) {
+              this.simplifyRearmRequired = true;
+              this.simplifyRechargeUntil = now + 900;
+            }
             ctx.resetDwell();
           }
         }
@@ -154,14 +184,29 @@ export class ModeDBlastSidesHandler implements ModeInteractionHandler {
 
     // 4. AWAITING SIMPLIFY (Point at an unsimplified side to enter arithmetic calculation)
     if (gameState.phase === 'awaiting_simplify') {
+      const isSimplifyTarget = hit && (hit.targetId === 'simplify-target-lhs' || hit.targetId === 'simplify-target-rhs');
+
+      // A blast often ends with the laser still resting on the newly-created
+      // simplify target. Require a brief recharge and a deliberate aim-away
+      // before accepting a new dwell gesture.
+      if (this.simplifyRearmRequired) {
+        interState.hoveredTargetId = null;
+        interState.isDestinationHovered = false;
+        ctx.resetDwell();
+
+        const laserDisengaged = !ray || !ray.active || !pose.isPointing || !isSimplifyTarget;
+        if (now >= this.simplifyRechargeUntil && laserDisengaged) {
+          this.simplifyRearmRequired = false;
+        }
+        return true;
+      }
+
       if (!ray || !ray.active) {
         interState.hoveredTargetId = null;
         interState.isDestinationHovered = false;
         ctx.resetDwell();
         return true;
       }
-
-      const isSimplifyTarget = hit && (hit.targetId === 'simplify-target-lhs' || hit.targetId === 'simplify-target-rhs');
 
       if (isSimplifyTarget && pose.isPointing) {
         const side = hit.targetId === 'simplify-target-lhs' ? 'lhs' : 'rhs';
@@ -181,7 +226,7 @@ export class ModeDBlastSidesHandler implements ModeInteractionHandler {
           ctx.setDwellState(hit.targetId, 0, hit.targetId, now);
         } else {
           const elapsed = now - ctx.lastDwellTime;
-          const progress = Math.min(1.0, elapsed / 400);
+          const progress = Math.min(1.0, elapsed / 700);
           ctx.setDwellState(hit.targetId, progress, ctx.lastDwellTargetId, ctx.lastDwellTime);
 
           if (progress > 0.2 && Math.random() < 0.2) {
@@ -215,7 +260,11 @@ export class ModeDBlastSidesHandler implements ModeInteractionHandler {
       if (num >= 1 && num <= modeDState.inverseChoices.length) {
         const choice = modeDState.inverseChoices[num - 1];
         if (choice) {
-          game.selectModeDInverse(choice.id);
+          if (ctx.callbacks.onModeDInverseRequested) {
+            ctx.callbacks.onModeDInverseRequested(choice.id);
+          } else {
+            game.selectModeDInverse(choice.id);
+          }
           return true;
         }
       }

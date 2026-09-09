@@ -44,6 +44,7 @@ export class InteractionController {
   public onSmashLhsRequested?: () => void;
   public onBlastRhsRequested?: () => void;
   public onBlastSimplifyRequested?: () => void;
+  public onModeDInverseRequested?: (choiceId: string) => void;
 
   private lastDwellTargetId: string | null = null;
   private lastDwellTime: number = 0;
@@ -76,7 +77,8 @@ export class InteractionController {
       onBlasterSelected: this.onBlasterSelected,
       onSmashLhsRequested: this.onSmashLhsRequested,
       onBlastRhsRequested: this.onBlastRhsRequested,
-      onBlastSimplifyRequested: this.onBlastSimplifyRequested
+      onBlastSimplifyRequested: this.onBlastSimplifyRequested,
+      onModeDInverseRequested: this.onModeDInverseRequested
     };
   }
 

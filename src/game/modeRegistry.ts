@@ -224,7 +224,7 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
           return `What should you undo first? Point laser at ${signStr}${val}.`;
         }
         if (stage === 'undo_coefficient') {
-          return `What should you undo next? Point laser at ${currentA} in ${currentA}x.`;
+          return `What should you undo next? Point laser at ${currentA} in ${currentA}Y.`;
         }
       }
       if (phase === 'choose_inverse') {
@@ -242,7 +242,7 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
         return `Scale is unbalanced! Blast ${opStr} onto the glowing other side to restore balance!`;
       }
       if (phase === 'awaiting_simplify') {
-        return 'Both sides match! Point at an unsimplified term to calculate and simplify it.';
+        return 'Both sides match! Reset your aim, then point back at an unsimplified term to simplify it.';
       }
       if (phase === 'solved') {
         return 'Equation balanced and solved! Look at the balance check, then continue.';

@@ -123,4 +123,4 @@ Preserved Variable Y: Progress to coefficient division step and verify that when
 
 
 Not Yet
-[  ] for things like "3x Y", instead write it as "3Y", but as I put my finger on the 3 to pick it up, it expands to (3x) Y, and we see the 3x inside the bubble, so it shows me that 3Y and 3x Y are the same thing
+[x] Mode D writes "3Y", then extracts "3×" into the laser bubble before forging it into the inverse operation.

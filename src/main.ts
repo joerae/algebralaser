@@ -45,6 +45,7 @@ class App {
   private inversePanelEl: HTMLElement | null = null;
   private isCameraRunning: boolean = false;
   private isSplitting: boolean = false;
+  private isModeDForgeAnimating: boolean = false;
   private cachedTargets: InteractiveTarget[] = [];
   private needTargetsRefresh: boolean = true;
 
@@ -180,10 +181,12 @@ class App {
 
     this.inversePanelView = new InversePanelView(inversePanel, {
       onSelectChoice: (choiceId) => {
-        this.game.selectModeDInverse(choiceId);
-        this.needTargetsRefresh = true;
+        this.handleModeDInverseChoice(choiceId);
       }
     });
+    this.interaction.onModeDInverseRequested = (choiceId) => {
+      this.handleModeDInverseChoice(choiceId);
+    };
 
     this.hudView = new HudView(hudHeader, hudFooter, modalEl, debugEl, bannerEl, {
       onEnableCamera: () => this.toggleCamera(),
@@ -246,6 +249,32 @@ class App {
   private handleSelectBlaster(blaster: BlasterType) {
     this.game.selectBlaster(blaster);
     this.needTargetsRefresh = true;
+  }
+
+  private handleModeDInverseChoice(choiceId: string) {
+    if (this.isModeDForgeAnimating) return;
+
+    const state = this.game.getState();
+    const choice = state.modeDState?.inverseChoices.find(candidate => candidate.id === choiceId);
+    if (!choice || !choice.isCorrect) {
+      this.game.selectModeDInverse(choiceId);
+      this.needTargetsRefresh = true;
+      return;
+    }
+
+    const sourceText = state.modeDState?.targetTerm === 'coefficient'
+      ? `${state.currentA}×`
+      : `${state.currentB < 0 ? '−' : '+'}${Math.abs(state.currentB)}`;
+
+    this.isModeDForgeAnimating = true;
+    this.inversePanelView.triggerForge(choiceId, sourceText, choice, () => {
+      this.isModeDForgeAnimating = false;
+      const latest = this.game.getState();
+      if (latest.mode === 'mode_d' && latest.phase === 'choose_inverse') {
+        this.game.selectModeDInverse(choiceId);
+      }
+      this.needTargetsRefresh = true;
+    }, this.game.reducedMotion);
   }
 
   private triggerSplitAndBalance() {
@@ -469,9 +498,19 @@ class App {
     let blasterInfo: BlasterOverlayInfo | undefined = undefined;
     if (gameState.mode === 'mode_c' || gameState.mode === 'mode_d') {
       const operand = gameState.blasterState?.carriedOperand;
+      const isChoosingModeDInverse = gameState.mode === 'mode_d' && gameState.phase === 'choose_inverse';
+      const extractedText = isChoosingModeDInverse && !this.isModeDForgeAnimating
+        ? (gameState.modeDState?.targetTerm === 'coefficient'
+            ? `${gameState.currentA}×`
+            : `${gameState.currentB < 0 ? '−' : '+'}${Math.abs(gameState.currentB)}`)
+        : null;
+      const isForgedDivision = gameState.mode === 'mode_d' && operand?.operator === '÷';
       blasterInfo = {
-        type: gameState.blasterState?.equipped || (gameState.modeDState?.selectedInverse?.operator || null),
-        carriedOperandText: operand ? `${operand.operator}${operand.value}` : null,
+        type: isChoosingModeDInverse
+          ? (gameState.modeDState?.targetTerm === 'coefficient' ? '×' : (gameState.currentB < 0 ? '−' : '+'))
+          : (gameState.blasterState?.equipped || (gameState.modeDState?.selectedInverse?.operator || null)),
+        carriedOperandText: extractedText || (operand ? (isForgedDivision ? `${operand.value}` : `${operand.operator}${operand.value}`) : null),
+        carriedOperandFormat: isForgedDivision ? 'division' : 'text',
         dwellProgress: interState.dwellProgress
       };
     }

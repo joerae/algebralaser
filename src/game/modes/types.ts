@@ -12,6 +12,7 @@ export interface ModeInteractionCallbacks {
   onSmashLhsRequested?: () => void;
   onBlastRhsRequested?: () => void;
   onBlastSimplifyRequested?: () => void;
+  onModeDInverseRequested?: (choiceId: string) => void;
 }
 
 export interface ModeVisionContext {

@@ -5,6 +5,7 @@ import { InteractiveTarget } from '../vision/rayCaster';
 export interface BlasterOverlayInfo {
   type: string | null;
   carriedOperandText?: string | null;
+  carriedOperandFormat?: 'text' | 'division';
   dwellProgress?: number;
 }
 
@@ -264,15 +265,49 @@ export class CanvasOverlay {
         hit.targetId === 'term-rhs-mode-c' ||
         hit.targetId.startsWith('scale-pan-') ||
         hit.targetId.startsWith('blast-target-') ||
-        hit.targetId.startsWith('equation-side-')
+        hit.targetId.startsWith('equation-side-') ||
+        hit.targetId.startsWith('inverse-choice-')
       );
       if (isTargeting) {
         const progress = Math.min(1, Math.max(0, blasterInfo.dwellProgress || 0));
         badgeX = origin.x + (endX - origin.x) * progress;
         badgeY = origin.y + (endY - origin.y) * progress;
       }
-      this.drawCarriedOperandBadge(badgeX, badgeY, blasterInfo.carriedOperandText, theme.primary);
+      if (blasterInfo.carriedOperandFormat === 'division') {
+        this.drawCarriedDivisionBadge(badgeX, badgeY, blasterInfo.carriedOperandText, theme.primary);
+      } else {
+        this.drawCarriedOperandBadge(badgeX, badgeY, blasterInfo.carriedOperandText, theme.primary);
+      }
     }
+  }
+
+  private drawCarriedDivisionBadge(x: number, y: number, denominator: string, color: string) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 18;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x - 12, y - 5);
+    ctx.lineTo(x + 12, y - 5);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 17px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(denominator, x, y + 8);
+    ctx.restore();
   }
 
   private drawCarriedOperandBadge(x: number, y: number, text: string, color: string) {

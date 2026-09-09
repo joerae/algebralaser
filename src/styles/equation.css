@@ -218,9 +218,22 @@
   white-space: nowrap;
 }
 
-.equation-rail.mode-d-question-rail {
-  width: min(640px, calc(100vw - 32px));
-  max-width: 640px;
+.equation-rail.mode-d-rail {
+  width: min(680px, calc(100vw - 32px));
+  min-width: 0;
+  max-width: 680px;
+}
+
+.mode-d-rail .equation-side {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.mode-d-rail .term-tile,
+.mode-d-rail .pulsing-simplify-target {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .mode-d-question-rail .collapsing-arithmetic-section .math-symbol {

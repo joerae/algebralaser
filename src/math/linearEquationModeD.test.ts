@@ -114,7 +114,7 @@ describe('Mode D: Blast Sides State Machine & Mathematics', () => {
     expect(state.currentC).toBe(12);
     expect(state.stage).toBe('undo_coefficient');
     expect(state.phase).toBe('ready');
-    expect(state.equationHistory).toContain('3 x Y = 12');
+    expect(state.equationHistory).toContain('3Y = 12');
 
     // 11. Target coefficient 3
     const targetCoeff = identifyModeDTarget(state, 'coefficient');

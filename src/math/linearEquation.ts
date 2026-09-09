@@ -19,12 +19,12 @@ import {
 } from './types';
 import { createPendingArithmetic, shuffleArray } from './puzzleGenerator';
 
-export function formatEquationLine(a: number, b: number, c: number): string {
+export function formatEquationLine(a: number, b: number, c: number, compactCoefficient: boolean = false): string {
   let left = '';
   if (a === 1) {
     left = 'Y';
   } else {
-    left = `${a} x Y`;
+    left = compactCoefficient ? `${a}Y` : `${a} x Y`;
   }
 
   if (b > 0) {
@@ -759,7 +759,7 @@ export function blastModeDSide(
       if (selectedInverse.operator === '÷') {
         lhsUnsimplified = `(${state.currentA}/${selectedInverse.operand})Y`;
       } else {
-        const leftVar = state.currentA > 1 ? `${state.currentA} x Y` : 'Y';
+        const leftVar = state.currentA > 1 ? `${state.currentA}Y` : 'Y';
         const origB = state.currentB < 0 ? `− ${Math.abs(state.currentB)}` : `+ ${state.currentB}`;
         lhsUnsimplified = `${leftVar} ${origB} ${selectedInverse.operator} ${selectedInverse.operand}`;
       }
@@ -808,7 +808,7 @@ export function blastModeDSide(
       if (selectedInverse.operator === '÷') {
         lhsUnsimplified = `(${state.currentA}/${selectedInverse.operand})Y`;
       } else {
-        const leftVar = state.currentA > 1 ? `${state.currentA} x Y` : 'Y';
+        const leftVar = state.currentA > 1 ? `${state.currentA}Y` : 'Y';
         const origB = state.currentB < 0 ? `− ${Math.abs(state.currentB)}` : `+ ${state.currentB}`;
         lhsUnsimplified = `${leftVar} ${origB} ${selectedInverse.operator} ${selectedInverse.operand}`;
       }
@@ -1073,7 +1073,7 @@ export function submitAnswer(
 
     const updatedEquationHistory = [...state.equationHistory];
     if (bothSimplified) {
-      const line = formatEquationLine(newA, newB, newC);
+      const line = formatEquationLine(newA, newB, newC, true);
       if (!updatedEquationHistory.includes(line)) {
         updatedEquationHistory.push(line);
       }
