@@ -1,3 +1,59 @@
+Version 1.10.0
+Date: 2026-09-11
+
+Release Notes:
+- Responsive Layout Overhaul (Chromebook 768px height & iPhone portrait mode):
+  - Dynamic Video-Window Height Scaling:
+    - Side selection boxes (Arithmetic answers on right, Forge/Blaster/Inverse on left) now match the exact vertical span of the video window (cameraRect.height).
+    - Converted cards to flex: 1 with min-height: 0 so choice cards scale in tandem with the video feed.
+    - Question prompt positioned above cards, ensuring the bottom-most card aligns with the camera bottom and never cuts off or collides with the footer.
+  - Chromebook 768px Height Layout:
+    - Reduced equation area footprint (145px) and history lines (55px) on displays <= 820px high.
+    - Replaced rigid 360px camera clamp with a responsive clamp (180px–310px), preventing vertical overflow on 768px Chromebook screens.
+  - iPhone & Mobile Portrait Mode:
+    - Adaptive layout switching: detects narrow/portrait viewports and docks selection panels directly beneath the camera box in a responsive horizontal grid.
+    - Compact mobile HUD header and footer with overflow protection.
+    - Fluid equation rail fitting within 360px portrait viewports without horizontal clipping.
+  - Files: src/styles/equation.css, src/styles/hud.css, src/styles/responsive.css, src/styles/index.css, src/styles/modes/mode-a.css, src/styles/modes/mode-c.css, src/styles/modes/mode-d.css, src/main.ts, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
+Version 1.9.2
+Date: 2026-09-10
+
+Release Notes:
+- Top Bar Cleanup & Settings Modal:
+  - Replaced crowded mode toggles, story switch, and sound toggle in the top header with a single standard Settings Cog icon (⚙️) and 'M' keyboard shortcut.
+  - Housed the 4 solver mode buttons, sound effects switch, and story mode switch inside the Settings dialog.
+- Four Pure-Form Foundational Equations (+, -, *, /):
+  - Curated Level 1: Pure Addition (Y + 3 = 8) with Wand (🪄).
+  - Curated Level 2: Pure Subtraction (Y − 4 = 6) with Broomstick (🧹).
+  - Curated Level 3: Pure Multiplication (3 × Y = 15) with Cauldron (🍲).
+  - Curated Level 4: Pure Division (Y ÷ 4 = 7) with Magical Chocolate (🍫, "1/4 of a block of magical chocolate").
+- Extended Equation Families:
+  - Added 'x_div_d', 'x_div_d_plus_b', and 'x_div_d_minus_b' equation families with fractional representation, story templates, and solver support.
+- Endless Dynamic Puzzle Progression:
+  - Advancing beyond Level 4 dynamically generates random puzzles from all 8 equation families with randomized items, coefficients, and positive solutions.
+- Complementary Operator Styling:
+  - Plus (+): Radiant Emerald Green (#34d399) paired with crisp Radiant Ice White Minus (−, #ffffff).
+  - Multiplier (×): Solar Crimson Red (#f43f5e) paired with Cosmic Purple Division (÷, #c084fc).
+
+Version 1.9.1
+Date: 2026-09-09
+
+Release Notes:
+- Story Mode Polish & Gameplay Tuning:
+  - Narrowed equation candidates down to 3 in a single horizontal row directly above the camera box for effortless pointer targeting (1A).
+  - Fixed coefficient and times scaling inside equation choice cards to normal compact size (1B).
+  - Replaced generic "extra charge" with realistic reasons (delivery, gift wrapping, express courier, packaging) (1C).
+  - Streamlined stories: removed duplicate question beats ("before the extra charge?"), leaving only the clean question (1D).
+  - Shortened equation prompt to "Which equation matches?" (1E).
+  - Pre-allocated story card height (min-height) to completely prevent the camera box from shifting down as story lines appear (1F).
+  - Omitted the concrete equation diagram from the story card during reading and choosing phases to prevent spoiling the answer (1G).
+  - Substantially enlarged the "3 - 1" RHS arithmetic hitbox and font size in Mode B (min-height 78px, min-width 120px, pad 32) (2a).
+  - Moved "Show Story" button to the bottom of the screen with a floating dwell pill, allowing pointing down to view story without interfering with equation targets (2b).
+  - Scaled magical item icon ~80% larger (68px) in the equation rail and solved screen to match large equation numbers (2c).
+  - Rendered magical item icons instead of text [item] in the perspective history rail (2d).
+- Files: src/data/storyTemplates.ts, src/story/buildConcreteStory.ts, src/story/equationChoices.ts, src/ui/storyView.ts, src/ui/equationChoiceView.ts, src/ui/mathItemView.ts, src/styles/story.css, src/styles/modes/mode-b.css, src/main.ts, src/game/interactionController.ts, index.html, and tests.
+
 Version 1.9.0
 Date: 2026-09-09
 

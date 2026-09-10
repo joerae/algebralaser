@@ -116,7 +116,8 @@
   backdrop-filter: blur(12px);
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.4);
   min-height: 96px;
-  min-width: 480px;
+  min-width: 0;
+  width: min(580px, calc(100vw - 24px));
   max-width: 580px;
   box-sizing: border-box;
   transform-origin: 50% 50%;
@@ -522,23 +523,26 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  gap: 12px;
+  gap: 10px;
   z-index: 35;
   transition: opacity 0.25s ease;
+  box-sizing: border-box;
 }
 
 .arithmetic-question {
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 18px;
-  padding: 14px 18px;
+  padding: 10px 16px;
   text-align: center;
   backdrop-filter: blur(12px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .question-text {
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 700;
   color: var(--gold-bright);
 }
@@ -552,7 +556,11 @@
 .answer-cards-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  justify-content: space-between;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .answer-card {
@@ -560,13 +568,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 1;
+  min-height: 0;
+  height: auto;
   background: var(--bg-card);
   border: 2px solid var(--border-subtle);
   border-radius: 16px;
-  height: 74px;
   cursor: pointer;
   transition: all 0.2s ease;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .answer-card:hover,
@@ -578,20 +589,21 @@
 }
 
 .answer-val {
-  font-size: 34px;
+  font-size: clamp(20px, 4.5vh, 34px);
   font-weight: 700;
   color: var(--text-main);
   z-index: 2;
+  line-height: 1;
 }
 
 /* SVG Dwell Progress Indicator on Answer Card */
 .dwell-svg {
   position: absolute;
-  right: 18px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%) rotate(-90deg);
-  width: 44px;
-  height: 44px;
+  width: clamp(28px, 4.5vh, 42px);
+  height: clamp(28px, 4.5vh, 42px);
   z-index: 2;
   pointer-events: none;
 }

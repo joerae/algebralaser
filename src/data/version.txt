@@ -1,3 +1,21 @@
+Version 1.10.0
+Date: 2026-09-11
+
+Release Notes:
+- Responsive Layout Overhaul (Chromebook 768px height & iPhone portrait mode):
+  - Dynamic Video-Window Height Scaling:
+    - Side selection boxes (Arithmetic answers on right, Forge/Blaster/Inverse on left) now match the exact vertical span of the video window (cameraRect.height).
+    - Converted cards to flex: 1 with min-height: 0 so choice cards scale in tandem with the video feed.
+    - Question prompt positioned above cards, ensuring the bottom-most card aligns with the camera bottom and never cuts off or collides with the footer.
+  - Chromebook 768px Height Layout:
+    - Reduced equation area footprint (145px) and history lines (55px) on displays <= 820px high.
+    - Replaced rigid 360px camera clamp with a responsive clamp (180px–310px), preventing vertical overflow on 768px Chromebook screens.
+  - iPhone & Mobile Portrait Mode:
+    - Adaptive layout switching: detects narrow/portrait viewports and docks selection panels directly beneath the camera box in a responsive horizontal grid.
+    - Compact mobile HUD header and footer with overflow protection.
+    - Fluid equation rail fitting within 360px portrait viewports without horizontal clipping.
+  - Files: src/styles/equation.css, src/styles/hud.css, src/styles/responsive.css, src/styles/index.css, src/styles/modes/mode-a.css, src/styles/modes/mode-c.css, src/styles/modes/mode-d.css, src/main.ts, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.9.2
 Date: 2026-09-10
 

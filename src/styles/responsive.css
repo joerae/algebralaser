@@ -1,0 +1,586 @@
+/* =========================================================
+   Magic Finger Algebra - Responsive Design System
+   Chromebook (1366x768 / height <= 820px) & iPhone Portrait Mode
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   1. Compact Displays & Chromebooks (height <= 820px or width <= 1366px)
+   --------------------------------------------------------- */
+@media (max-height: 820px), (max-width: 1366px) {
+  .stage-container {
+    padding: 4px 14px;
+  }
+
+  .hud-header {
+    padding: 6px 18px;
+  }
+
+  .brand-title {
+    font-size: 16px;
+  }
+
+  .hud-footer {
+    padding: 6px 18px;
+  }
+
+  .instruction-text {
+    font-size: 13px;
+  }
+
+  /* Equation Area: scaled down so camera and side panels have plenty of vertical room */
+  .equation-area {
+    height: 145px;
+    min-height: 145px;
+    max-height: 145px;
+    flex: 0 0 145px;
+    padding-bottom: 2px;
+  }
+
+  .equation-history-container {
+    height: 55px;
+    min-height: 55px;
+    max-height: 55px;
+    flex: 0 0 55px;
+    margin-bottom: 4px;
+  }
+
+  .history-line[data-depth="1"] {
+    font-size: 18px;
+  }
+
+  .history-line[data-depth="2"] {
+    font-size: 15px;
+  }
+
+  .history-line[data-depth="3"],
+  .history-line[data-depth="4"] {
+    font-size: 12px;
+  }
+
+  .equation-rail {
+    font-size: 34px;
+    min-height: 60px;
+    padding: 4px 16px;
+    gap: 10px;
+    min-width: 0;
+    width: min(540px, calc(100vw - 20px));
+  }
+
+  .math-symbol {
+    font-size: 34px;
+  }
+
+  .term-tile {
+    font-size: 34px;
+    min-height: 44px;
+    min-width: 42px;
+    padding: 3px 10px;
+  }
+
+  .term-times {
+    font-size: 26px;
+  }
+
+  .fraction .num,
+  .fraction .denom {
+    font-size: 26px;
+  }
+
+  /* Camera Box: dynamically sized to fit Chromebook 768px height with zero overflow */
+  .camera-box {
+    height: clamp(180px, min(42vh, calc(100vh - 270px)), 310px);
+    max-height: 310px;
+    aspect-ratio: 4 / 3;
+    width: auto;
+    margin-top: 2px;
+    margin-bottom: 2px;
+  }
+
+  .camera-size-btn {
+    display: none;
+  }
+
+  /* Side Panels: scaled and responsive to video window height */
+  .answers-column {
+    width: 220px;
+    gap: 6px;
+  }
+
+  .arithmetic-question {
+    padding: 6px 10px;
+    border-radius: 14px;
+  }
+
+  .question-text {
+    font-size: 15px;
+  }
+
+  .question-subtext {
+    font-size: 11px;
+    margin-top: 2px;
+  }
+
+  .answer-card {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    padding: 4px 10px;
+    border-radius: 14px;
+  }
+
+  .answer-val {
+    font-size: clamp(18px, 4vh, 26px);
+  }
+
+  .dwell-svg {
+    width: clamp(24px, 4vh, 32px);
+    height: clamp(24px, 4vh, 32px);
+    right: 10px;
+  }
+
+  .forge-panel {
+    width: 145px;
+    gap: 6px;
+  }
+
+  .forge-header {
+    padding: 4px 8px;
+    margin-bottom: 4px;
+  }
+
+  .forge-card {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    border-radius: 12px;
+  }
+
+  .forge-symbol {
+    font-size: 32px;
+  }
+
+  .blaster-panel {
+    width: 145px;
+    gap: 6px;
+  }
+
+  .blaster-card {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    padding: 3px 8px;
+    border-radius: 12px;
+  }
+
+  .blaster-icon-wrap {
+    width: 30px;
+    height: 30px;
+  }
+
+  .blaster-symbol {
+    font-size: 16px;
+  }
+
+  .blaster-name {
+    font-size: 11px;
+  }
+
+  .inverse-panel {
+    width: 150px;
+    gap: 6px;
+  }
+
+  .inverse-card {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    padding: 4px 8px;
+    border-radius: 12px;
+  }
+
+  .inverse-val {
+    font-size: 22px;
+  }
+
+  .solved-line-wrap {
+    font-size: 36px;
+    gap: 8px;
+  }
+
+  .action-btn-primary {
+    padding: 8px 20px;
+    font-size: 15px;
+  }
+
+  .open-palm-advance-badge {
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+}
+
+/* ---------------------------------------------------------
+   2. Mobile & iPhone in Portrait Mode (width <= 768px & portrait, or width <= 640px)
+   --------------------------------------------------------- */
+@media (max-width: 768px) and (orientation: portrait), (max-width: 640px) {
+  html, body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  #app {
+    min-height: 100vh;
+    height: auto;
+  }
+
+  .stage-container {
+    flex-direction: column;
+    padding: 4px 8px 6px;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: visible;
+  }
+
+  .workspace-center {
+    width: 100%;
+    max-width: 100%;
+    gap: 4px;
+    flex: 0 0 auto;
+    height: auto;
+  }
+
+  /* HUD Header in Mobile Portrait */
+  .hud-header {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .brand-title {
+    font-size: 14px;
+    gap: 6px;
+  }
+
+  .brand-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
+  .header-controls {
+    gap: 6px;
+  }
+
+  .level-indicator {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .icon-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  /* HUD Footer in Mobile Portrait */
+  .hud-footer {
+    padding: 6px 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .instruction-text {
+    font-size: 11px;
+    gap: 4px;
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    margin-bottom: 2px;
+  }
+
+  .hud-actions {
+    gap: 6px;
+  }
+
+  .version-badge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  /* Equation Area in Mobile Portrait */
+  .equation-area {
+    height: auto;
+    min-height: 75px;
+    max-height: 115px;
+    flex: 0 0 auto;
+    padding-bottom: 2px;
+  }
+
+  .equation-history-container {
+    height: 38px;
+    min-height: 38px;
+    max-height: 38px;
+    flex: 0 0 38px;
+    margin-bottom: 2px;
+  }
+
+  .history-line[data-depth="1"] {
+    font-size: 14px;
+  }
+
+  .history-line[data-depth="2"] {
+    font-size: 12px;
+  }
+
+  .history-line[data-depth="3"],
+  .history-line[data-depth="4"] {
+    font-size: 10px;
+  }
+
+  .equation-rail {
+    min-height: 48px;
+    padding: 4px 8px;
+    font-size: 24px;
+    gap: 6px;
+    min-width: 0;
+    width: calc(100vw - 16px);
+    max-width: 360px;
+    border-radius: 14px;
+  }
+
+  .math-symbol {
+    font-size: 24px;
+  }
+
+  .term-tile {
+    font-size: 24px;
+    min-height: 36px;
+    min-width: 32px;
+    padding: 2px 6px;
+    border-radius: 10px;
+  }
+
+  .term-times {
+    font-size: 18px;
+  }
+
+  .fraction .num,
+  .fraction .denom {
+    font-size: 18px;
+  }
+
+  /* Camera Box in Mobile Portrait: centered, fits iPhone width cleanly */
+  .camera-box {
+    width: min(calc(100vw - 16px), 330px);
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: 248px;
+    border-radius: 16px;
+    margin: 2px auto;
+  }
+
+  .camera-box-header {
+    padding: 4px 10px;
+  }
+
+  .camera-title {
+    font-size: 11px;
+  }
+
+  .camera-hint-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
+  /* -------------------------------------------------------
+     Portrait Docked Panels: Placed gracefully below the video window
+     ------------------------------------------------------- */
+
+  /* Arithmetic Answers Dock */
+  .answers-column.panel-portrait-dock {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    width: min(calc(100vw - 16px), 330px) !important;
+    height: auto !important;
+    margin: 4px auto 0 !important;
+    gap: 6px !important;
+    z-index: 35;
+  }
+
+  .answers-column.panel-portrait-dock .arithmetic-question {
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .answers-column.panel-portrait-dock .question-text {
+    font-size: 14px;
+  }
+
+  .answers-column.panel-portrait-dock .question-subtext {
+    font-size: 10px;
+    margin-top: 1px;
+  }
+
+  .answers-column.panel-portrait-dock .answer-cards-list {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    height: 56px !important;
+    width: 100%;
+  }
+
+  .answers-column.panel-portrait-dock .answer-card {
+    height: 56px !important;
+    border-radius: 12px;
+    flex: none;
+  }
+
+  .answers-column.panel-portrait-dock .answer-val {
+    font-size: 22px;
+  }
+
+  .answers-column.panel-portrait-dock .dwell-svg {
+    width: 26px;
+    height: 26px;
+    right: 6px;
+  }
+
+  /* Mode B Forge Panel Dock */
+  .forge-panel.panel-portrait-dock {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    width: min(calc(100vw - 16px), 330px) !important;
+    height: auto !important;
+    margin: 4px auto 0 !important;
+    gap: 4px !important;
+    z-index: 35;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-header {
+    padding: 4px 8px;
+    margin-bottom: 2px;
+    border-radius: 10px;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-badge {
+    font-size: 10px;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-subtitle {
+    font-size: 10px;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-cards-vertical {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+    height: 52px !important;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-card {
+    height: 52px !important;
+    border-radius: 10px;
+    flex: none;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-symbol {
+    font-size: 26px;
+  }
+
+  /* Mode C Blaster Panel Dock */
+  .blaster-panel.panel-portrait-dock {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    width: min(calc(100vw - 16px), 330px) !important;
+    height: auto !important;
+    margin: 4px auto 0 !important;
+    gap: 4px !important;
+    z-index: 35;
+  }
+
+  .blaster-panel.panel-portrait-dock .blaster-header {
+    margin-bottom: 2px;
+  }
+
+  .blaster-panel.panel-portrait-dock .blaster-title {
+    font-size: 11px;
+  }
+
+  .blaster-panel.panel-portrait-dock .blaster-caption {
+    font-size: 10px;
+  }
+
+  .blaster-panel.panel-portrait-dock .blaster-cards-vertical {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 4px !important;
+    height: 50px !important;
+  }
+
+  .blaster-panel.panel-portrait-dock .blaster-card {
+    height: 50px !important;
+    padding: 2px 4px;
+    border-radius: 10px;
+    justify-content: center;
+    flex: none;
+  }
+
+  .blaster-panel.panel-portrait-dock .blaster-name {
+    display: none;
+  }
+
+  .blaster-panel.panel-portrait-dock .blaster-icon-wrap {
+    width: 28px;
+    height: 28px;
+  }
+
+  .blaster-panel.panel-portrait-dock .blaster-symbol {
+    font-size: 18px;
+  }
+
+  /* Mode D Inverse Panel Dock */
+  .inverse-panel.panel-portrait-dock {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    width: min(calc(100vw - 16px), 330px) !important;
+    height: auto !important;
+    margin: 4px auto 0 !important;
+    gap: 4px !important;
+    z-index: 35;
+  }
+
+  .inverse-panel.panel-portrait-dock .inverse-header {
+    margin-bottom: 2px;
+  }
+
+  .inverse-panel.panel-portrait-dock .inverse-title {
+    font-size: 11px;
+  }
+
+  .inverse-panel.panel-portrait-dock .inverse-subtitle {
+    font-size: 10px;
+  }
+
+  .inverse-panel.panel-portrait-dock .inverse-cards-list {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+    height: 52px !important;
+  }
+
+  .inverse-panel.panel-portrait-dock .inverse-card {
+    height: 52px !important;
+    border-radius: 10px;
+    flex: none;
+  }
+
+  .inverse-panel.panel-portrait-dock .inverse-val {
+    font-size: 20px;
+  }
+}

@@ -847,48 +847,65 @@ class App {
 
   private updateArrowAndLayout(phase: string) {
     const gameState = this.game.getState();
+    const isMobilePortrait = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+    const footerEl = document.getElementById('hud-footer');
+    const footerHeight = footerEl ? footerEl.offsetHeight : 55;
+    const maxBottom = window.innerHeight - footerHeight - 10;
 
     // 1. Forge Panel on Left (visible during forging or applying in Mode B)
     const isForgeVisible = gameState.mode === 'mode_b' && phase === 'forging';
     if (isForgeVisible && this.cameraBoxEl && this.forgePanelEl) {
-      const cameraRect = this.cameraBoxEl.getBoundingClientRect();
-      const columnWidth = 165;
-      let left = cameraRect.left - columnWidth - 18;
-      if (left < 10) left = 10;
-
       this.forgePanelEl.style.display = 'flex';
       this.forgePanelView.render(true, phase as 'forging' | 'applying', gameState.forgedOperation?.forgedOperator || null);
 
-      // Vertically align the 4 operator cards with the camera viewport
-      const headerEl = this.forgePanelEl.querySelector<HTMLElement>('.forge-header');
-      const headerHeight = headerEl ? headerEl.offsetHeight + 8 : 50;
-      const top = Math.max(10, cameraRect.top - headerHeight);
-      const totalHeight = cameraRect.height + (cameraRect.top - top);
+      if (isMobilePortrait) {
+        this.forgePanelEl.classList.add('panel-portrait-dock');
+        this.forgePanelEl.style.left = '';
+        this.forgePanelEl.style.top = '';
+        this.forgePanelEl.style.width = '';
+        this.forgePanelEl.style.height = '';
+        this.forgePanelEl.style.right = '';
+        const cardsContainer = this.forgePanelEl.querySelector<HTMLElement>('.forge-cards-vertical');
+        if (cardsContainer) {
+          cardsContainer.style.height = '';
+          cardsContainer.style.flex = '';
+        }
+      } else {
+        this.forgePanelEl.classList.remove('panel-portrait-dock');
+        const cameraRect = this.cameraBoxEl.getBoundingClientRect();
+        const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 145 : 165;
+        let left = cameraRect.left - columnWidth - 14;
+        if (left < 10) left = 10;
 
-      this.forgePanelEl.style.left = `${left}px`;
-      this.forgePanelEl.style.top = `${top}px`;
-      this.forgePanelEl.style.width = `${columnWidth}px`;
-      this.forgePanelEl.style.height = `${totalHeight}px`;
-      this.forgePanelEl.style.right = 'auto';
+        const headerEl = this.forgePanelEl.querySelector<HTMLElement>('.forge-header');
+        const headerHeight = headerEl ? headerEl.offsetHeight + 6 : 46;
+        const top = Math.max(10, cameraRect.top - headerHeight);
+        const safeCardsHeight = Math.max(100, Math.min(cameraRect.height, maxBottom - cameraRect.top));
+        const totalHeight = safeCardsHeight + (cameraRect.top - top);
 
-      const cardsContainer = this.forgePanelEl.querySelector<HTMLElement>('.forge-cards-vertical');
-      if (cardsContainer) {
-        cardsContainer.style.height = `${cameraRect.height}px`;
-        cardsContainer.style.flex = '0 0 auto';
+        this.forgePanelEl.style.left = `${left}px`;
+        this.forgePanelEl.style.top = `${top}px`;
+        this.forgePanelEl.style.width = `${columnWidth}px`;
+        this.forgePanelEl.style.height = `${totalHeight}px`;
+        this.forgePanelEl.style.right = 'auto';
+
+        const cardsContainer = this.forgePanelEl.querySelector<HTMLElement>('.forge-cards-vertical');
+        if (cardsContainer) {
+          cardsContainer.style.height = `${safeCardsHeight}px`;
+          cardsContainer.style.flex = '0 0 auto';
+        }
       }
     } else {
-      if (this.forgePanelEl) this.forgePanelEl.style.display = 'none';
+      if (this.forgePanelEl) {
+        this.forgePanelEl.classList.remove('panel-portrait-dock');
+        this.forgePanelEl.style.display = 'none';
+      }
       this.forgePanelView.render(false);
     }
 
     // Mode C: Blaster Panel on Left
     const isBlasterVisible = gameState.mode === 'mode_c';
     if (isBlasterVisible && this.cameraBoxEl && this.blasterPanelEl) {
-      const cameraRect = this.cameraBoxEl.getBoundingClientRect();
-      const columnWidth = 165;
-      let left = cameraRect.left - columnWidth - 18;
-      if (left < 10) left = 10;
-
       this.blasterPanelEl.style.display = 'flex';
       const activeBlaster = gameState.blasterState?.equipped || null;
       let recommended: BlasterType | null = null;
@@ -901,35 +918,54 @@ class App {
       }
       this.blasterPanelView.render(true, activeBlaster, gameState.phase, recommended);
 
-      const headerEl = this.blasterPanelEl.querySelector<HTMLElement>('.blaster-header');
-      const headerHeight = headerEl ? headerEl.offsetHeight + 8 : 50;
-      const top = Math.max(10, cameraRect.top - headerHeight);
-      const totalHeight = cameraRect.height + (cameraRect.top - top);
+      if (isMobilePortrait) {
+        this.blasterPanelEl.classList.add('panel-portrait-dock');
+        this.blasterPanelEl.style.left = '';
+        this.blasterPanelEl.style.top = '';
+        this.blasterPanelEl.style.width = '';
+        this.blasterPanelEl.style.height = '';
+        this.blasterPanelEl.style.right = '';
+        const cardsContainer = this.blasterPanelEl.querySelector<HTMLElement>('.blaster-cards-vertical');
+        if (cardsContainer) {
+          cardsContainer.style.height = '';
+          cardsContainer.style.flex = '';
+        }
+      } else {
+        this.blasterPanelEl.classList.remove('panel-portrait-dock');
+        const cameraRect = this.cameraBoxEl.getBoundingClientRect();
+        const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 145 : 165;
+        let left = cameraRect.left - columnWidth - 14;
+        if (left < 10) left = 10;
 
-      this.blasterPanelEl.style.left = `${left}px`;
-      this.blasterPanelEl.style.top = `${top}px`;
-      this.blasterPanelEl.style.width = `${columnWidth}px`;
-      this.blasterPanelEl.style.height = `${totalHeight}px`;
-      this.blasterPanelEl.style.right = 'auto';
+        const headerEl = this.blasterPanelEl.querySelector<HTMLElement>('.blaster-header');
+        const headerHeight = headerEl ? headerEl.offsetHeight + 6 : 46;
+        const top = Math.max(10, cameraRect.top - headerHeight);
+        const safeCardsHeight = Math.max(100, Math.min(cameraRect.height, maxBottom - cameraRect.top));
+        const totalHeight = safeCardsHeight + (cameraRect.top - top);
 
-      const cardsContainer = this.blasterPanelEl.querySelector<HTMLElement>('.blaster-cards-vertical');
-      if (cardsContainer) {
-        cardsContainer.style.height = `${cameraRect.height}px`;
-        cardsContainer.style.flex = '0 0 auto';
+        this.blasterPanelEl.style.left = `${left}px`;
+        this.blasterPanelEl.style.top = `${top}px`;
+        this.blasterPanelEl.style.width = `${columnWidth}px`;
+        this.blasterPanelEl.style.height = `${totalHeight}px`;
+        this.blasterPanelEl.style.right = 'auto';
+
+        const cardsContainer = this.blasterPanelEl.querySelector<HTMLElement>('.blaster-cards-vertical');
+        if (cardsContainer) {
+          cardsContainer.style.height = `${safeCardsHeight}px`;
+          cardsContainer.style.flex = '0 0 auto';
+        }
       }
     } else {
-      if (this.blasterPanelEl) this.blasterPanelEl.style.display = 'none';
+      if (this.blasterPanelEl) {
+        this.blasterPanelEl.classList.remove('panel-portrait-dock');
+        this.blasterPanelEl.style.display = 'none';
+      }
       this.blasterPanelView.render(false);
     }
 
     // Mode D: Inverse Panel on Left (visible during 'choose_inverse' phase)
     const isInverseVisible = gameState.mode === 'mode_d' && phase === 'choose_inverse';
     if (isInverseVisible && this.cameraBoxEl && this.inversePanelEl) {
-      const cameraRect = this.cameraBoxEl.getBoundingClientRect();
-      const columnWidth = 175;
-      let left = cameraRect.left - columnWidth - 18;
-      if (left < 10) left = 10;
-
       this.inversePanelEl.style.display = 'flex';
       const prompt = gameState.modeDState?.targetTerm === 'constant'
         ? `What blasts away ${gameState.currentB < 0 ? `−${Math.abs(gameState.currentB)}` : `+${gameState.currentB}`}?`
@@ -937,24 +973,48 @@ class App {
 
       this.inversePanelView.render(true, gameState.modeDState?.inverseChoices || [], prompt);
 
-      const headerEl = this.inversePanelEl.querySelector<HTMLElement>('.inverse-header');
-      const headerHeight = headerEl ? headerEl.offsetHeight + 8 : 50;
-      const top = Math.max(10, cameraRect.top - headerHeight);
-      const totalHeight = cameraRect.height + (cameraRect.top - top);
+      if (isMobilePortrait) {
+        this.inversePanelEl.classList.add('panel-portrait-dock');
+        this.inversePanelEl.style.left = '';
+        this.inversePanelEl.style.top = '';
+        this.inversePanelEl.style.width = '';
+        this.inversePanelEl.style.height = '';
+        this.inversePanelEl.style.right = '';
+        const cardsContainer = this.inversePanelEl.querySelector<HTMLElement>('.inverse-cards-list');
+        if (cardsContainer) {
+          cardsContainer.style.height = '';
+          cardsContainer.style.flex = '';
+        }
+      } else {
+        this.inversePanelEl.classList.remove('panel-portrait-dock');
+        const cameraRect = this.cameraBoxEl.getBoundingClientRect();
+        const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 150 : 175;
+        let left = cameraRect.left - columnWidth - 14;
+        if (left < 10) left = 10;
 
-      this.inversePanelEl.style.left = `${left}px`;
-      this.inversePanelEl.style.top = `${top}px`;
-      this.inversePanelEl.style.width = `${columnWidth}px`;
-      this.inversePanelEl.style.height = `${totalHeight}px`;
-      this.inversePanelEl.style.right = 'auto';
+        const headerEl = this.inversePanelEl.querySelector<HTMLElement>('.inverse-header');
+        const headerHeight = headerEl ? headerEl.offsetHeight + 6 : 46;
+        const top = Math.max(10, cameraRect.top - headerHeight);
+        const safeCardsHeight = Math.max(100, Math.min(cameraRect.height, maxBottom - cameraRect.top));
+        const totalHeight = safeCardsHeight + (cameraRect.top - top);
 
-      const cardsContainer = this.inversePanelEl.querySelector<HTMLElement>('.inverse-cards-list');
-      if (cardsContainer) {
-        cardsContainer.style.height = `${cameraRect.height}px`;
-        cardsContainer.style.flex = '0 0 auto';
+        this.inversePanelEl.style.left = `${left}px`;
+        this.inversePanelEl.style.top = `${top}px`;
+        this.inversePanelEl.style.width = `${columnWidth}px`;
+        this.inversePanelEl.style.height = `${totalHeight}px`;
+        this.inversePanelEl.style.right = 'auto';
+
+        const cardsContainer = this.inversePanelEl.querySelector<HTMLElement>('.inverse-cards-list');
+        if (cardsContainer) {
+          cardsContainer.style.height = `${safeCardsHeight}px`;
+          cardsContainer.style.flex = '0 0 auto';
+        }
       }
     } else {
-      if (this.inversePanelEl) this.inversePanelEl.style.display = 'none';
+      if (this.inversePanelEl) {
+        this.inversePanelEl.classList.remove('panel-portrait-dock');
+        this.inversePanelEl.style.display = 'none';
+      }
       this.inversePanelView.render(false);
     }
 
@@ -995,7 +1055,10 @@ class App {
       && !gameState.balancedDisplay?.rhsSolved;
     if (phase !== 'question' && !showModeBAnswer) {
       if (this.arrowSvgEl) this.arrowSvgEl.style.display = 'none';
-      if (this.answersColumnEl) this.answersColumnEl.style.display = 'none';
+      if (this.answersColumnEl) {
+        this.answersColumnEl.classList.remove('panel-portrait-dock');
+        this.answersColumnEl.style.display = 'none';
+      }
       return;
     }
 
@@ -1003,17 +1066,46 @@ class App {
 
     this.answersColumnEl.style.display = 'flex';
     const cameraRect = this.cameraBoxEl.getBoundingClientRect();
-    const columnWidth = 260;
 
-    let left = cameraRect.right + 18;
-    if (left + columnWidth > window.innerWidth - 14) {
-      left = Math.max(14, window.innerWidth - columnWidth - 14);
+    if (isMobilePortrait) {
+      this.answersColumnEl.classList.add('panel-portrait-dock');
+      this.answersColumnEl.style.left = '';
+      this.answersColumnEl.style.top = '';
+      this.answersColumnEl.style.width = '';
+      this.answersColumnEl.style.height = '';
+      this.answersColumnEl.style.right = '';
+      const cardsContainer = this.answersColumnEl.querySelector<HTMLElement>('.answer-cards-list');
+      if (cardsContainer) {
+        cardsContainer.style.height = '';
+        cardsContainer.style.flex = '';
+      }
+    } else {
+      this.answersColumnEl.classList.remove('panel-portrait-dock');
+      const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 220 : 260;
+
+      let left = cameraRect.right + 16;
+      if (left + columnWidth > window.innerWidth - 12) {
+        left = Math.max(10, window.innerWidth - columnWidth - 12);
+      }
+
+      const questionEl = this.answersColumnEl.querySelector<HTMLElement>('.arithmetic-question');
+      const questionHeight = questionEl ? questionEl.offsetHeight + 8 : 48;
+      const top = Math.max(10, cameraRect.top - questionHeight);
+      const safeCardsHeight = Math.max(100, Math.min(cameraRect.height, maxBottom - cameraRect.top));
+      const totalHeight = safeCardsHeight + (cameraRect.top - top);
+
+      this.answersColumnEl.style.left = `${left}px`;
+      this.answersColumnEl.style.top = `${top}px`;
+      this.answersColumnEl.style.width = `${columnWidth}px`;
+      this.answersColumnEl.style.height = `${totalHeight}px`;
+      this.answersColumnEl.style.right = 'auto';
+
+      const cardsContainer = this.answersColumnEl.querySelector<HTMLElement>('.answer-cards-list');
+      if (cardsContainer) {
+        cardsContainer.style.height = `${safeCardsHeight}px`;
+        cardsContainer.style.flex = '0 0 auto';
+      }
     }
-    const top = Math.max(65, cameraRect.top);
-
-    this.answersColumnEl.style.left = `${left}px`;
-    this.answersColumnEl.style.top = `${top}px`;
-    this.answersColumnEl.style.right = 'auto';
 
     // Curving arrow from equation to question card
     const termEl = document.getElementById('arithmetic-rhs') || document.getElementById('term-simplify-target') || document.getElementById('term-rhs-mode-c');
@@ -1023,21 +1115,26 @@ class App {
       const termRect = termEl.getBoundingClientRect();
       const qRect = questionCard.getBoundingClientRect();
 
-      const startX = termRect.right + 6;
-      const startY = termRect.top + termRect.height / 2;
-      const endX = qRect.left - 10;
-      const endY = qRect.top + 28;
+      if (isMobilePortrait) {
+        const startX = termRect.left + termRect.width / 2;
+        const startY = termRect.bottom + 4;
+        const endX = qRect.left + qRect.width / 2;
+        const endY = qRect.top - 6;
+        const midY = startY + (endY - startY) * 0.5;
+        const d = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+        this.arrowPathEl.setAttribute('d', d);
+        this.arrowSvgEl.style.display = 'block';
+      } else {
+        const startX = termRect.right + 6;
+        const startY = termRect.top + termRect.height / 2;
+        const endX = qRect.left - 10;
+        const endY = qRect.top + 28;
 
-      const cornerX = Math.max(startX + 30, Math.min(cameraRect.right + 10, endX - 10));
-
-      const cp1X = cornerX;
-      const cp1Y = startY;
-      const cp2X = cornerX;
-      const cp2Y = endY;
-
-      const d = `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      this.arrowPathEl.setAttribute('d', d);
-      this.arrowSvgEl.style.display = 'block';
+        const cornerX = Math.max(startX + 24, Math.min(cameraRect.right + 10, endX - 10));
+        const d = `M ${startX} ${startY} C ${cornerX} ${startY}, ${cornerX} ${endY}, ${endX} ${endY}`;
+        this.arrowPathEl.setAttribute('d', d);
+        this.arrowSvgEl.style.display = 'block';
+      }
     } else if (this.arrowSvgEl) {
       this.arrowSvgEl.style.display = 'none';
     }
