@@ -73,16 +73,17 @@ export class StoryView {
         <div class="story-presentation-panel">
           <div class="story-card">
             <div class="story-card-header">
-              <span class="story-card-icon">🧙‍♂️</span>
-              <span class="story-card-title">Magic Shop Purchase</span>
+              <span class="story-card-icon">${item.emojiFallback}</span>
+              <span class="story-card-title">${this.capitalise(item.singular)} Purchase</span>
             </div>
             <div class="story-beats-container">
               ${visibleBeats.map((b: StoryBeat, idx: number) => {
                 const isHighlighted = highlightedBeat === b.highlightTarget;
                 const isQuestion = b.type === 'question';
+                const html = this.injectItemIcon(b.text, item);
                 return `
                   <p class="story-sentence sentence-revealed ${isHighlighted ? 'sentence-highlight' : ''} ${isQuestion ? 'story-question-beat' : ''}" data-index="${idx}">
-                    ${b.text}
+                    ${html}
                   </p>
                 `;
               }).join('')}
@@ -154,24 +155,9 @@ export class StoryView {
       return;
     }
 
-    // 4. Completed: Show story verification
+    // 4. Completed: no verification box — the answer line below is sufficient
     if (phase === 'completed') {
-      const v = story.verification;
-      this.container.innerHTML = `
-        <div class="story-completed-verification">
-          <div class="verification-badge">✨ Purchase Verified!</div>
-          <div class="verification-lines">
-            <div class="verification-line line-unit">${v.unitPriceLine}</div>
-            ${v.subtotalLine ? `<div class="verification-line line-subtotal">${v.subtotalLine}</div>` : ''}
-            ${v.modifierLine ? `<div class="verification-line line-modifier">${v.modifierLine}</div>` : ''}
-            <div class="verification-line line-numeric pulse-match">
-              <span class="numeric-check-expr">${v.numericCheckLine}</span>
-              <span class="numeric-check-badge">✓ Valid</span>
-            </div>
-          </div>
-        </div>
-        ${popoverHtml}
-      `;
+      this.container.innerHTML = '';
       this.wirePopoverListeners();
       return;
     }
@@ -206,6 +192,16 @@ export class StoryView {
         <span class="mod-tag">${label}</span>
       </span>
     `;
+  }
+
+  private capitalise(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  private injectItemIcon(text: string, item: any): string {
+    if (!text.includes('{{ITEM_ICON}}')) return text;
+    const iconHtml = `<span class="story-inline-icon">${renderItemIcon(item, 'story-text-icon')}</span>`;
+    return text.replace(/\{\{ITEM_ICON\}\}/g, iconHtml);
   }
 
   private wirePopoverListeners() {

@@ -12,7 +12,7 @@ import { StoryBeat, VerificationData } from '../story/types';
  * 4. Never reveal the unknown price (solution) in the story or questions.
  */
 
-export const CHARGE_REASONS = ['delivery', 'gift wrapping', 'express delivery', 'packaging'] as const;
+export const CHARGE_REASONS = ['delivery', 'gift wrapping', 'packaging'] as const;
 export type ChargeReason = typeof CHARGE_REASONS[number];
 
 export function getChargeReason(equationId: string): ChargeReason {
@@ -43,10 +43,10 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
         modifierReason: reason,
         shortQuestion: `How much did the ${item.singular} cost?`,
         beats: [
-          { type: 'objects', text: `I bought a ${item.singular}.`, highlightTarget: 'objects' },
+          { type: 'objects', text: `I bought a ${item.singular}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `There was a ${reason} fee of ${absB} gold.`, highlightTarget: 'modifier' },
-          { type: 'total', text: `I paid ${c} gold altogether.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did the ${item.singular} cost?` }
+          { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
+          { type: 'question', text: `How much did the ${item.singular}{{ITEM_ICON}} cost?` }
         ]
       };
 
@@ -56,10 +56,10 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
         modifierAmount: absB,
         shortQuestion: `How much did the ${item.singular} cost?`,
         beats: [
-          { type: 'objects', text: `I bought a ${item.singular}.`, highlightTarget: 'objects' },
+          { type: 'objects', text: `I bought a ${item.singular}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `I got a discount of ${absB} gold.`, highlightTarget: 'modifier' },
-          { type: 'total', text: `I paid ${c} gold altogether.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did the ${item.singular} cost?` }
+          { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
+          { type: 'question', text: `How much did the ${item.singular}{{ITEM_ICON}} cost?` }
         ]
       };
 
@@ -69,9 +69,9 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
         modifierAmount: 0,
         shortQuestion: `How much did each ${item.singular} cost?`,
         beats: [
-          { type: 'objects', text: `I bought ${a} identical ${item.plural} for the same price each.`, highlightTarget: 'objects' },
-          { type: 'total', text: `I paid ${c} gold altogether.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did each ${item.singular} cost?` }
+          { type: 'objects', text: `I bought ${a} ${item.plural}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
+          { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
+          { type: 'question', text: `How much did each ${item.singular}{{ITEM_ICON}} cost?` }
         ]
       };
 
@@ -82,10 +82,10 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
         modifierReason: reason,
         shortQuestion: `How much did each ${item.singular} cost?`,
         beats: [
-          { type: 'objects', text: `I bought ${a} identical ${item.plural} for the same price each.`, highlightTarget: 'objects' },
+          { type: 'objects', text: `I bought ${a} ${item.plural}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `There was a ${reason} fee of ${absB} gold.`, highlightTarget: 'modifier' },
-          { type: 'total', text: `I paid ${c} gold altogether.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did each ${item.singular} cost?` }
+          { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
+          { type: 'question', text: `How much did each ${item.singular}{{ITEM_ICON}} cost?` }
         ]
       };
 
@@ -95,10 +95,10 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
         modifierAmount: absB,
         shortQuestion: `How much did each ${item.singular} cost?`,
         beats: [
-          { type: 'objects', text: `I bought ${a} identical ${item.plural} for the same price each.`, highlightTarget: 'objects' },
+          { type: 'objects', text: `I bought ${a} ${item.plural}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `I got a discount of ${absB} gold.`, highlightTarget: 'modifier' },
-          { type: 'total', text: `I paid ${c} gold altogether.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did each ${item.singular} cost?` }
+          { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
+          { type: 'question', text: `How much did each ${item.singular}{{ITEM_ICON}} cost?` }
         ]
       };
   }
