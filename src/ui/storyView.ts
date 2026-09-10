@@ -2,7 +2,6 @@ import { StoryPresentationState, StoryBeat } from '../story/types';
 import { renderItemIcon } from './mathItemView';
 
 export interface StoryViewCallbacks {
-  onShowStoryRequested: () => void;
   onCloseStoryRequested: () => void;
 }
 
@@ -18,11 +17,6 @@ export class StoryView {
   public render(state: StoryPresentationState) {
     if (!state.enabled) {
       this.container.innerHTML = '';
-      const bottomDock = document.getElementById('story-bottom-dock');
-      if (bottomDock) {
-        bottomDock.style.display = 'none';
-        bottomDock.innerHTML = '';
-      }
       return;
     }
 
@@ -56,13 +50,6 @@ export class StoryView {
           </div>
         </div>
       `;
-    }
-
-    // Clean up bottom dock if not in solving phase
-    const bottomDock = document.getElementById('story-bottom-dock');
-    if (bottomDock && phase !== 'solving') {
-      bottomDock.style.display = 'none';
-      bottomDock.innerHTML = '';
     }
 
     // 1. Reading & Choosing Equation: show rich story card & concise question
@@ -120,7 +107,7 @@ export class StoryView {
       return;
     }
 
-    // 3. Solving: display compact story prompt at top + Show Story button docked at bottom
+    // 3. Solving: display the compact story prompt. The S key still recalls the story.
     if (phase === 'solving') {
       this.container.innerHTML = `
         <div class="story-solving-bar">
@@ -131,23 +118,6 @@ export class StoryView {
         </div>
         ${popoverHtml}
       `;
-
-      if (bottomDock) {
-        bottomDock.style.display = 'flex';
-        bottomDock.innerHTML = `
-          <button id="btn-show-story" class="btn-show-story action-btn-dwell" title="Show original story (Hotkey: S)">
-            <span class="btn-text">📖 Show Story</span>
-            <svg class="dwell-svg btn-dwell-svg" viewBox="0 0 44 44">
-              <circle class="dwell-track" cx="22" cy="22" r="18"></circle>
-              <circle class="dwell-fill" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"></circle>
-            </svg>
-          </button>
-        `;
-
-        bottomDock.querySelector('#btn-show-story')?.addEventListener('click', () => {
-          this.callbacks.onShowStoryRequested();
-        });
-      }
 
       this.wirePopoverListeners();
       return;
@@ -216,10 +186,6 @@ export class StoryView {
 
   public getInteractiveElements(): { id: string; element: HTMLElement; type: 'utility' }[] {
     const targets: { id: string; element: HTMLElement; type: 'utility' }[] = [];
-    const btnShowStory = document.getElementById('btn-show-story');
-    if (btnShowStory && btnShowStory.offsetParent !== null) {
-      targets.push({ id: 'btn-show-story', element: btnShowStory, type: 'utility' });
-    }
     const btnCloseStory = this.container.querySelector<HTMLElement>('#btn-close-story');
     if (btnCloseStory && btnCloseStory.offsetParent !== null) {
       targets.push({ id: 'btn-close-story', element: btnCloseStory, type: 'utility' });

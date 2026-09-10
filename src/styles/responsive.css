@@ -292,10 +292,527 @@
   }
 }
 
+/* =========================================================
+   Mode B fluid layout system (v1.11)
+   These rules intentionally come last so one viewport budget owns the HUD,
+   story, equation, camera, side rails, and portrait panel placement.
+   ========================================================= */
+
+:root {
+  --responsive-edge: clamp(8px, 1.8vw, 28px);
+  --responsive-gap: clamp(4px, 0.8dvh, 10px);
+  --panel-card-gap: clamp(5px, 0.9dvh, 9px);
+  --portrait-panel-space: 0px;
+}
+
+html,
+body {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#app {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@supports (height: 100dvh) {
+  #app {
+    height: 100dvh;
+  }
+}
+
+.hud-header {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: clamp(5px, 1dvh, 12px) var(--responsive-edge);
+  padding-top: max(clamp(5px, 1dvh, 12px), env(safe-area-inset-top));
+  gap: 10px;
+}
+
+.brand-title {
+  font-size: clamp(15px, 1.55vw, 20px);
+  white-space: nowrap;
+}
+
+.header-controls {
+  margin-left: auto;
+  gap: clamp(6px, 1vw, 12px);
+}
+
+.header-controls .icon-btn {
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+  padding: 7px clamp(10px, 1.2vw, 14px);
+}
+
+.control-icon {
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.stage-container {
+  min-height: 0;
+  padding: clamp(2px, 0.7dvh, 8px) var(--responsive-edge) clamp(3px, 0.8dvh, 10px);
+}
+
+.workspace-center {
+  min-width: 0;
+  min-height: 0;
+  gap: var(--responsive-gap);
+}
+
+.story-area {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 0;
+}
+
+.hud-footer {
+  flex: 0 0 auto;
+  min-height: 50px;
+  padding: clamp(5px, 1dvh, 10px) var(--responsive-edge);
+  padding-bottom: max(clamp(5px, 1dvh, 10px), env(safe-area-inset-bottom));
+  gap: 10px;
+}
+
+.instruction-text {
+  min-width: 0;
+  font-size: clamp(12px, 1.3vw, 15px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hud-actions {
+  flex: 0 0 auto;
+  gap: clamp(5px, 0.9vw, 10px);
+}
+
+.hud-actions .icon-btn {
+  min-height: 40px;
+  padding: 6px clamp(8px, 1vw, 13px);
+}
+
+/* Fluid story family: full purchase, condensing, and short solving prompt. */
+.story-presentation-panel {
+  width: min(620px, calc(100vw - (2 * var(--responsive-edge))));
+  max-width: 100%;
+  gap: var(--responsive-gap);
+}
+
+.story-card {
+  padding: clamp(5px, 0.9dvh, 9px) clamp(10px, 1.5vw, 16px);
+  border-radius: clamp(9px, 1vw, 12px);
+}
+
+.story-card-header {
+  gap: clamp(4px, 0.6vw, 7px);
+  margin-bottom: clamp(2px, 0.5dvh, 5px);
+  padding-bottom: clamp(2px, 0.4dvh, 4px);
+}
+
+.story-card-icon {
+  font-size: clamp(0.85rem, 1.8dvh, 1.05rem);
+}
+
+.story-card-title {
+  font-size: clamp(0.72rem, 1.55dvh, 0.85rem);
+}
+
+.story-beats-container {
+  gap: clamp(1px, 0.35dvh, 3px);
+}
+
+.story-sentence {
+  font-size: clamp(0.8rem, 1.7dvh, 0.95rem);
+  line-height: 1.24;
+}
+
+.story-sentence.story-question-beat {
+  font-size: clamp(0.84rem, 1.8dvh, 0.98rem);
+  margin-top: 1px;
+  padding-top: 1px;
+}
+
+.story-inline-icon .story-text-icon.math-item-token {
+  width: clamp(23px, 3.5dvh, 32px) !important;
+  height: clamp(23px, 3.5dvh, 32px) !important;
+  min-width: clamp(23px, 3.5dvh, 32px) !important;
+  min-height: clamp(23px, 3.5dvh, 32px) !important;
+}
+
+.story-solving-bar {
+  width: min(680px, calc(100vw - (2 * var(--responsive-edge))));
+  max-width: 100%;
+  margin: 0 auto;
+  padding: clamp(5px, 0.8dvh, 8px) clamp(10px, 1.6vw, 18px);
+  border-radius: clamp(9px, 1vw, 12px);
+}
+
+.story-solving-left {
+  min-width: 0;
+  gap: clamp(6px, 1vw, 10px);
+}
+
+.story-solving-icon {
+  font-size: clamp(1rem, 2.2dvh, 1.25rem);
+}
+
+.story-solving-question {
+  font-size: clamp(0.88rem, 1.9dvh, 1.05rem);
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Mode B gets one continuous vertical budget rather than fixed buckets. */
+#app[data-mode="mode_b"] .equation-area {
+  height: clamp(100px, 20dvh, 205px);
+  min-height: clamp(100px, 20dvh, 205px);
+  max-height: clamp(100px, 20dvh, 205px);
+  flex-basis: clamp(100px, 20dvh, 205px);
+  padding-bottom: 2px;
+}
+
+#app[data-mode="mode_b"] .equation-history-container {
+  height: clamp(38px, 9dvh, 104px);
+  min-height: clamp(38px, 9dvh, 104px);
+  max-height: clamp(38px, 9dvh, 104px);
+  flex-basis: clamp(38px, 9dvh, 104px);
+  margin-bottom: clamp(2px, 0.5dvh, 5px);
+}
+
+#app[data-mode="mode_b"] .equation-rail.mode-b-rail {
+  width: min(820px, calc(100vw - 440px));
+  min-width: 0;
+  min-height: clamp(58px, 9dvh, 104px);
+  padding: clamp(4px, 0.8dvh, 12px) clamp(12px, 2vw, 42px);
+  gap: clamp(9px, 2vw, 32px);
+  font-size: clamp(30px, 5.2dvh, 58px);
+}
+
+#app[data-mode="mode_b"] .equation-rail.mode-b-rail .math-symbol,
+#app[data-mode="mode_b"] .equation-rail.mode-b-rail .term-tile {
+  font-size: clamp(30px, 5.2dvh, 58px);
+}
+
+#app[data-mode="mode_b"] .equation-rail.mode-b-rail .term-tile {
+  min-width: clamp(44px, 7dvh, 80px);
+  min-height: clamp(46px, 7.5dvh, 82px);
+  padding: clamp(3px, 0.7dvh, 8px) clamp(8px, 1.4vw, 18px);
+  margin: 0 clamp(1px, 0.4vw, 6px);
+}
+
+#app[data-mode="mode_b"] .equation-rail .math-item-token,
+#app[data-mode="mode_b"] .solved-line-wrap .math-item-token {
+  width: clamp(42px, 7dvh, 68px);
+  height: clamp(42px, 7dvh, 68px);
+  min-width: clamp(42px, 7dvh, 68px);
+  min-height: clamp(42px, 7dvh, 68px);
+}
+
+#app[data-mode="mode_b"] .equation-rail .term-tile .math-item-token {
+  width: clamp(38px, 6dvh, 58px);
+  height: clamp(38px, 6dvh, 58px);
+  min-width: clamp(38px, 6dvh, 58px);
+  min-height: clamp(38px, 6dvh, 58px);
+}
+
+#app[data-mode="mode_b"] .camera-box {
+  flex: 0 1 auto;
+  height: clamp(180px, 48dvh, 560px);
+  max-height: calc(100dvh - 245px);
+  max-width: min(76vw, 760px);
+  margin: 0;
+  border-radius: clamp(14px, 1.5vw, 24px);
+}
+
+#app[data-story-phase="choosing_equation"] .story-presentation-panel {
+  width: min(620px, var(--camera-inline-size, 620px));
+}
+
+/* Equal camera-height lanes for every side-mounted target set. */
+.forge-cards-vertical {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: var(--panel-card-gap);
+}
+
+.answer-cards-list,
+.story-equation-cards-vertical {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: var(--panel-card-gap);
+}
+
+.forge-card,
+.answer-card,
+.story-equation-card {
+  min-height: 0;
+  height: auto;
+}
+
+/* Portrait keeps the complete game in one viewport and moves aiming choices up. */
+@media (max-width: 768px) and (orientation: portrait) {
+  :root {
+    --responsive-edge: 8px;
+    --responsive-gap: 3px;
+    --portrait-panel-space: 116px;
+  }
+
+  #app[data-story-feedback="true"] {
+    --portrait-panel-space: 150px;
+  }
+
+  .hud-header {
+    min-height: 46px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+
+  .brand-title {
+    max-width: calc(100vw - 112px);
+    overflow: hidden;
+    font-size: clamp(13px, 4vw, 16px);
+    text-overflow: ellipsis;
+  }
+
+  .header-controls .icon-btn {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+
+  .camera-button-label,
+  .settings-button-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .stage-container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  .workspace-center {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .hud-footer {
+    min-height: 50px;
+    flex-wrap: nowrap;
+    justify-content: center;
+  }
+
+  .instruction-text {
+    display: none;
+  }
+
+  .hud-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hud-actions .icon-btn {
+    min-height: 44px;
+  }
+
+  #app[data-mode="mode_b"] .equation-area {
+    height: clamp(86px, 16dvh, 118px);
+    min-height: clamp(86px, 16dvh, 118px);
+    max-height: clamp(86px, 16dvh, 118px);
+    flex-basis: clamp(86px, 16dvh, 118px);
+  }
+
+  #app[data-mode="mode_b"] .equation-history-container {
+    height: clamp(32px, 6dvh, 44px);
+    min-height: clamp(32px, 6dvh, 44px);
+    max-height: clamp(32px, 6dvh, 44px);
+    flex-basis: clamp(32px, 6dvh, 44px);
+  }
+
+  #app[data-mode="mode_b"] .equation-rail.mode-b-rail {
+    width: min(calc(100vw - 16px), 430px);
+    max-width: 100%;
+    min-height: clamp(48px, 8dvh, 64px);
+    padding: 3px 7px;
+    gap: clamp(4px, 1.8vw, 8px);
+    font-size: clamp(23px, 7vw, 32px);
+  }
+
+  #app[data-mode="mode_b"] .equation-rail.mode-b-rail .math-symbol,
+  #app[data-mode="mode_b"] .equation-rail.mode-b-rail .term-tile {
+    font-size: clamp(23px, 7vw, 32px);
+  }
+
+  #app[data-mode="mode_b"] .camera-box {
+    width: min(calc(100vw - 16px), 440px);
+    height: auto;
+    max-height: min(292px, calc(100dvh - 330px - var(--portrait-panel-space)));
+    min-height: 145px;
+    margin: 0 auto;
+  }
+
+  #app[data-portrait-panel="true"] .camera-box {
+    margin-top: var(--portrait-panel-space);
+  }
+
+  .forge-panel.panel-portrait-dock,
+  .answers-column.panel-portrait-dock,
+  .story-choices-column.panel-portrait-dock {
+    position: absolute !important;
+    right: auto !important;
+    width: min(calc(100vw - 16px), 440px) !important;
+    height: auto !important;
+    margin: 0 !important;
+    gap: 5px !important;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-header,
+  .answers-column.panel-portrait-dock .arithmetic-question,
+  .story-choices-column.panel-portrait-dock .choices-prompt.arithmetic-question {
+    padding: 4px 8px;
+    margin: 0;
+    border-radius: 10px;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-subtitle,
+  .answers-column.panel-portrait-dock .question-subtext,
+  .story-choices-column.panel-portrait-dock .question-subtext {
+    display: none;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-cards-vertical {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-rows: 1fr !important;
+    height: 64px !important;
+    gap: 6px !important;
+  }
+
+  .answers-column.panel-portrait-dock .answer-cards-list,
+  .story-choices-column.panel-portrait-dock .story-equation-cards-vertical {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: 1fr !important;
+    height: 64px !important;
+    gap: 6px !important;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-card,
+  .answers-column.panel-portrait-dock .answer-card,
+  .story-choices-column.panel-portrait-dock .story-equation-card {
+    height: 64px !important;
+    min-height: 64px !important;
+  }
+
+  .story-presentation-panel,
+  .story-solving-bar {
+    width: min(calc(100vw - 16px), 440px);
+  }
+
+  .story-sentence {
+    font-size: clamp(0.76rem, 3.45vw, 0.9rem);
+  }
+
+  .story-sentence.story-question-beat {
+    font-size: clamp(0.8rem, 3.6vw, 0.94rem);
+  }
+}
+
+/* Short landscape browsers, including a 768px Chromebook after browser chrome. */
+@media (max-height: 700px) and (orientation: landscape) {
+  .hud-header {
+    min-height: 42px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  .header-controls .icon-btn {
+    min-height: 38px;
+  }
+
+  .hud-footer {
+    min-height: 44px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  .hud-actions .icon-btn {
+    min-height: 38px;
+  }
+
+  #app[data-mode="mode_b"] .equation-area {
+    height: clamp(76px, 18dvh, 112px);
+    min-height: clamp(76px, 18dvh, 112px);
+    max-height: clamp(76px, 18dvh, 112px);
+    flex-basis: clamp(76px, 18dvh, 112px);
+  }
+
+  #app[data-mode="mode_b"] .equation-history-container {
+    height: clamp(26px, 7dvh, 44px);
+    min-height: clamp(26px, 7dvh, 44px);
+    max-height: clamp(26px, 7dvh, 44px);
+    flex-basis: clamp(26px, 7dvh, 44px);
+  }
+
+  #app[data-mode="mode_b"] .camera-box {
+    height: clamp(145px, 45dvh, 300px);
+    max-height: calc(100dvh - 205px);
+  }
+
+  .story-card {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .story-sentence {
+    font-size: clamp(0.76rem, 2.1dvh, 0.86rem);
+    line-height: 1.16;
+  }
+
+  .story-solving-bar {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+}
+
+@media (max-width: 1040px), (max-height: 650px) {
+  .camera-button-label,
+  .settings-button-label {
+    display: none;
+  }
+
+  .header-controls .icon-btn {
+    width: 44px;
+    min-width: 44px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .instruction-text {
+    font-size: 12px;
+  }
+}
+
 /* ---------------------------------------------------------
    2. Mobile & iPhone in Portrait Mode (width <= 768px & portrait, or width <= 640px)
    --------------------------------------------------------- */
-@media (max-width: 768px) and (orientation: portrait), (max-width: 640px) {
+@media (max-width: 768px) and (orientation: portrait) {
   html, body {
     overflow-y: auto;
     overflow-x: hidden;
@@ -737,5 +1254,162 @@
 
   .inverse-panel.panel-portrait-dock .inverse-val {
     font-size: 20px;
+  }
+}
+
+/* Final portrait contract: supersedes the legacy below-camera dock above. */
+@media (max-width: 768px) and (orientation: portrait) {
+  html,
+  body {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  #app {
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  @supports (height: 100dvh) {
+    #app {
+      height: 100dvh;
+    }
+  }
+
+  .stage-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 2px 8px 3px;
+    overflow: hidden;
+  }
+
+  .workspace-center {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-height: 0;
+    gap: 3px;
+    overflow: visible;
+  }
+
+  .hud-header {
+    min-height: 46px;
+    padding: max(3px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 3px max(10px, env(safe-area-inset-left));
+    flex-wrap: nowrap;
+  }
+
+  .brand-title {
+    max-width: calc(100vw - 112px);
+    font-size: clamp(13px, 4vw, 16px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-controls .icon-btn {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .hud-footer {
+    flex: 0 0 auto;
+    min-height: 50px;
+    padding: 3px 8px max(3px, env(safe-area-inset-bottom));
+    flex-wrap: nowrap;
+    justify-content: center;
+  }
+
+  .instruction-text {
+    display: none;
+  }
+
+  .hud-actions {
+    width: 100%;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .hud-actions .icon-btn {
+    min-height: 44px;
+    padding: 5px 8px;
+  }
+
+  #app[data-mode="mode_b"] .camera-box {
+    width: min(calc(100vw - 16px), 440px);
+    max-width: min(calc(100vw - 16px), 440px);
+    height: auto;
+    max-height: min(292px, calc(100dvh - 330px - var(--portrait-panel-space)));
+    min-height: 145px;
+    margin: 0 auto;
+    aspect-ratio: 4 / 3;
+    transition-property: width, height, max-height, border-color, box-shadow;
+  }
+
+  #app[data-portrait-panel="true"] .camera-box {
+    margin-top: var(--portrait-panel-space);
+  }
+
+  .forge-panel.panel-portrait-dock,
+  .answers-column.panel-portrait-dock,
+  .story-choices-column.panel-portrait-dock {
+    position: absolute !important;
+    right: auto !important;
+    width: min(calc(100vw - 16px), 440px) !important;
+    height: auto !important;
+    margin: 0 !important;
+    gap: 5px !important;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-header,
+  .answers-column.panel-portrait-dock .arithmetic-question,
+  .story-choices-column.panel-portrait-dock .choices-prompt.arithmetic-question {
+    padding: 4px 8px;
+    margin: 0;
+    border-radius: 10px;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-subtitle,
+  .answers-column.panel-portrait-dock .question-subtext,
+  .story-choices-column.panel-portrait-dock .question-subtext {
+    display: none;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-cards-vertical {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-rows: 1fr !important;
+    height: 64px !important;
+    gap: 6px !important;
+  }
+
+  .answers-column.panel-portrait-dock .answer-cards-list,
+  .story-choices-column.panel-portrait-dock .story-equation-cards-vertical {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: 1fr !important;
+    height: 64px !important;
+    gap: 6px !important;
+  }
+
+  .forge-panel.panel-portrait-dock .forge-card,
+  .answers-column.panel-portrait-dock .answer-card,
+  .story-choices-column.panel-portrait-dock .story-equation-card {
+    height: 64px !important;
+    min-height: 64px !important;
+    flex: none;
+  }
+
+  .story-presentation-panel,
+  .story-solving-bar {
+    width: min(calc(100vw - 16px), 440px);
+    max-width: 100%;
   }
 }

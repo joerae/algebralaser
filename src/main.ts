@@ -22,6 +22,7 @@ import { StoryView } from './ui/storyView';
 import { EquationChoiceView } from './ui/equationChoiceView';
 import { soundManager } from './audio/soundEffects';
 import { StoryPresentationState } from './story/types';
+import { expandNonOverlappingTargets, TargetRectInput } from './ui/responsiveTargetGeometry';
 
 class App {
   private game: GameController;
@@ -62,6 +63,8 @@ class App {
   private isModeDForgeAnimating: boolean = false;
   private cachedTargets: InteractiveTarget[] = [];
   private needTargetsRefresh: boolean = true;
+  private layoutDirty: boolean = true;
+  private resizeObserver: ResizeObserver | null = null;
   private lastLevelId: string = '';
 
   constructor() {
@@ -180,17 +183,12 @@ class App {
       this.needTargetsRefresh = true;
     };
 
-    window.addEventListener('resize', () => {
-      this.needTargetsRefresh = true;
-    });
+    window.addEventListener('resize', () => this.markLayoutDirty());
+    window.visualViewport?.addEventListener('resize', () => this.markLayoutDirty());
 
     // 3. UI Views
     if (this.storyAreaEl) {
       this.storyView = new StoryView(this.storyAreaEl, {
-        onShowStoryRequested: () => {
-          this.storyController.openPopover();
-          this.needTargetsRefresh = true;
-        },
         onCloseStoryRequested: () => {
           this.storyController.closePopover();
           this.needTargetsRefresh = true;
@@ -302,14 +300,16 @@ class App {
       }
     }, savedMode, initialStoryMode);
 
+    this.setupResponsiveObservers(hudHeader, hudFooter);
+
     // Wire Story Presentation updates
     this.storyController.subscribe((storyState) => {
       this.renderStory(storyState);
     });
 
     // 4. Connect State Updates
-    this.game.subscribe((state, extra) => {
-      this.updateView(state, extra);
+    this.game.subscribe((state) => {
+      this.updateView(state);
     });
 
     // 5. Setup Mouse, Touch and Keyboard
@@ -322,6 +322,28 @@ class App {
     requestAnimationFrame((t) => this.loop(t));
   }
 
+  private markLayoutDirty() {
+    this.layoutDirty = true;
+    this.needTargetsRefresh = true;
+  }
+
+  private setupResponsiveObservers(header: HTMLElement, footer: HTMLElement) {
+    if (typeof ResizeObserver === 'undefined') return;
+    this.resizeObserver = new ResizeObserver(() => this.markLayoutDirty());
+    [
+      header,
+      footer,
+      this.storyAreaEl,
+      this.equationAreaEl,
+      this.cameraBoxEl,
+      this.forgePanelEl,
+      this.storyChoicesColumnEl,
+      this.answersColumnEl
+    ].forEach(element => {
+      if (element) this.resizeObserver?.observe(element);
+    });
+  }
+
   private handleToggleStoryMode(enabled: boolean) {
     try {
       localStorage.setItem('algebra_story_mode', enabled ? 'true' : 'false');
@@ -332,7 +354,7 @@ class App {
     this.storyController.setEnabled(enabled);
     this.hudView.setStoryMode(enabled);
     this.renderStory();
-    this.needTargetsRefresh = true;
+    this.markLayoutDirty();
   }
 
   private handleStoryEquationChoice(choiceId: string) {
@@ -344,7 +366,7 @@ class App {
     } else {
       soundManager.playCorrect();
     }
-    this.needTargetsRefresh = true;
+    this.markLayoutDirty();
   }
 
   private renderStory(storyState: StoryPresentationState = this.storyController.getState()) {
@@ -413,7 +435,7 @@ class App {
       }
     }
 
-    this.needTargetsRefresh = true;
+    this.markLayoutDirty();
   }
 
   private handleForgeSign(sign: ForgeSign) {
@@ -592,7 +614,7 @@ class App {
     }, this.game.reducedMotion);
   }
 
-  private updateView(state = this.game.getState(), extra = { currentLevel: this.game.getCurrentLevelNumber(), totalLevels: this.game.getTotalLevels() }) {
+  private updateView(state = this.game.getState()) {
     const currentEquation = this.game.getCurrentLevel();
     if (this.lastLevelId !== currentEquation.id) {
       this.lastLevelId = currentEquation.id;
@@ -609,8 +631,7 @@ class App {
       && !!state.balancedDisplay?.rhsActivated
       && !state.balancedDisplay?.rhsSolved;
     this.answersView.render((state.phase === 'question' || showModeBAnswer) ? state.pendingArithmetic : null);
-    this.hudView.updateProgress(extra.currentLevel, extra.totalLevels);
-    this.needTargetsRefresh = true;
+    this.markLayoutDirty();
 
     // Data-driven contextual instructions and camera badge hints
     const storyState = this.storyController.getState();
@@ -624,9 +645,6 @@ class App {
       }
     }
 
-    if (state.phase === 'question' || showModeBAnswer) {
-      this.updateArrowAndLayout(state.phase);
-    }
   }
 
   private async toggleCamera() {
@@ -683,9 +701,13 @@ class App {
     let classifiedPose = null;
     let interactiveTargets: InteractiveTarget[] = [];
 
-    // Position answers column and arrow FIRST before gathering bounding boxes
+    // Responsive geometry is measured only after state/content/viewport changes.
     const currentPhase = this.game.getState().phase;
-    this.updateArrowAndLayout(currentPhase);
+    if (this.layoutDirty) {
+      this.layoutDirty = false;
+      this.updateArrowAndLayout(currentPhase);
+      this.needTargetsRefresh = true;
+    }
 
     // Collect interactive targets from DOM
     interactiveTargets = this.collectTargets();
@@ -786,17 +808,6 @@ class App {
       if (this.storyController.getState().phase === 'choosing_equation' && this.equationChoiceView) {
         this.equationChoiceView.updateDwell(interState.hoveredTargetId, interState.dwellProgress);
       }
-      const btnShowStory = document.getElementById('btn-show-story');
-      if (btnShowStory) {
-        const fill = btnShowStory.querySelector<SVGCircleElement>('.dwell-fill');
-        if (interState.hoveredTargetId === 'btn-show-story') {
-          btnShowStory.classList.add('dwell-active');
-          if (fill) fill.style.strokeDashoffset = `${113.1 * (1 - Math.max(0, Math.min(1, interState.dwellProgress)))}`;
-        } else {
-          btnShowStory.classList.remove('dwell-active');
-          if (fill) fill.style.strokeDashoffset = '113.1';
-        }
-      }
       const btnCloseStory = document.getElementById('btn-close-story');
       if (btnCloseStory) {
         if (interState.hoveredTargetId === 'btn-close-story') {
@@ -849,10 +860,52 @@ class App {
     requestAnimationFrame((t) => this.loop(t));
   }
 
+  private positionPortraitPanel(
+    panel: HTMLElement,
+    cameraRect: DOMRect,
+    stageLeft: number,
+    stageTop: number
+  ) {
+    panel.style.setProperty('width', `${cameraRect.width}px`, 'important');
+    const panelRect = panel.getBoundingClientRect();
+    const equationIsVisible = this.equationAreaEl && getComputedStyle(this.equationAreaEl).display !== 'none';
+    const anchor = equationIsVisible ? this.equationAreaEl : this.storyAreaEl;
+    const anchorBottom = anchor?.getBoundingClientRect().bottom ?? cameraRect.top;
+    panel.style.setProperty('left', `${cameraRect.left - stageLeft + (cameraRect.width - panelRect.width) / 2}px`, 'important');
+    panel.style.setProperty('top', `${anchorBottom - stageTop + 3}px`, 'important');
+  }
+
   private updateArrowAndLayout(phase: string) {
     const gameState = this.game.getState();
     const storyState = this.storyController.getState();
     const isMobilePortrait = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+    const showModeBAnswer = gameState.mode === 'mode_b'
+      && phase === 'awaiting_cleanup'
+      && !!gameState.balancedDisplay?.rhsActivated
+      && !gameState.balancedDisplay?.rhsSolved;
+    const hasPortraitPanel = storyState.enabled && storyState.phase === 'choosing_equation'
+      || gameState.mode === 'mode_b' && phase === 'forging'
+      || gameState.mode === 'mode_b' && (phase === 'question' || showModeBAnswer);
+    const appEl = document.getElementById('app');
+    if (appEl) {
+      const portraitPanelValue = String(isMobilePortrait && hasPortraitPanel);
+      const portraitPanelChanged = appEl.dataset.portraitPanel !== portraitPanelValue;
+      appEl.dataset.mode = gameState.mode;
+      appEl.dataset.phase = phase;
+      appEl.dataset.storyPhase = storyState.enabled ? storyState.phase : 'disabled';
+      appEl.dataset.storyFeedback = String(Boolean(storyState.lastFeedback));
+      appEl.dataset.portraitPanel = portraitPanelValue;
+      appEl.classList.toggle('layout-portrait', isMobilePortrait);
+      if (this.cameraBoxEl) {
+        appEl.style.setProperty('--camera-inline-size', `${this.cameraBoxEl.getBoundingClientRect().width}px`);
+      }
+      if (portraitPanelChanged) {
+        requestAnimationFrame(() => this.markLayoutDirty());
+      }
+    }
+    const stageRect = document.querySelector<HTMLElement>('.stage-container')?.getBoundingClientRect();
+    const stageLeft = stageRect?.left ?? 0;
+    const stageTop = stageRect?.top ?? 0;
     const footerEl = document.getElementById('hud-footer');
     const footerHeight = footerEl ? footerEl.offsetHeight : 55;
     const maxBottom = window.innerHeight - footerHeight - 10;
@@ -875,18 +928,20 @@ class App {
           cardsContainer.style.height = '';
           cardsContainer.style.flex = '';
         }
+        const cameraRect = this.cameraBoxEl.getBoundingClientRect();
+        this.positionPortraitPanel(this.forgePanelEl, cameraRect, stageLeft, stageTop);
       } else {
         this.forgePanelEl.classList.remove('panel-portrait-dock');
         const cameraRect = this.cameraBoxEl.getBoundingClientRect();
         const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 145 : 165;
-        let left = cameraRect.left - columnWidth - 14;
+        let left = cameraRect.left - stageLeft - columnWidth - 14;
         if (left < 10) left = 10;
 
-        const headerEl = this.forgePanelEl.querySelector<HTMLElement>('.forge-header');
-        const headerHeight = headerEl ? headerEl.offsetHeight + 6 : 46;
-        const top = Math.max(10, cameraRect.top - headerHeight);
-        const safeCardsHeight = Math.max(100, Math.min(cameraRect.height, maxBottom - cameraRect.top));
-        const totalHeight = safeCardsHeight + (cameraRect.top - top);
+        const cardsContainer = this.forgePanelEl.querySelector<HTMLElement>('.forge-cards-vertical');
+        const headerHeight = cardsContainer?.offsetTop ?? 46;
+        const top = Math.max(4, cameraRect.top - stageTop - headerHeight);
+        const safeCardsHeight = cameraRect.height;
+        const totalHeight = safeCardsHeight + headerHeight;
 
         this.forgePanelEl.style.left = `${left}px`;
         this.forgePanelEl.style.top = `${top}px`;
@@ -894,7 +949,6 @@ class App {
         this.forgePanelEl.style.height = `${totalHeight}px`;
         this.forgePanelEl.style.right = 'auto';
 
-        const cardsContainer = this.forgePanelEl.querySelector<HTMLElement>('.forge-cards-vertical');
         if (cardsContainer) {
           cardsContainer.style.height = `${safeCardsHeight}px`;
           cardsContainer.style.flex = '0 0 auto';
@@ -1071,23 +1125,21 @@ class App {
           cardsContainer.style.height = '';
           cardsContainer.style.flex = '';
         }
+        this.positionPortraitPanel(this.storyChoicesColumnEl, cameraRect, stageLeft, stageTop);
       } else {
         this.storyChoicesColumnEl.classList.remove('panel-portrait-dock');
         const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 250 : 280;
 
-        let left = cameraRect.right + 16;
-        if (left + columnWidth > window.innerWidth - 12) {
-          left = Math.max(10, window.innerWidth - columnWidth - 12);
+        let left = cameraRect.right - stageLeft + 16;
+        if (stageRect && left + columnWidth > stageRect.width - 12) {
+          left = Math.max(10, stageRect.width - columnWidth - 12);
         }
 
-        const promptEl = this.storyChoicesColumnEl.querySelector<HTMLElement>('.choices-prompt');
-        const feedbackEl = this.storyChoicesColumnEl.querySelector<HTMLElement>('.story-choice-feedback-banner');
-        const promptHeight = promptEl ? promptEl.offsetHeight + 8 : 48;
-        const feedbackHeight = feedbackEl ? feedbackEl.offsetHeight + 6 : 0;
-        const headerExtra = promptHeight + feedbackHeight;
-        const top = Math.max(10, cameraRect.top - headerExtra);
-        const safeCardsHeight = Math.max(120, Math.min(cameraRect.height, maxBottom - cameraRect.top));
-        const totalHeight = safeCardsHeight + (cameraRect.top - top);
+        const cardsContainer = this.storyChoicesColumnEl.querySelector<HTMLElement>('.story-equation-cards-vertical');
+        const headerExtra = cardsContainer?.offsetTop ?? 48;
+        const top = Math.max(4, cameraRect.top - stageTop - headerExtra);
+        const safeCardsHeight = cameraRect.height;
+        const totalHeight = safeCardsHeight + headerExtra;
 
         this.storyChoicesColumnEl.style.left = `${left}px`;
         this.storyChoicesColumnEl.style.top = `${top}px`;
@@ -1095,7 +1147,6 @@ class App {
         this.storyChoicesColumnEl.style.height = `${totalHeight}px`;
         this.storyChoicesColumnEl.style.right = 'auto';
 
-        const cardsContainer = this.storyChoicesColumnEl.querySelector<HTMLElement>('.story-equation-cards-vertical');
         if (cardsContainer) {
           cardsContainer.style.height = `${safeCardsHeight}px`;
           cardsContainer.style.flex = '0 0 auto';
@@ -1113,10 +1164,6 @@ class App {
     }
 
     // 3. Answers Column on Right (also available during Mode B's parallel cleanup stage)
-    const showModeBAnswer = gameState.mode === 'mode_b'
-      && phase === 'awaiting_cleanup'
-      && !!gameState.balancedDisplay?.rhsActivated
-      && !gameState.balancedDisplay?.rhsSolved;
     if (phase !== 'question' && !showModeBAnswer) {
       if (this.arrowSvgEl) this.arrowSvgEl.style.display = 'none';
       if (this.answersColumnEl) {
@@ -1143,20 +1190,21 @@ class App {
         cardsContainer.style.height = '';
         cardsContainer.style.flex = '';
       }
+      this.positionPortraitPanel(this.answersColumnEl, cameraRect, stageLeft, stageTop);
     } else {
       this.answersColumnEl.classList.remove('panel-portrait-dock');
       const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 220 : 260;
 
-      let left = cameraRect.right + 16;
-      if (left + columnWidth > window.innerWidth - 12) {
-        left = Math.max(10, window.innerWidth - columnWidth - 12);
+      let left = cameraRect.right - stageLeft + 16;
+      if (stageRect && left + columnWidth > stageRect.width - 12) {
+        left = Math.max(10, stageRect.width - columnWidth - 12);
       }
 
-      const questionEl = this.answersColumnEl.querySelector<HTMLElement>('.arithmetic-question');
-      const questionHeight = questionEl ? questionEl.offsetHeight + 8 : 48;
-      const top = Math.max(10, cameraRect.top - questionHeight);
-      const safeCardsHeight = Math.max(100, Math.min(cameraRect.height, maxBottom - cameraRect.top));
-      const totalHeight = safeCardsHeight + (cameraRect.top - top);
+      const cardsContainer = this.answersColumnEl.querySelector<HTMLElement>('.answer-cards-list');
+      const questionHeight = cardsContainer?.offsetTop ?? 48;
+      const top = Math.max(4, cameraRect.top - stageTop - questionHeight);
+      const safeCardsHeight = cameraRect.height;
+      const totalHeight = safeCardsHeight + questionHeight;
 
       this.answersColumnEl.style.left = `${left}px`;
       this.answersColumnEl.style.top = `${top}px`;
@@ -1164,7 +1212,6 @@ class App {
       this.answersColumnEl.style.height = `${totalHeight}px`;
       this.answersColumnEl.style.right = 'auto';
 
-      const cardsContainer = this.answersColumnEl.querySelector<HTMLElement>('.answer-cards-list');
       if (cardsContainer) {
         cardsContainer.style.height = `${safeCardsHeight}px`;
         cardsContainer.style.flex = '0 0 auto';
@@ -1213,18 +1260,39 @@ class App {
     });
   }
 
+  private appendPanelTargets(
+    targets: InteractiveTarget[],
+    elements: Array<{ id: string; element: HTMLElement }>,
+    type: InteractiveTarget['type'],
+    padding: number,
+    priority: number
+  ) {
+    const sourceRects: TargetRectInput[] = elements.map(({ element }) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+    });
+    const expandedRects = expandNonOverlappingTargets(sourceRects, {
+      padding,
+      guard: 4,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight
+    });
+
+    elements.forEach((target, index) => {
+      targets.push({
+        id: target.id,
+        type,
+        rect: expandedRects[index],
+        enabled: true,
+        priority
+      });
+    });
+  }
+
   private collectTargets(): InteractiveTarget[] {
     const gameState = this.game.getState();
     const storyState = this.storyController.getState();
-    const isDynamicPhase = gameState.phase === 'question' ||
-      gameState.phase === 'solved' ||
-      gameState.phase === 'forging' ||
-      gameState.phase === 'applying' ||
-      gameState.phase === 'blasting_rhs' ||
-      gameState.phase === 'awaiting_simplify' ||
-      (storyState.enabled && (storyState.phase === 'choosing_equation' || storyState.isPopoverOpen));
-
-    if (!this.needTargetsRefresh && this.cachedTargets.length > 0 && !isDynamicPhase) {
+    if (!this.needTargetsRefresh) {
       return this.cachedTargets;
     }
 
@@ -1234,24 +1302,7 @@ class App {
     if (this.storyController.blocksSolverInteraction()) {
       if (storyState.phase === 'choosing_equation' && this.equationChoiceView) {
         const choiceTargets = this.equationChoiceView.getInteractiveElements();
-        choiceTargets.forEach(t => {
-          const rect = t.element.getBoundingClientRect();
-          const pad = 16;
-          targets.push({
-            id: t.id,
-            type: 'equation_choice',
-            rect: {
-              left: rect.left - pad,
-              top: rect.top - pad,
-              right: rect.right + pad,
-              bottom: rect.bottom + pad,
-              width: rect.width + pad * 2,
-              height: rect.height + pad * 2
-            },
-            enabled: true,
-            priority: 2
-          });
-        });
+        this.appendPanelTargets(targets, choiceTargets, 'equation_choice', 16, 2);
       }
 
       if (this.storyView) {
@@ -1309,24 +1360,7 @@ class App {
     });
 
     if (gameState.phase === 'forging') {
-      forgeTargets.forEach(t => {
-        const rect = t.element.getBoundingClientRect();
-        const pad = 22;
-        targets.push({
-          id: t.id,
-          type: t.type,
-          rect: {
-            left: rect.left - pad,
-            top: rect.top - pad,
-            right: rect.right + pad,
-            bottom: rect.bottom + pad,
-            width: rect.width + pad * 2,
-            height: rect.height + pad * 2
-          },
-          enabled: true,
-          priority: 2
-        });
-      });
+      this.appendPanelTargets(targets, forgeTargets, 'forge', 22, 2);
     }
 
     if (gameState.mode === 'mode_c') {
@@ -1372,24 +1406,7 @@ class App {
       });
     }
 
-    ansTargets.forEach(t => {
-      const rect = t.element.getBoundingClientRect();
-      const pad = 22;
-      targets.push({
-        id: t.id,
-        type: t.type,
-        rect: {
-          left: rect.left - pad,
-          top: rect.top - pad,
-          right: rect.right + pad,
-          bottom: rect.bottom + pad,
-          width: rect.width + pad * 2,
-          height: rect.height + pad * 2
-        },
-        enabled: true,
-        priority: 2
-      });
-    });
+    this.appendPanelTargets(targets, ansTargets, 'answer', 22, 2);
 
     if (storyState.enabled && this.storyView) {
       const storyUtility = this.storyView.getInteractiveElements();
@@ -1555,8 +1572,7 @@ class App {
           localStorage.setItem('algebra_camera_size', isNowCompact ? 'compact' : 'large');
         } catch {}
         updateSizeUI();
-        this.needTargetsRefresh = true;
-        this.updateArrowAndLayout(this.game.getState().phase);
+        this.markLayoutDirty();
       });
     }
   }

@@ -53,7 +53,7 @@ export class HudView {
     this.callbacks = callbacks;
     this.currentMode = initialMode;
     this.storyModeEnabled = initialStoryMode;
-    this.renderHeader(1, 4);
+    this.renderHeader();
     this.renderFooter('Get Y on its own.');
 
     window.addEventListener('keydown', (e) => {
@@ -89,13 +89,6 @@ export class HudView {
       this.bannerEl.style.display = 'none';
     }
     this.updateCameraBtn();
-  }
-
-  public updateProgress(level: number, total: number) {
-    const levelInd = this.headerEl.querySelector('.level-indicator');
-    if (levelInd) {
-      levelInd.textContent = `Level ${level} of ${total}`;
-    }
   }
 
   public updateInstruction(text: string) {
@@ -150,22 +143,29 @@ export class HudView {
   }
 
   private updateCameraBtn() {
-    const btn = this.headerEl.querySelector('#btn-toggle-camera');
+    const btn = this.headerEl.querySelector<HTMLButtonElement>('#btn-toggle-camera');
     if (btn) {
+      const label = this.isCameraActive ? 'Camera Active' : 'Enable Camera';
       btn.className = `icon-btn ${this.isCameraActive ? 'active' : ''}`;
-      btn.innerHTML = this.isCameraActive ? '📷 Camera Active' : '📷 Enable Camera';
+      btn.innerHTML = `<span class="control-icon" aria-hidden="true">📷</span><span class="camera-button-label">${label}</span>`;
+      btn.title = this.isCameraActive ? 'Stop camera' : 'Enable camera';
+      btn.setAttribute('aria-label', btn.title);
+      btn.setAttribute('aria-pressed', String(this.isCameraActive));
     }
   }
 
-  public renderHeader(level: number, total: number) {
+  public renderHeader() {
     this.headerEl.innerHTML = `
       <div class="brand-title">
         <span>Magic Finger Algebra</span>
       </div>
-      <div class="level-indicator">Level ${level} of ${total}</div>
       <div class="header-controls">
-        <button id="btn-toggle-camera" class="icon-btn">📷 Enable Camera</button>
-        <button id="btn-settings" class="icon-btn" title="Settings & Solver Modes (Press M)">⚙️ Settings</button>
+        <button id="btn-toggle-camera" class="icon-btn" title="Enable camera" aria-label="Enable camera" aria-pressed="false">
+          <span class="control-icon" aria-hidden="true">📷</span><span class="camera-button-label">Enable Camera</span>
+        </button>
+        <button id="btn-settings" class="icon-btn" title="Settings & Solver Modes (Press M)" aria-label="Settings & Solver Modes">
+          <span class="control-icon" aria-hidden="true">⚙️</span><span class="settings-button-label">Settings</span>
+        </button>
       </div>
     `;
 
@@ -187,7 +187,7 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.10.1</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.11.0</button>
       </div>
     `;
 

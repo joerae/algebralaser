@@ -1,3 +1,15 @@
+Version 1.11.0
+Date: 2026-09-11
+
+Release Notes:
+- Comprehensive Mode B responsive layout:
+  - Fluid story, equation, camera, and control sizing fits short Chromebook and mobile portrait viewports without page scrolling.
+  - Desktop selection prompts sit above the camera while their choices span its full height; portrait choices become a horizontal panel above the camera.
+  - Laser hitboxes gain responsive padding while being clipped at safe boundaries so neighbouring choices never overlap.
+  - Removed the level indicator and visible Show Story control, and condensed header controls on constrained screens. The S shortcut still opens the story.
+  - Reduced frame-time layout work by recalculating responsive geometry only when layout or game state changes.
+- Files: index.html, src/main.ts, src/ui/hudView.ts, src/ui/storyView.ts, src/ui/responsiveTargetGeometry.ts, src/ui/responsiveTargetGeometry.test.ts, src/styles/story.css, src/styles/responsive.css, src/data/version.txt, public/version.txt.
+
 Version 1.10.1
 Date: 2026-09-11
 
