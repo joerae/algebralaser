@@ -47,7 +47,7 @@ describe('StoryController', () => {
     expect(controller.getState().lastFeedback).toBe(wrongChoice.feedback);
   });
 
-  it('handles correct equation choice: moves to condensing then solving', () => {
+  it('handles correct equation choice: moves directly to solving', () => {
     const controller = new StoryController(BENCHMARK_PUZZLE, true);
     controller.reducedMotion = false;
     controller.initLevel(BENCHMARK_PUZZLE);
@@ -60,15 +60,11 @@ describe('StoryController', () => {
     const res = controller.selectEquationChoice(correctChoice.id);
     expect(res.success).toBe(true);
     expect(res.isCorrect).toBe(true);
-    expect(controller.getState().phase).toBe('condensing');
-
-    // Advance condensing duration
-    vi.advanceTimersByTime(800);
     expect(controller.getState().phase).toBe('solving');
     expect(readySpy).toHaveBeenCalled();
   });
 
-  it('blocks solver interaction during reading, choosing, condensing, and popover', () => {
+  it('blocks solver interaction during reading, choosing, and popover', () => {
     const controller = new StoryController(BENCHMARK_PUZZLE, true);
     expect(controller.blocksSolverInteraction()).toBe(true);
 
@@ -96,9 +92,9 @@ describe('StoryController', () => {
 
     const correct = controller.getState().candidates.find(c => c.isCorrect)!;
     controller.selectEquationChoice(correct.id);
-    expect(controller.getState().phase).toBe('condensing');
+    expect(controller.getState().phase).toBe('solving');
 
-    // Player switches mode while condensing
+    // Player switches mode
     controller.handleModeSwitch();
     expect(controller.getState().phase).toBe('solving');
   });

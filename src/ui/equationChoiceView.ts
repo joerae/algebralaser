@@ -39,9 +39,9 @@ export class EquationChoiceView {
           });
       let modifierHtml = '';
       if (cand.b > 0) {
-        modifierHtml = `<span class="choice-op op-plus">+</span> <span class="choice-num">${cand.b}</span>`;
+        modifierHtml = `<span class="choice-modifier-tile op-plus">+ ${cand.b}</span>`;
       } else if (cand.b < 0) {
-        modifierHtml = `<span class="choice-op op-minus">−</span> <span class="choice-num">${Math.abs(cand.b)}</span>`;
+        modifierHtml = `<span class="choice-modifier-tile op-minus">− ${Math.abs(cand.b)}</span>`;
       }
 
       return `

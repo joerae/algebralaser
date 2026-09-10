@@ -161,23 +161,15 @@ export class StoryController {
     }
 
     // Correct choice!
-    const sessionId = this.currentSessionId;
     this.state.selectedCandidateId = choiceId;
-    this.state.phase = 'condensing';
+    this.state.phase = 'solving';
     this.state.lastFeedback = candidate.feedback;
     this.state.highlightedBeat = null;
     this.notify();
 
-    const duration = this.reducedMotion ? 0 : 700;
-
-    this.condensingTimer = setTimeout(() => {
-      if (this.currentSessionId !== sessionId) return;
-      this.state.phase = 'solving';
-      this.notify();
-      if (this.onReadyForSolving) {
-        this.onReadyForSolving();
-      }
-    }, duration);
+    if (this.onReadyForSolving) {
+      this.onReadyForSolving();
+    }
 
     return { success: true, isCorrect: true, feedback: candidate.feedback };
   }

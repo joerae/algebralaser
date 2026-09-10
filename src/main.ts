@@ -372,7 +372,22 @@ class App {
         storyState.phase === 'choosing_equation' ||
         storyState.phase === 'condensing'
       );
-      this.equationAreaEl.style.display = isIntro ? 'none' : 'flex';
+      const wasHidden = this.equationAreaEl.style.display === 'none';
+      if (isIntro) {
+        this.equationAreaEl.style.display = 'none';
+        this.equationAreaEl.style.opacity = '0';
+      } else {
+        this.equationAreaEl.style.display = 'flex';
+        // Smooth fade-in when equation area transitions from hidden (story) to visible (solving)
+        if (wasHidden) {
+          this.equationAreaEl.style.opacity = '0';
+          requestAnimationFrame(() => {
+            if (this.equationAreaEl) {
+              this.equationAreaEl.style.opacity = '1';
+            }
+          });
+        }
+      }
     }
 
     const activeItem = storyState.enabled ? storyState.story.item : null;

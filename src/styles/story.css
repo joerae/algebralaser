@@ -491,6 +491,8 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 /* Choice card coefficient & times sizing (prevents giant 76px equation rail tile) */
@@ -563,6 +565,34 @@
 
 .choice-op.op-minus {
   color: #ffffff;
+}
+
+/* Modifier tile in equation choice cards — wraps the entire "+3" or "−3" in a coloured box */
+.choice-modifier-tile {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.choice-modifier-tile.op-plus {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
+}
+
+.choice-modifier-tile.op-minus {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
 }
 
 .choice-num {

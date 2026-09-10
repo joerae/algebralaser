@@ -86,20 +86,25 @@ export function classifyHandPose(landmarks: LandmarkPoint[], confidenceScore: nu
                      ringStraightness > 0.76 && 
                      pinkyStraightness > 0.72;
 
-  // 2. Foreshortened: straight in 3D but projected 2D chord is short
-  const isForeshortened = indexStraightness > 0.85 && index2dRatio < 0.40;
+  // 2. Foreshortened: straight in 3D but projected 2D chord is very short
+  //    (relaxed from 0.40 → 0.28 to allow pointing slightly toward camera)
+  const isForeshortened = indexStraightness > 0.85 && index2dRatio < 0.28;
 
   // 3. Other fingers curled
-  // Middle, ring, pinky should be folded
-  const otherFingersCurled = (middleStraightness < 0.72) && 
-                             (ringStraightness < 0.72) && 
-                             (pinkyStraightness < 0.75);
+  // Middle, ring, pinky should be folded (relaxed thresholds for child-friendly detection)
+  const otherFingersCurled = (middleStraightness < 0.78) && 
+                             (ringStraightness < 0.78) && 
+                             (pinkyStraightness < 0.80);
 
   // 4. Index straight (pointing)
-  // Index straightness >= 0.85 and index chord compared to palm scale >= 0.65
-  const isIndexStraight = indexStraightness >= 0.86 && (indexChord3d / palmScale3d) >= 0.65;
+  // Relaxed from 0.86/0.65 → 0.80/0.55 for more liberal detection
+  const isIndexStraight = indexStraightness >= 0.80 && (indexChord3d / palmScale3d) >= 0.55;
 
-  const isPointing = isIndexStraight && otherFingersCurled && !isOpenPalm && !isForeshortened;
+  // Also accept "loose" pointing when index is straight in 3D but moderately foreshortened
+  const isPointingStrict = isIndexStraight && otherFingersCurled && !isOpenPalm && !isForeshortened;
+  const isPointingLoose = !isPointingStrict && !isOpenPalm && otherFingersCurled
+    && indexStraightness >= 0.82 && index2dRatio >= 0.18 && index2dRatio < 0.55;
+  const isPointing = isPointingStrict || isPointingLoose;
 
   // 5. Index curled
   // Observed curl: index bends significantly while other fingers remain curled

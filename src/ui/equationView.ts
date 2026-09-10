@@ -222,10 +222,15 @@ export class EquationView {
 
       let leftHtml: string;
       if (!lhsApplied) {
+        const isDivisionPre = Boolean(state.problem.d && state.problem.d > 1) && isCoeff;
         const originalConstant = currentB === 0
           ? ''
           : `<span class="term-tile ${currentB < 0 ? 'op-minus' : 'op-plus'}">${currentB < 0 ? '&minus;' : '+'} ${Math.abs(currentB)}</span>`;
-        leftHtml = `${variableHtml}${originalConstant}`;
+        // Keep ÷d visible until the ×d bubble arrives
+        const originalDivisor = isDivisionPre
+          ? `<span class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</span><span class="term-tile op-divide">${state.problem.d}</span>`
+          : '';
+        leftHtml = `${variableHtml}${originalDivisor}${originalConstant}`;
       } else if (balancedDisplay.lhsCleaned) {
         leftHtml = isCoeff
           ? this.renderVarSpan()
@@ -235,9 +240,12 @@ export class EquationView {
         if (isDivision) {
           leftHtml = `
             ${this.renderVarSpan()}
-            <div ${cleanupId} class="${cleanupClass} op-times" role="button" aria-label="Blast away division and multiplication pair">
-              <span class="math-symbol op-divide" style="font-size: 32px; padding: 0 4px;">÷ ${state.problem.d}</span>
-              <span class="math-symbol op-times" style="font-size: 32px; padding: 0 4px;">× ${state.forgedOperation?.forgedOperand || state.problem.d}</span>
+            <div ${cleanupId} class="${cleanupClass} op-divide" role="button" aria-label="Blast away division and multiplication pair">
+              <div class="fraction mode-b-identity-fraction">
+                <div class="num">${state.problem.d}</div>
+                <div class="fraction-bar"></div>
+                <div class="denom">${state.forgedOperation?.forgedOperand || state.problem.d}</div>
+              </div>
             </div>
           `;
         } else {
@@ -270,7 +278,7 @@ export class EquationView {
         rightHtml = `<span class="math-symbol mode-b-rhs-solved">${currentC}</span>`;
       } else if (rhsApplied) {
         const isDivision = Boolean(state.problem.d && state.problem.d > 1);
-        if (isDivision || state.forgedOperation?.forgedOperator === '×') {
+        if (isCoeff && (isDivision || state.forgedOperation?.forgedOperator === '×')) {
           const forgedOp = state.forgedOperation?.forgedOperand || state.problem.d || currentA;
           rightHtml = `
             <div ${rhsTargetId} class="collapsing-arithmetic-section mode-b-rhs-operation ${rhsTargetClass}">
@@ -289,7 +297,8 @@ export class EquationView {
           `;
         } else {
           const forgedSign = state.forgedOperation?.forgedOperator === '+' ? '+' : '&minus;';
-          rightHtml = `<div ${rhsTargetId} class="collapsing-arithmetic-section mode-b-rhs-operation ${rhsTargetClass}"><span class="math-symbol">${currentC} ${forgedSign} ${state.forgedOperation?.forgedOperand || Math.abs(currentB)}</span></div>`;
+          const forgedOpClass = state.forgedOperation?.forgedOperator === '+' ? 'op-plus' : 'op-minus';
+          rightHtml = `<div ${rhsTargetId} class="collapsing-arithmetic-section mode-b-rhs-operation ${rhsTargetClass}"><span class="math-symbol ${forgedOpClass}">${currentC} ${forgedSign} ${state.forgedOperation?.forgedOperand || Math.abs(currentB)}</span></div>`;
         }
       }
 
@@ -318,8 +327,8 @@ export class EquationView {
       let rightHtml = '';
 
       if (isCoeff) {
-        const isDivision = Boolean(state.problem.d && state.problem.d > 1);
-        if (isDivision || state.forgedOperation?.forgedOperator === '×') {
+        const isDivisionLegacy = Boolean(state.problem.d && state.problem.d > 1);
+        if (isDivisionLegacy || state.forgedOperation?.forgedOperator === '×') {
           const forgedOp = state.forgedOperation?.forgedOperand || state.problem.d || currentA;
           leftHtml = `
             <span class="balanced-term-group">
