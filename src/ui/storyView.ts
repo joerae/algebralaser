@@ -89,8 +89,6 @@ export class StoryView {
               }).join('')}
             </div>
           </div>
-
-          <div id="story-equation-choices-container" class="story-choices-mount"></div>
         </div>
         ${popoverHtml}
       `;

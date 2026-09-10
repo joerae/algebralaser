@@ -73,14 +73,13 @@ export class EquationChoiceView {
     ` : '';
 
     this.container.innerHTML = `
-      <div class="story-equation-choices-panel">
-        <div class="choices-prompt">
-          <span>Which equation matches?</span>
-        </div>
-        ${feedbackHtml}
-        <div class="story-equation-cards-grid">
-          ${cardsHtml}
-        </div>
+      <div class="choices-prompt arithmetic-question">
+        <div class="question-text">Which equation matches?</div>
+        <div class="question-subtext">Aim laser ray & hold, or press 1–3</div>
+      </div>
+      ${feedbackHtml}
+      <div class="story-equation-cards-vertical">
+        ${cardsHtml}
       </div>
     `;
 

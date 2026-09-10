@@ -1,3 +1,18 @@
+Version 1.10.1
+Date: 2026-09-11
+
+Release Notes:
+- Story Mode Responsive Layout & Camera Viewport Optimization:
+  - Compact Story Area:
+    - Reduced `.story-card` vertical height by over 60% (from ~230px down to ~85px) with streamlined padding, compact header, and tight flowing story beats.
+  - Side-Mounted Equation Selection:
+    - Moved the "Which equation matches?" prompt, feedback banner, and the 3 equation cards into `#story-choices-column` to the right of the video window.
+    - Matches the vertical positioning and height scaling of the arithmetic question column (`cameraRect.height`).
+    - Gives the camera box and laser tracker >300px of freed vertical space, guaranteeing a large, comfortable webcam area even on 768px-height Chromebooks.
+  - Mobile Portrait Docking:
+    - Equation selection smoothly transitions to a horizontal docked grid below the video window in mobile portrait mode.
+- Files: index.html, src/ui/storyView.ts, src/ui/equationChoiceView.ts, src/main.ts, src/styles/story.css, src/styles/responsive.css, src/data/version.txt, public/version.txt.
+
 Version 1.10.0
 Date: 2026-09-11
 

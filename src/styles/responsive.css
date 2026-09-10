@@ -138,6 +138,80 @@
     right: 10px;
   }
 
+  /* Story Mode Compact Card & Equation Choices in Smaller Screens */
+  .story-presentation-panel {
+    max-width: 620px;
+    gap: 6px;
+  }
+
+  .story-card {
+    padding: 6px 12px;
+    min-height: 0;
+  }
+
+  .story-card-header {
+    margin-bottom: 3px;
+    padding-bottom: 2px;
+    gap: 5px;
+  }
+
+  .story-card-icon {
+    font-size: 0.95rem;
+  }
+
+  .story-card-title {
+    font-size: 0.78rem;
+  }
+
+  .story-beats-container {
+    gap: 2px;
+    min-height: 0;
+  }
+
+  .story-sentence {
+    font-size: 0.88rem;
+    line-height: 1.25;
+  }
+
+  .story-sentence.sentence-highlight {
+    padding: 1px 6px;
+  }
+
+  .story-sentence.story-question-beat {
+    margin-top: 1px;
+    padding-top: 1px;
+    font-size: 0.9rem;
+  }
+
+  .story-choices-column {
+    width: 250px;
+    gap: 6px;
+  }
+
+  .story-choices-column .choices-prompt.arithmetic-question {
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .story-choices-column .choices-prompt .question-text {
+    font-size: 15px;
+  }
+
+  .story-choices-column .choices-prompt .question-subtext {
+    font-size: 11px;
+    margin-top: 2px;
+  }
+
+  .story-choices-column .story-choice-feedback-banner {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+  }
+
+  .story-equation-card {
+    padding: 4px 6px;
+    border-radius: 12px;
+  }
+
   .forge-panel {
     width: 145px;
     gap: 6px;
@@ -443,6 +517,87 @@
     width: 26px;
     height: 26px;
     right: 6px;
+  }
+
+  /* Story Choices Dock in Mobile Portrait */
+  .story-choices-column.panel-portrait-dock {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    width: min(calc(100vw - 16px), 360px) !important;
+    height: auto !important;
+    margin: 4px auto 0 !important;
+    gap: 6px !important;
+    z-index: 35;
+  }
+
+  .story-choices-column.panel-portrait-dock .choices-prompt.arithmetic-question {
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .story-choices-column.panel-portrait-dock .question-text {
+    font-size: 14px;
+  }
+
+  .story-choices-column.panel-portrait-dock .question-subtext {
+    font-size: 10px;
+    margin-top: 1px;
+  }
+
+  .story-choices-column.panel-portrait-dock .story-choice-feedback-banner {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+  }
+
+  .story-choices-column.panel-portrait-dock .story-equation-cards-vertical {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    height: 64px !important;
+    width: 100%;
+  }
+
+  .story-choices-column.panel-portrait-dock .story-equation-card {
+    height: 64px !important;
+    border-radius: 12px;
+    flex: none;
+    padding: 4px 2px;
+  }
+
+  .story-choices-column.panel-portrait-dock .choice-equation-expr {
+    font-size: 1rem;
+    gap: 2px;
+  }
+
+  .story-choices-column.panel-portrait-dock .story-equation-card .choice-coeff-tile {
+    font-size: 1rem;
+    padding: 1px 4px;
+  }
+
+  .story-choices-column.panel-portrait-dock .story-equation-card .math-item-token {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 2px;
+  }
+
+  .story-choices-column.panel-portrait-dock .choice-modifier-tile {
+    font-size: 0.95rem;
+    padding: 1px 3px;
+  }
+
+  .story-choices-column.panel-portrait-dock .choice-rhs {
+    font-size: 1rem;
+  }
+
+  .story-choices-column.panel-portrait-dock .choice-dwell-svg {
+    width: 18px;
+    height: 18px;
+    top: 3px;
+    right: 3px;
   }
 
   /* Mode B Forge Panel Dock */

@@ -50,6 +50,7 @@ class App {
   private arrowPathEl: SVGPathElement | null = null;
   private cameraBoxEl: HTMLElement | null = null;
   private answersColumnEl: HTMLElement | null = null;
+  private storyChoicesColumnEl: HTMLElement | null = null;
   private forgePanelEl: HTMLElement | null = null;
   private blasterPanelEl: HTMLElement | null = null;
   private inversePanelEl: HTMLElement | null = null;
@@ -77,6 +78,7 @@ class App {
     this.arrowPathEl = document.getElementById('connector-arrow-path') as unknown as SVGPathElement | null;
     this.cameraBoxEl = document.getElementById('camera-box');
     this.answersColumnEl = document.getElementById('answers-column');
+    this.storyChoicesColumnEl = document.getElementById('story-choices-column');
     this.forgePanelEl = document.getElementById('forge-panel');
     this.blasterPanelEl = document.getElementById('blaster-panel');
     this.inversePanelEl = document.getElementById('inverse-panel');
@@ -349,18 +351,20 @@ class App {
     if (!this.storyAreaEl) return;
     this.storyView.render(storyState);
 
-    const choicesMount = document.getElementById('story-equation-choices-container');
-    if (choicesMount) {
-      this.equationChoiceView = new EquationChoiceView(choicesMount, {
+    if (this.storyChoicesColumnEl) {
+      this.equationChoiceView = new EquationChoiceView(this.storyChoicesColumnEl, {
         onSelectChoice: (choiceId) => this.handleStoryEquationChoice(choiceId)
       });
-      if (storyState.phase === 'choosing_equation') {
+      if (storyState.enabled && storyState.phase === 'choosing_equation') {
         this.equationChoiceView.render(
           storyState.candidates,
           storyState.story.item,
           storyState.lastFeedback,
           storyState.selectedCandidateId
         );
+      } else {
+        this.storyChoicesColumnEl.style.display = 'none';
+        this.storyChoicesColumnEl.innerHTML = '';
       }
     } else {
       this.equationChoiceView = null;
@@ -847,6 +851,7 @@ class App {
 
   private updateArrowAndLayout(phase: string) {
     const gameState = this.game.getState();
+    const storyState = this.storyController.getState();
     const isMobilePortrait = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
     const footerEl = document.getElementById('hud-footer');
     const footerHeight = footerEl ? footerEl.offsetHeight : 55;
@@ -1046,6 +1051,65 @@ class App {
       }
       if (this.answersColumnEl) this.answersColumnEl.style.display = 'none';
       return;
+    }
+
+    // 2.5 Story Mode Equation Choices Column on Right (matches answers-column layout)
+    const isStoryChoiceVisible = storyState.enabled && storyState.phase === 'choosing_equation';
+    if (isStoryChoiceVisible && this.cameraBoxEl && this.storyChoicesColumnEl) {
+      this.storyChoicesColumnEl.style.display = 'flex';
+      const cameraRect = this.cameraBoxEl.getBoundingClientRect();
+
+      if (isMobilePortrait) {
+        this.storyChoicesColumnEl.classList.add('panel-portrait-dock');
+        this.storyChoicesColumnEl.style.left = '';
+        this.storyChoicesColumnEl.style.top = '';
+        this.storyChoicesColumnEl.style.width = '';
+        this.storyChoicesColumnEl.style.height = '';
+        this.storyChoicesColumnEl.style.right = '';
+        const cardsContainer = this.storyChoicesColumnEl.querySelector<HTMLElement>('.story-equation-cards-vertical');
+        if (cardsContainer) {
+          cardsContainer.style.height = '';
+          cardsContainer.style.flex = '';
+        }
+      } else {
+        this.storyChoicesColumnEl.classList.remove('panel-portrait-dock');
+        const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 250 : 280;
+
+        let left = cameraRect.right + 16;
+        if (left + columnWidth > window.innerWidth - 12) {
+          left = Math.max(10, window.innerWidth - columnWidth - 12);
+        }
+
+        const promptEl = this.storyChoicesColumnEl.querySelector<HTMLElement>('.choices-prompt');
+        const feedbackEl = this.storyChoicesColumnEl.querySelector<HTMLElement>('.story-choice-feedback-banner');
+        const promptHeight = promptEl ? promptEl.offsetHeight + 8 : 48;
+        const feedbackHeight = feedbackEl ? feedbackEl.offsetHeight + 6 : 0;
+        const headerExtra = promptHeight + feedbackHeight;
+        const top = Math.max(10, cameraRect.top - headerExtra);
+        const safeCardsHeight = Math.max(120, Math.min(cameraRect.height, maxBottom - cameraRect.top));
+        const totalHeight = safeCardsHeight + (cameraRect.top - top);
+
+        this.storyChoicesColumnEl.style.left = `${left}px`;
+        this.storyChoicesColumnEl.style.top = `${top}px`;
+        this.storyChoicesColumnEl.style.width = `${columnWidth}px`;
+        this.storyChoicesColumnEl.style.height = `${totalHeight}px`;
+        this.storyChoicesColumnEl.style.right = 'auto';
+
+        const cardsContainer = this.storyChoicesColumnEl.querySelector<HTMLElement>('.story-equation-cards-vertical');
+        if (cardsContainer) {
+          cardsContainer.style.height = `${safeCardsHeight}px`;
+          cardsContainer.style.flex = '0 0 auto';
+        }
+      }
+      if (this.arrowSvgEl) this.arrowSvgEl.style.display = 'none';
+      if (this.answersColumnEl) {
+        this.answersColumnEl.classList.remove('panel-portrait-dock');
+        this.answersColumnEl.style.display = 'none';
+      }
+      return;
+    } else if (this.storyChoicesColumnEl) {
+      this.storyChoicesColumnEl.classList.remove('panel-portrait-dock');
+      this.storyChoicesColumnEl.style.display = 'none';
     }
 
     // 3. Answers Column on Right (also available during Mode B's parallel cleanup stage)

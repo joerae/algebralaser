@@ -120,47 +120,47 @@
   width: 100%;
   background: linear-gradient(145deg, rgba(30, 27, 75, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
   border: 1.5px solid rgba(251, 191, 36, 0.4);
-  border-radius: 14px;
-  padding: 16px 22px;
+  border-radius: 12px;
+  padding: 8px 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 15px rgba(251, 191, 36, 0.15);
   backdrop-filter: blur(12px);
   box-sizing: border-box;
-  min-height: 195px;
+  min-height: 0;
 }
 
 .story-card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 5px;
   border-bottom: 1px solid rgba(251, 191, 36, 0.2);
-  padding-bottom: 6px;
+  padding-bottom: 4px;
 }
 
 .story-card-icon {
-  font-size: 1.3rem;
+  font-size: 1.05rem;
 }
 
 .story-card-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: #fbbf24;
 }
 
 .story-beats-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 125px;
+  gap: 3px;
+  min-height: 0;
 }
 
 .story-sentence {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.15rem;
-  line-height: 1.45;
+  font-size: 0.95rem;
+  line-height: 1.35;
   color: #f1f5f9;
   margin: 0;
   opacity: 0;
@@ -178,15 +178,16 @@
   text-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
   background: rgba(251, 191, 36, 0.15);
   border-left: 3px solid #fbbf24;
-  padding: 4px 8px;
+  padding: 2px 8px;
   border-radius: 0 6px 6px 0;
 }
 
 .story-sentence.story-question-beat {
   font-weight: 700;
   color: #fbbf24;
-  margin-top: 4px;
-  padding-top: 4px;
+  margin-top: 2px;
+  padding-top: 2px;
+  font-size: 0.98rem;
 }
 
 /* Concrete Scene Visualization */
@@ -381,37 +382,57 @@
   height: 44px;
 }
 
-/* Equation Choices Mount & Panel */
-.story-choices-mount {
-  width: 100%;
-}
-
-.story-equation-choices-panel {
+/* Equation Choices Column & Vertical Cards */
+.story-choices-column {
+  position: absolute;
+  width: 280px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 8px;
+  z-index: 35;
+  transition: opacity 0.25s ease;
+  box-sizing: border-box;
 }
 
-.choices-prompt {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #38bdf8;
+.story-choices-column .choices-prompt.arithmetic-question {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 16px;
+  padding: 8px 14px;
   text-align: center;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.story-choices-column .choices-prompt .question-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold-bright, #fbbf24);
+}
+
+.story-choices-column .choices-prompt .question-subtext {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 2px;
 }
 
 .story-choice-feedback-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: 8px;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: 10px;
   color: #fca5a5;
   font-family: 'Outfit', sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  flex-shrink: 0;
   animation: feedbackSlide 0.25s ease-out;
 }
 
@@ -427,10 +448,14 @@
   }
 }
 
-.story-equation-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+.story-equation-cards-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: space-between;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .story-equation-card {
@@ -439,21 +464,26 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 22px 14px 20px;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  padding: 6px 8px;
   background: rgba(30, 41, 59, 0.85);
   border: 1.5px solid rgba(148, 163, 184, 0.25);
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer;
   outline: none;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  min-height: 108px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .story-equation-card:hover,
 .story-equation-card.dwell-active {
   background: rgba(51, 65, 85, 0.95);
   border-color: #38bdf8;
-  transform: translateY(-2px);
+  transform: translateX(-3px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 12px rgba(56, 189, 248, 0.3);
 }
 
@@ -464,27 +494,30 @@
 
 .choice-header {
   position: absolute;
-  top: 6px;
-  left: 8px;
+  top: 5px;
+  left: 6px;
+  z-index: 2;
 }
 
 .choice-key-badge {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: #94a3b8;
-  background: rgba(15, 23, 42, 0.6);
-  padding: 2px 6px;
+  background: rgba(15, 23, 42, 0.65);
+  padding: 1px 5px;
   border-radius: 4px;
 }
 
 .choice-equation-expr {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 5px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.75rem;
+  font-size: clamp(1.1rem, 2.8vh, 1.45rem);
   color: #f1f5f9;
+  width: 100%;
 }
 
 .choice-lhs {
@@ -498,13 +531,13 @@
 /* Choice card coefficient & times sizing (prevents giant 76px equation rail tile) */
 .story-equation-card .choice-coeff-tile {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.9rem;
+  font-size: clamp(1.15rem, 2.8vh, 1.45rem);
   font-weight: 700;
   color: #f87171;
   min-width: 0;
   min-height: 0;
-  padding: 4px 10px;
-  border-radius: 8px;
+  padding: 2px 6px;
+  border-radius: 6px;
   background: rgba(248, 113, 113, 0.15);
   border: 1px solid rgba(248, 113, 113, 0.35);
   line-height: 1;
@@ -516,12 +549,11 @@
 
 .story-equation-card .choice-times-symbol {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.6rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #f87171;
-  padding: 0 2px;
+  padding: 0 1px;
   display: none;
-  /* hidden until hover */
   align-items: center;
   line-height: 1;
 }
@@ -532,26 +564,27 @@
 }
 
 .story-equation-card .term-tile {
-  font-size: 1.9rem;
+  font-size: clamp(1.15rem, 2.8vh, 1.45rem);
   min-width: 0;
   min-height: 0;
-  padding: 4px 10px;
+  padding: 2px 6px;
   line-height: 1;
   box-shadow: none;
 }
 
 .story-equation-card .math-symbol {
-  font-size: 1.9rem;
+  font-size: clamp(1.15rem, 2.8vh, 1.45rem);
   line-height: 1;
 }
 
 /* Icon in choice cards: match the coefficient font size visually */
 .story-equation-card .math-item-token {
-  width: 52px;
-  height: 52px;
-  min-width: 52px;
-  min-height: 52px;
-  padding: 4px;
+  width: clamp(28px, 4vh, 42px);
+  height: clamp(28px, 4vh, 42px);
+  min-width: clamp(28px, 4vh, 42px);
+  min-height: clamp(28px, 4vh, 42px);
+  padding: 3px;
+  border-radius: 8px;
 }
 
 .choice-op {
@@ -567,15 +600,15 @@
   color: #ffffff;
 }
 
-/* Modifier tile in equation choice cards — wraps the entire "+3" or "−3" in a coloured box */
+/* Modifier tile in equation choice cards */
 .choice-modifier-tile {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.5rem;
+  font-size: clamp(1.05rem, 2.5vh, 1.35rem);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: 6px;
   line-height: 1;
   white-space: nowrap;
@@ -583,16 +616,16 @@
 
 .choice-modifier-tile.op-plus {
   color: #34d399;
-  background: rgba(52, 211, 153, 0.12);
+  background: rgba(52, 211, 153, 0.15);
   border: 1px solid rgba(52, 211, 153, 0.45);
-  text-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
 }
 
 .choice-modifier-tile.op-minus {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
 .choice-num {
@@ -601,20 +634,23 @@
 
 .choice-equals {
   color: #94a3b8;
+  font-size: clamp(1.1rem, 2.8vh, 1.45rem);
 }
 
 .choice-rhs {
   color: #38bdf8;
   font-weight: 700;
+  font-size: clamp(1.15rem, 2.8vh, 1.45rem);
 }
 
 .choice-dwell-svg {
   position: absolute;
   right: 6px;
-  top: 6px;
+  top: 5px;
   width: 22px;
   height: 22px;
   pointer-events: none;
+  z-index: 2;
 }
 
 .shake-card {
