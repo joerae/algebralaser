@@ -236,7 +236,8 @@ export class EquationView {
           leftHtml = `
             ${this.renderVarSpan()}
             <div ${cleanupId} class="${cleanupClass} op-times" role="button" aria-label="Blast away division and multiplication pair">
-              <span class="math-symbol op-times" style="font-size: 36px; padding: 0 8px;">÷ ${state.problem.d} × ${state.forgedOperation?.forgedOperand || state.problem.d}</span>
+              <span class="math-symbol op-divide" style="font-size: 32px; padding: 0 4px;">÷ ${state.problem.d}</span>
+              <span class="math-symbol op-times" style="font-size: 32px; padding: 0 4px;">× ${state.forgedOperation?.forgedOperand || state.problem.d}</span>
             </div>
           `;
         } else {
@@ -268,7 +269,15 @@ export class EquationView {
       if (balancedDisplay.rhsSolved) {
         rightHtml = `<span class="math-symbol mode-b-rhs-solved">${currentC}</span>`;
       } else if (rhsApplied) {
-        if (isCoeff) {
+        const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+        if (isDivision || state.forgedOperation?.forgedOperator === '×') {
+          const forgedOp = state.forgedOperation?.forgedOperand || state.problem.d || currentA;
+          rightHtml = `
+            <div ${rhsTargetId} class="collapsing-arithmetic-section mode-b-rhs-operation ${rhsTargetClass}">
+              <span class="math-symbol" style="font-size: 42px;">${currentC} <span class="term-times op-times">×</span> ${forgedOp}</span>
+            </div>
+          `;
+        } else if (isCoeff) {
           rightHtml = `
             <div ${rhsTargetId} class="collapsing-arithmetic-section mode-b-rhs-operation ${rhsTargetClass}">
               <div class="fraction op-divide">
@@ -284,16 +293,6 @@ export class EquationView {
         }
       }
 
-      const banner = phase === 'awaiting_cleanup'
-        ? (balancedDisplay.lhsCleaned
-          ? 'Great! Now solve the calculation on the right.'
-          : (balancedDisplay.rhsSolved
-            ? 'Great! Now blast the left side.'
-            : (balancedDisplay.rhsActivated
-              ? 'Choose either side'
-              : '')))
-        : (rhsApplied ? 'Both sides changed!' : (lhsApplied ? 'Now balancing it out...' : 'Changing up both sides equally...'));
-
       this.container.innerHTML = `
         ${historyHtml}
         <div class="equation-rail mode-b-rail mode-b-balance-rail">
@@ -301,7 +300,6 @@ export class EquationView {
           <div class="math-symbol symbol-equals">=</div>
           <div class="equation-side equation-rhs">${rightHtml}</div>
         </div>
-        <div class="operation-banner balanced-banner">${banner}</div>
       `;
 
       this.container.querySelector('#mode-b-cleanup-target')?.addEventListener('click', () => {
@@ -320,18 +318,35 @@ export class EquationView {
       let rightHtml = '';
 
       if (isCoeff) {
-        leftHtml = `
-          <span class="balanced-term-group">
-            <span class="cancelling-term">${currentA} <span class="term-times">x</span></span>
-            ${this.renderVar()}
-            <span class="cancelling-term op-divide">÷ ${currentA}</span>
-          </span>
-        `;
-        rightHtml = `
-          <span class="math-symbol op-divide" style="font-size: 52px;">
-            ${balancedDisplay.rightBefore} ÷ ${state.forgedOperation?.forgedOperand || currentA}
-          </span>
-        `;
+        const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+        if (isDivision || state.forgedOperation?.forgedOperator === '×') {
+          const forgedOp = state.forgedOperation?.forgedOperand || state.problem.d || currentA;
+          leftHtml = `
+            <span class="balanced-term-group">
+              ${this.renderVar()}
+              <span class="cancelling-term op-divide">÷ ${state.problem.d}</span>
+              <span class="cancelling-term op-times">× ${forgedOp}</span>
+            </span>
+          `;
+          rightHtml = `
+            <span class="math-symbol op-times" style="font-size: 52px;">
+              ${balancedDisplay.rightBefore} × ${forgedOp}
+            </span>
+          `;
+        } else {
+          leftHtml = `
+            <span class="balanced-term-group">
+              <span class="cancelling-term">${currentA} <span class="term-times">x</span></span>
+              ${this.renderVar()}
+              <span class="cancelling-term op-divide">÷ ${currentA}</span>
+            </span>
+          `;
+          rightHtml = `
+            <span class="math-symbol op-divide" style="font-size: 52px;">
+              ${balancedDisplay.rightBefore} ÷ ${state.forgedOperation?.forgedOperand || currentA}
+            </span>
+          `;
+        }
       } else {
         const absB = Math.abs(currentB);
         const isNeg = currentB < 0;
@@ -362,7 +377,6 @@ export class EquationView {
           <div class="math-symbol symbol-equals">=</div>
           ${rightHtml}
         </div>
-        <div class="operation-banner balanced-banner">Opposite applied to both sides! Cancelling on variable side...</div>
       `;
       return;
     }
@@ -370,7 +384,7 @@ export class EquationView {
     // 4. Question Phase (Unsimplified intermediate expression, ready to collapse)
     if (phase === 'question' && pendingArithmetic) {
       let leftSide = '';
-      if (pendingArithmetic.operator === '÷') {
+      if (pendingArithmetic.operator === '÷' || (state.problem.d && state.problem.d > 1)) {
         leftSide = this.renderVar();
       } else {
         leftSide = currentA > 1
@@ -387,6 +401,8 @@ export class EquationView {
             <div class="denom">${pendingArithmetic.operand2}</div>
           </div>
         `;
+      } else if (pendingArithmetic.operator === '×') {
+        exprHtml = `<span class="math-symbol op-times" style="font-size: 54px;">${pendingArithmetic.operand1} <span class="term-times op-times">×</span> ${pendingArithmetic.operand2}</span>`;
       } else {
         const opSymbol = pendingArithmetic.operator === '+' ? '+' : '−';
         const opClass = pendingArithmetic.operator === '+' ? 'op-plus' : 'op-minus';
@@ -848,22 +864,39 @@ export class EquationView {
       }
 
       if (carriedTerm === 'coefficient') {
-        this.container.innerHTML = `
-          ${historyHtml}
-          <div class="equation-rail">
-            <div class="term-tile term-ghost op-times">${currentA}</div>
-            <div class="math-symbol term-times op-times">x</div>
-            ${this.renderVarDiv()}
-            <div class="math-symbol symbol-equals">=</div>
-            <div class="fraction op-divide">
-              <div class="num">${currentC}</div>
-              <div class="fraction-bar"></div>
-              <div id="drop-destination" class="drop-destination ${isDestinationHovered ? 'active' : ''}" style="min-height: 48px; padding: 2px 14px;">
-                <div class="denom" style="color: #c084fc; font-size: 28px;">⇣</div>
+        const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+        if (isDivision) {
+          this.container.innerHTML = `
+            ${historyHtml}
+            <div class="equation-rail">
+              ${this.renderVarDiv()}
+              <div class="math-symbol symbol-equals">=</div>
+              <div class="math-symbol">${currentC}</div>
+              <div class="math-symbol op-times">×</div>
+              <div id="drop-destination" class="drop-destination ${isDestinationHovered ? 'active' : ''}">
+                <div class="math-symbol" style="font-size: 28px; color: #f43f5e;">⇣</div>
+                <div class="destination-caption">Landing Slot</div>
               </div>
             </div>
-          </div>
-        `;
+          `;
+        } else {
+          this.container.innerHTML = `
+            ${historyHtml}
+            <div class="equation-rail">
+              <div class="term-tile term-ghost op-times">${currentA}</div>
+              <div class="math-symbol term-times op-times">x</div>
+              ${this.renderVarDiv()}
+              <div class="math-symbol symbol-equals">=</div>
+              <div class="fraction op-divide">
+                <div class="num">${currentC}</div>
+                <div class="fraction-bar"></div>
+                <div id="drop-destination" class="drop-destination ${isDestinationHovered ? 'active' : ''}" style="min-height: 48px; padding: 2px 14px;">
+                  <div class="denom" style="color: #c084fc; font-size: 28px;">⇣</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
 
         this.attachDropListener();
         return;

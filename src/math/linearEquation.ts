@@ -45,7 +45,7 @@ export function formatUnsimplifiedEquationLine(
   _c: number,
   pending: PendingArithmetic
 ): string {
-  const left = pending.operator === '÷'
+  const left = (pending.operator === '÷' || pending.operator === '×')
     ? 'Y'
     : (a === 1 ? 'Y' : `${a} x Y`);
   const opDisplay = pending.operator === '-' ? '−' : pending.operator;
@@ -334,7 +334,13 @@ export function applyToBothSides(
     rhsSolved: false
   };
 
-  const currentLine = formatEquationLine(state.currentA, state.currentB, state.currentC);
+  const currentLine = formatEquationLine(
+    state.currentA,
+    state.currentB,
+    state.currentC,
+    false,
+    (state.stage === 'undo_coefficient' ? state.problem.d : undefined)
+  );
   const updatedHistory = state.equationHistory.includes(currentLine)
     ? [...state.equationHistory]
     : [...state.equationHistory, currentLine];
@@ -672,7 +678,8 @@ export function generateModeDInverseChoices(
   currentA: number,
   currentB: number,
   currentC: number,
-  rng: () => number = Math.random
+  rng: () => number = Math.random,
+  d?: number
 ): InverseChoice[] {
   let correctOp: OperationSign;
   let correctVal: number;
@@ -685,6 +692,10 @@ export function generateModeDInverseChoices(
     correctOp = isNeg ? '+' : '−';
     sameOp = isNeg ? '−' : '+';
     correctVal = absB;
+  } else if (d && d > 1) {
+    correctOp = '×';
+    sameOp = '÷';
+    correctVal = d;
   } else {
     correctOp = '÷';
     sameOp = '×';
@@ -763,7 +774,8 @@ export function identifyModeDTarget(
     state.currentA,
     state.currentB,
     state.currentC,
-    rng
+    rng,
+    state.problem.d
   );
 
   const history = [...state.history, saveSnapshot(state)];
@@ -1014,14 +1026,15 @@ export function activateModeDSimplify(
         wrongHint: `Adding and subtracting the same number cancels to zero.`
       };
     } else {
-      const a = state.currentA;
+      const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+      const val = isDivision ? state.problem.d! : state.currentA;
       pendingArithmetic = {
-        operand1: a,
-        operand2: a,
+        operand1: val,
+        operand2: val,
         operator: '÷',
         correctAnswer: 1,
-        choices: shuffleArray([1, a, 0], rng),
-        explanation: `${a} ÷ ${a} = 1 (1 x Y is just Y!)`,
+        choices: shuffleArray([1, val, 0], rng),
+        explanation: `${val} ÷ ${val} = 1 (Cancels out to leave Y!)`,
         wrongHint: `Any number divided by itself is 1.`
       };
     }
@@ -1274,7 +1287,13 @@ export function submitAnswer(
       state.pendingArithmetic
     );
   } else {
-    completedLine = formatEquationLine(state.currentA, state.currentB, state.currentC);
+    completedLine = formatEquationLine(
+      state.currentA,
+      state.currentB,
+      state.currentC,
+      false,
+      (state.stage === 'undo_coefficient' ? state.problem.d : undefined)
+    );
   }
   const updatedEquationHistory = state.equationHistory.includes(completedLine)
     ? [...state.equationHistory]
@@ -1292,9 +1311,10 @@ export function submitAnswer(
     newA = 1;
   }
 
+  const isDivision = Boolean(state.problem.d && state.problem.d > 1);
   const nextStage = newB !== 0
     ? 'undo_constant'
-    : (newA > 1 ? 'undo_coefficient' : 'solved');
+    : ((newA > 1 || (state.stage !== 'undo_coefficient' && isDivision)) ? 'undo_coefficient' : 'solved');
 
   const nextBlasterState = state.mode === 'mode_c'
     ? {

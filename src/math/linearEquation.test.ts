@@ -321,4 +321,75 @@ describe('Linear Equation Mathematics & State Machine', () => {
     const state = createInitialState(BENCHMARK_PUZZLE);
     expect(state.mode).toBe('mode_b');
   });
+
+  it('solves division puzzle Y ÷ 4 = 7 in Mode B by forging multiplication', () => {
+    const divPuzzle = {
+      id: 'test-div-puzzle',
+      a: 1,
+      b: 0,
+      c: 7,
+      d: 4,
+      family: 'x_div_d' as const,
+      itemId: 'item-chocolate',
+      targetVariable: 'Y' as const,
+      solution: 28
+    };
+    let state = createInitialState(divPuzzle, 'mode_b');
+    expect(state.phase).toBe('ready');
+    expect(state.stage).toBe('undo_coefficient');
+
+    // Pick up coefficient/division term (the 4)
+    const pick = pickUpTerm(state, 'coefficient');
+    expect(pick.success).toBe(true);
+    state = pick.state;
+    expect(state.phase).toBe('forging');
+    expect(state.carriedTerm).toBe('coefficient');
+
+    // Forge opposite: ÷4 requires ×4
+    const forgeWrong = forgeOpposite(state, '+');
+    expect(forgeWrong.correct).toBe(false);
+
+    const forgeTimes = forgeOpposite(state, '×');
+    expect(forgeTimes.correct).toBe(true);
+    state = forgeTimes.state;
+    expect(state.phase).toBe('applying');
+    expect(state.forgedOperation?.originalOperator).toBe('÷');
+    expect(state.forgedOperation?.originalOperand).toBe(4);
+    expect(state.forgedOperation?.forgedOperator).toBe('×');
+    expect(state.forgedOperation?.forgedOperand).toBe(4);
+
+    // Apply to both sides
+    const applied = applyToBothSides(state);
+    expect(applied.success).toBe(true);
+    state = applied.state;
+    expect(state.phase).toBe('balancing');
+    expect(state.balancedDisplay?.leftBefore).toBe('Y ÷ 4');
+    expect(state.balancedDisplay?.leftAdded).toBe('× 4');
+    expect(state.balancedDisplay?.rightAdded).toBe('× 4');
+    expect(state.pendingArithmetic?.operator).toBe('×');
+    expect(state.pendingArithmetic?.operand1).toBe(7);
+    expect(state.pendingArithmetic?.operand2).toBe(4);
+    expect(state.pendingArithmetic?.correctAnswer).toBe(28);
+    expect(state.equationHistory).toEqual(['Y ÷ 4 = 7']);
+
+    // Reveal Mode B sides
+    state = revealModeBBalanceSide(state, 'lhs');
+    state = revealModeBBalanceSide(state, 'rhs');
+    state = finishModeBBalance(state);
+    expect(state.phase).toBe('awaiting_cleanup');
+
+    // Activate RHS and answer 28
+    state = activateModeBRhsCalculation(state);
+    const ans = submitAnswer(state, 28);
+    expect(ans.correct).toBe(true);
+    state = ans.state;
+    expect(state.currentC).toBe(28);
+
+    // Clean up LHS (cancelling ÷4 and ×4)
+    state = cancelLhsInverse(state);
+    expect(state.stage).toBe('solved');
+    expect(state.phase).toBe('solved');
+    expect(state.currentC).toBe(28);
+    expect(state.equationHistory).toEqual(['Y ÷ 4 = 7', 'Y = 7 × 4']);
+  });
 });

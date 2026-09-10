@@ -318,6 +318,11 @@
 }
 
 /* Operation Banner (absolutely positioned so it never affects equation-area height or camera-box) */
+/* Gold pedagogical tips disabled per user preference */
+.operation-banner:not(#equation-feedback-banner) {
+  display: none !important;
+}
+
 .operation-banner {
   position: absolute;
   bottom: 0px;

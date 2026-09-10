@@ -407,14 +407,17 @@ class App {
       this.forgePanelView.triggerSuccess(sign);
       this.needTargetsRefresh = true;
       if (target && from && this.splitLeftEl && before.carriedTerm) {
-        const operand = before.carriedTerm === 'constant' ? Math.abs(before.currentB) : before.currentA;
+        const isDivision = Boolean(before.problem.d && before.problem.d > 1);
+        const operand = before.carriedTerm === 'constant'
+          ? Math.abs(before.currentB)
+          : (isDivision ? before.problem.d! : before.currentA);
         const originalSymbol = before.carriedTerm === 'constant'
           ? `${before.currentB < 0 ? '\u2212' : '+'}${operand}`
-          : `\u00d7${operand}`;
+          : (isDivision ? `÷${operand}` : `\u00d7${operand}`);
         const forgedSymbol = `${sign === '-' || sign === '−' ? '\u2212' : sign}${operand}`;
         const originalClass = before.carriedTerm === 'constant'
           ? (before.currentB < 0 ? 'op-minus' : 'op-plus')
-          : 'op-times';
+          : (isDivision ? 'op-divide' : 'op-times');
         const forgedClass = sign === '+'
           ? 'op-plus'
           : (sign === '-' || sign === '−' ? 'op-minus' : (sign === '×' ? 'op-times' : 'op-divide'));
@@ -457,13 +460,16 @@ class App {
     const before = this.game.getState();
     if (!this.game.pickup(term) || !this.splitRightEl) return;
 
-    const operand = term === 'constant' ? Math.abs(before.currentB) : before.currentA;
+    const isDivision = Boolean(before.problem.d && before.problem.d > 1);
+    const operand = term === 'constant'
+      ? Math.abs(before.currentB)
+      : (isDivision ? before.problem.d! : before.currentA);
     const symbol = term === 'constant'
       ? `${before.currentB < 0 ? '\u2212' : '+'}${operand}`
-      : `\u00d7${operand}`;
+      : (isDivision ? `÷${operand}` : `\u00d7${operand}`);
     const operationClass = term === 'constant'
       ? (before.currentB < 0 ? 'op-minus' : 'op-plus')
-      : 'op-times';
+      : (isDivision ? 'op-divide' : 'op-times');
 
     this.isModeBPickupAnimating = true;
     this.carriedBubbleView.hide();

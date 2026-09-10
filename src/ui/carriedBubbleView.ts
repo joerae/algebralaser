@@ -158,8 +158,10 @@ export class CarriedBubbleView {
           this.termEl.textContent = `${isNeg ? '−' : '+'}${absB}`;
           this.bubbleEl.classList.add(isNeg ? 'op-minus' : 'op-plus');
         } else if (gameState.carriedTerm === 'coefficient') {
-          this.termEl.textContent = `x ${gameState.currentA}`;
-          this.bubbleEl.classList.add('op-times');
+          const isDivision = Boolean(gameState.problem.d && gameState.problem.d > 1);
+          const operand = isDivision ? gameState.problem.d : gameState.currentA;
+          this.termEl.textContent = isDivision ? `÷ ${operand}` : `x ${operand}`;
+          this.bubbleEl.classList.add(isDivision ? 'op-divide' : 'op-times');
         }
       }
       if (this.captionEl) {
@@ -244,12 +246,14 @@ export class CarriedBubbleView {
             this.bubbleEl.classList.add(isNeg ? 'op-minus' : 'op-plus');
           }
         } else if (gameState.carriedTerm === 'coefficient') {
+          const isDivision = Boolean(gameState.problem.d && gameState.problem.d > 1);
+          const operand = isDivision ? gameState.problem.d : gameState.currentA;
           if (isCrossed) {
-            this.termEl.textContent = `÷ ${gameState.currentA}`;
-            this.bubbleEl.classList.add('op-divide');
+            this.termEl.textContent = isDivision ? `× ${operand}` : `÷ ${operand}`;
+            this.bubbleEl.classList.add(isDivision ? 'op-times' : 'op-divide');
           } else {
-            this.termEl.textContent = `x ${gameState.currentA}`;
-            this.bubbleEl.classList.add('op-times');
+            this.termEl.textContent = isDivision ? `÷ ${operand}` : `x ${operand}`;
+            this.bubbleEl.classList.add(isDivision ? 'op-divide' : 'op-times');
           }
         }
       }

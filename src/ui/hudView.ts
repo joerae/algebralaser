@@ -161,7 +161,6 @@ export class HudView {
     this.headerEl.innerHTML = `
       <div class="brand-title">
         <span>Magic Finger Algebra</span>
-        <span class="brand-badge">Laser Powered</span>
       </div>
       <div class="level-indicator">Level ${level} of ${total}</div>
       <div class="header-controls">

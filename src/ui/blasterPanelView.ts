@@ -10,6 +10,8 @@ export class BlasterPanelView {
   private cardElements: Map<string, { cardEl: HTMLElement; fillCircle: SVGCircleElement | null }> = new Map();
   private readonly circumference: number = 2 * Math.PI * 30; // r=30 -> ~188.5
 
+  private lastRenderKey: string = '';
+
   constructor(container: HTMLElement, callbacks: BlasterCallbacks) {
     this.container = container;
     this.callbacks = callbacks;
@@ -21,6 +23,11 @@ export class BlasterPanelView {
     phase: GamePhase = 'ready',
     recommendedBlaster: BlasterType | null = null
   ) {
+    const currentKey = `${visible}_${equippedBlaster}_${phase}_${recommendedBlaster}`;
+    if (currentKey === this.lastRenderKey) {
+      return;
+    }
+    this.lastRenderKey = currentKey;
     this.cardElements.clear();
 
     if (!visible) {

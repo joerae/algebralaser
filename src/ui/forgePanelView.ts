@@ -11,6 +11,7 @@ export class ForgePanelView {
   private callbacks: ForgeCallbacks;
   private cardElements: Map<string, { cardEl: HTMLElement; fillCircle: SVGCircleElement | null }> = new Map();
   private readonly circumference: number = 2 * Math.PI * 34; // r=34 -> ~213.6
+  private lastRenderKey: string = '';
 
   constructor(container: HTMLElement, callbacks: ForgeCallbacks) {
     this.container = container;
@@ -18,6 +19,11 @@ export class ForgePanelView {
   }
 
   public render(visible: boolean, mode: 'forging' | 'applying' | null = null, forgedOp: string | null = null) {
+    const currentKey = `${visible}_${mode}_${forgedOp}`;
+    if (currentKey === this.lastRenderKey) {
+      return;
+    }
+    this.lastRenderKey = currentKey;
     this.cardElements.clear();
 
     if (!visible || !mode) {
@@ -86,12 +92,16 @@ export class ForgePanelView {
         fillCircle: circle
       });
 
-      card.addEventListener('click', (e) => {
+      const handleSelect = (e: Event) => {
         e.stopPropagation();
+        e.preventDefault();
         if (!isApplying) {
           this.callbacks.onSelectSign(sign);
         }
-      });
+      };
+
+      card.addEventListener('pointerdown', handleSelect);
+      card.addEventListener('click', handleSelect);
     });
   }
 

@@ -29,9 +29,11 @@ export class AnswersView {
 
     this.container.style.display = 'flex';
     const shopBadge = activeItem ? `<span class="answers-shop-badge" title="${activeItem.singular}">${activeItem.emojiFallback}</span> ` : '';
-    const questionText = arithmetic.operator === '÷'
-      ? `${shopBadge}What is ${arithmetic.operand1} ÷ ${arithmetic.operand2}?`
-      : `${shopBadge}What is ${arithmetic.operand1} ${arithmetic.operator === '+' ? '+' : '−'} ${arithmetic.operand2}?`;
+    let opSymbol = '−';
+    if (arithmetic.operator === '÷') opSymbol = '÷';
+    else if (arithmetic.operator === '×') opSymbol = '×';
+    else if (arithmetic.operator === '+') opSymbol = '+';
+    const questionText = `${shopBadge}What is ${arithmetic.operand1} ${opSymbol} ${arithmetic.operand2}?`;
 
     const cardsHtml = arithmetic.choices.map((choice) => {
       const cardId = `answer-choice-${choice}`;
