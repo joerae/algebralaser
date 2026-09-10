@@ -104,8 +104,15 @@
 }
 
 @keyframes storyFadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Main Story Card */
@@ -227,8 +234,13 @@
 }
 
 @keyframes itemFloat {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-3px); }
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(-3px);
+  }
 }
 
 .concrete-item-img {
@@ -268,8 +280,15 @@
 }
 
 @keyframes pulseTarget {
-  0% { transform: scale(1); box-shadow: 0 0 4px rgba(251, 191, 36, 0.3); }
-  100% { transform: scale(1.08); box-shadow: 0 0 16px rgba(251, 191, 36, 0.7); }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 4px rgba(251, 191, 36, 0.3);
+  }
+
+  100% {
+    transform: scale(1.08);
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.7);
+  }
 }
 
 .mod-tag {
@@ -312,9 +331,17 @@
 }
 
 @keyframes condenseGlow {
-  0% { box-shadow: 0 0 0 rgba(251, 191, 36, 0); }
-  50% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.45); }
-  100% { box-shadow: 0 0 0 rgba(251, 191, 36, 0); }
+  0% {
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.45);
+  }
+
+  100% {
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
+  }
 }
 
 .story-condensing-banner {
@@ -333,8 +360,13 @@
 }
 
 @keyframes condenseScale {
-  0% { transform: scale(1.3); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1.3);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .condensing-coeff {
@@ -384,8 +416,15 @@
 }
 
 @keyframes feedbackSlide {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .story-equation-cards-grid {
@@ -479,7 +518,8 @@
   font-weight: 700;
   color: #f87171;
   padding: 0 2px;
-  display: none; /* hidden until hover */
+  display: none;
+  /* hidden until hover */
   align-items: center;
   line-height: 1;
 }
@@ -517,8 +557,13 @@
   margin: 0 2px;
 }
 
-.choice-op.op-plus { color: #f1f5f9; }
-.choice-op.op-minus { color: #f87171; }
+.choice-op.op-plus {
+  color: #f1f5f9;
+}
+
+.choice-op.op-minus {
+  color: #f87171;
+}
 
 .choice-num {
   font-weight: 700;
@@ -547,10 +592,27 @@
 }
 
 @keyframes cardShake {
-  10%, 90% { transform: translate3d(-2px, 0, 0); }
-  20%, 80% { transform: translate3d(3px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
+
+  10%,
+  90% {
+    transform: translate3d(-2px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(3px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
 }
 
 /* Solving Phase: Centered Goal Bar at Top */
@@ -654,8 +716,13 @@
 }
 
 @keyframes popoverFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .story-popover-content {
@@ -753,8 +820,15 @@
 }
 
 @keyframes matchPulse {
-  0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(52, 211, 153, 0.4)); }
-  100% { transform: scale(1.03); filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.8)); }
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(52, 211, 153, 0.4));
+  }
+
+  100% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.8));
+  }
 }
 
 .numeric-check-badge {
@@ -775,12 +849,12 @@
   margin: 0 2px;
 }
 
-.story-inline-icon .story-text-icon {
-  width: 1.35em;
-  height: 1.35em;
-  min-width: 0;
-  min-height: 0;
-  padding: 1px;
+.story-inline-icon .story-text-icon.math-item-token {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 2px;
   border-radius: 5px;
   background: rgba(251, 191, 36, 0.12);
   border: 1px solid rgba(251, 191, 36, 0.3);
@@ -794,6 +868,7 @@
 
 /* Reduced Motion Override */
 @media (prefers-reduced-motion: reduce) {
+
   .concrete-item-token,
   .story-presentation-panel,
   .condensing-objects,

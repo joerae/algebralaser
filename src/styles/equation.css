@@ -679,6 +679,13 @@
   text-shadow: 0 0 14px rgba(244, 63, 94, 0.8);
 }
 
+/* Hide × when it sits right before a magic item icon (reads "3 [icon]" not "3 × [icon]") */
+.math-symbol.term-times:has(+ .math-item-token),
+.term-times:has(+ .math-item-token) {
+  display: none;
+}
+
+
 /* Division (÷): Cosmic Royal Purple / Violet */
 .op-divide,
 .term-tile.op-divide {
