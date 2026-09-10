@@ -1,3 +1,23 @@
+Version 1.9.2
+Date: 2026-09-10
+
+Release Notes:
+- Top Bar Cleanup & Settings Modal:
+  - Replaced crowded mode toggles, story switch, and sound toggle in the top header with a single standard Settings Cog icon (⚙️) and 'M' keyboard shortcut.
+  - Housed the 4 solver mode buttons, sound effects switch, and story mode switch inside the Settings dialog.
+- Four Pure-Form Foundational Equations (+, -, *, /):
+  - Curated Level 1: Pure Addition (Y + 3 = 8) with Wand (🪄).
+  - Curated Level 2: Pure Subtraction (Y − 4 = 6) with Broomstick (🧹).
+  - Curated Level 3: Pure Multiplication (3 × Y = 15) with Cauldron (🍲).
+  - Curated Level 4: Pure Division (Y ÷ 4 = 7) with Magical Chocolate (🍫, "1/4 of a block of magical chocolate").
+- Extended Equation Families:
+  - Added 'x_div_d', 'x_div_d_plus_b', and 'x_div_d_minus_b' equation families with fractional representation, story templates, and solver support.
+- Endless Dynamic Puzzle Progression:
+  - Advancing beyond Level 4 dynamically generates random puzzles from all 8 equation families with randomized items, coefficients, and positive solutions.
+- Complementary Operator Styling:
+  - Plus (+): Radiant Emerald Green (#34d399) paired with crisp Radiant Ice White Minus (−, #ffffff).
+  - Multiplier (×): Solar Crimson Red (#f43f5e) paired with Cosmic Purple Division (÷, #c084fc).
+
 Version 1.9.1
 Date: 2026-09-09
 

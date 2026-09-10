@@ -85,7 +85,7 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
     title: 'Mode B: Balance Both Sides (Forge & Apply to Both Sides)',
     label: 'Mode B: Balance Both Sides',
     icon: '⚖️',
-    description: 'Forge opposite operations and apply to both sides',
+    description: 'Choose opposite operations and apply to both sides',
     getInstruction(state: EquationState): string {
       const { phase, stage, currentB, currentA } = state;
       if (phase === 'ready') {
@@ -123,7 +123,7 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
     getBadgeHint(state: EquationState): string {
       switch (state.phase) {
         case 'ready': return 'Point up at equation ☝️';
-        case 'forging': return 'Forge opposite sign ⚡';
+        case 'forging': return 'Choose Opposite ⚡';
         case 'applying': return 'Aim at equation to balance ⚖️';
         case 'question': return 'Aim laser at answer 👉';
         case 'solved': return 'Show Open Palm 👋 or Point Next';

@@ -1,6 +1,6 @@
 import { EquationCandidate } from '../story/types';
 import { MagicItem } from '../data/magicItems';
-import { renderProduct } from './mathItemView';
+import { renderProduct, renderDivision } from './mathItemView';
 
 export interface EquationChoiceViewCallbacks {
   onSelectChoice: (choiceId: string) => void;
@@ -30,11 +30,13 @@ export class EquationChoiceView {
       const isSelected = selectedId === cand.id;
       const keyNum = index + 1;
 
-      // Render the candidate equation expression: a × [icon] (+/- b) = c
-      const productHtml = renderProduct(cand.a, item, {
-        tileClass: 'choice-coeff-tile',
-        timesClass: 'choice-times-symbol'
-      });
+      // Render the candidate equation expression
+      const productHtml = cand.d && cand.d > 1
+        ? renderDivision(cand.d, item)
+        : renderProduct(cand.a, item, {
+            tileClass: 'choice-coeff-tile',
+            timesClass: 'choice-times-symbol'
+          });
       let modifierHtml = '';
       if (cand.b > 0) {
         modifierHtml = `<span class="choice-op op-plus">+</span> <span class="choice-num">${cand.b}</span>`;

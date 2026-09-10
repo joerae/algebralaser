@@ -22,7 +22,7 @@ import {
   activateModeDSimplify
 } from '../math/linearEquation';
 import { soundManager } from '../audio/soundEffects';
-import { generateCuratedLevelSet } from '../math/puzzleGenerator';
+import { generateCuratedLevelSet, generateRandomPuzzle } from '../math/puzzleGenerator';
 import { getModeDefinition } from './modeRegistry';
 
 export type StateListener = (state: EquationState, extra?: { currentLevel: number; totalLevels: number }) => void;
@@ -328,7 +328,11 @@ export class GameController {
     if (this.currentLevelIndex < this.levels.length - 1) {
       this.currentLevelIndex++;
     } else {
-      this.currentLevelIndex = 0; // Loop or restart
+      // Endless mode: dynamically generate a new random equation from all families!
+      const nextLevelNum = this.levels.length + 1;
+      const newPuzzle = generateRandomPuzzle(nextLevelNum);
+      this.levels.push(newPuzzle);
+      this.currentLevelIndex++;
     }
     this.state = createInitialState(this.levels[this.currentLevelIndex], this.state.mode);
     this.notify();

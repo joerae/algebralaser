@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="magic-item-svg crystal-svg" aria-hidden="true" fill="none">
+  <path d="M24 6 L38 18 L32 40 L16 40 L10 18 Z" fill="#6366f1" stroke="#818cf8" stroke-width="2"/>
+  <path d="M24 6 L32 40 M24 6 L16 40 M10 18 L38 18" stroke="#a5b4fc" stroke-width="1.5"/>
+  <circle cx="38" cy="10" r="1.5" fill="#f472b6"/>
+</svg>

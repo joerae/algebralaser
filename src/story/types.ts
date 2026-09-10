@@ -36,6 +36,8 @@ export type MisconceptionTag =
   | 'wrong_sign'
   | 'omit_coefficient'
   | 'wrong_coefficient'
+  | 'wrong_division'
+  | 'wrong_operation'
   | 'wrong_total';
 
 export interface EquationCandidate {
@@ -43,6 +45,7 @@ export interface EquationCandidate {
   a: number;
   b: number; // modifier: positive (+), negative (-), or 0
   c: number; // total
+  d?: number; // denominator for division expressions (e.g. Y ÷ 4)
   isCorrect: boolean;
   misconception: MisconceptionTag;
   feedback: string;

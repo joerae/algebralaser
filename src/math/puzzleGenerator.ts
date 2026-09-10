@@ -20,6 +20,16 @@ export function shuffleArray<T>(array: T[], rng: () => number = Math.random): T[
   return result;
 }
 
+export const PURE_PLUS_PUZZLE: LinearEquationDef = {
+  id: 'curated-1',
+  family: 'x_plus_b',
+  a: 1,
+  b: 3,
+  c: 8,
+  solution: 5,
+  description: 'Pure Addition: Solve Y + 3 = 8'
+};
+
 export const TUTORIAL_PUZZLE: LinearEquationDef = {
   id: 'tutorial-1',
   family: 'x_plus_b',
@@ -30,6 +40,38 @@ export const TUTORIAL_PUZZLE: LinearEquationDef = {
   description: 'Warm up: Get Y on its own by undoing +1'
 };
 
+export const PURE_MINUS_PUZZLE: LinearEquationDef = {
+  id: 'curated-2',
+  family: 'x_minus_b',
+  a: 1,
+  b: -4,
+  c: 6,
+  solution: 10,
+  description: 'Pure Subtraction: Solve Y − 4 = 6'
+};
+
+export const PURE_TIMES_PUZZLE: LinearEquationDef = {
+  id: 'curated-3',
+  family: 'ax',
+  a: 3,
+  b: 0,
+  c: 15,
+  solution: 5,
+  description: 'Pure Multiplication: Solve 3 x Y = 15'
+};
+
+export const PURE_DIVIDE_PUZZLE: LinearEquationDef = {
+  id: 'curated-4',
+  family: 'x_div_d',
+  a: 1,
+  d: 4,
+  b: 0,
+  c: 7,
+  solution: 28,
+  description: 'Pure Division: Solve Y ÷ 4 = 7'
+};
+
+// Kept for legacy backward compatibility in tests
 export const BENCHMARK_PUZZLE: LinearEquationDef = {
   id: 'benchmark-3x-minus-1',
   family: 'ax_minus_b',
@@ -132,6 +174,7 @@ export function generatePuzzle(
 
   let a = 1;
   let b = 0;
+  let d: number | undefined = undefined;
   let solution = 1;
   let c = 1;
 
@@ -180,6 +223,33 @@ export function generatePuzzle(
       }
       break;
     }
+    case 'x_div_d': {
+      a = 1;
+      d = Math.floor(rng() * 4) + 2; // 2 to 5
+      c = Math.floor(rng() * 8) + 2; // 2 to 9
+      b = 0;
+      solution = c * d;
+      break;
+    }
+    case 'x_div_d_plus_b': {
+      a = 1;
+      d = Math.floor(rng() * 3) + 2; // 2 to 4
+      const part = Math.floor(rng() * 6) + 2; // 2 to 7
+      b = Math.floor(rng() * 6) + 1; // 1 to 6
+      c = part + b;
+      solution = part * d;
+      break;
+    }
+    case 'x_div_d_minus_b': {
+      a = 1;
+      d = Math.floor(rng() * 3) + 2; // 2 to 4
+      const absB = Math.floor(rng() * 5) + 1; // 1 to 5
+      b = -absB;
+      c = Math.floor(rng() * 6) + 2; // 2 to 7 (always positive!)
+      const part = c + absB;
+      solution = part * d;
+      break;
+    }
   }
 
   return {
@@ -188,14 +258,17 @@ export function generatePuzzle(
     a,
     b,
     c,
+    d,
     solution,
-    description: `Solve ${formatEquationString(a, b, c)}`
+    description: `Solve ${formatEquationString(a, b, c, d)}`
   };
 }
 
-export function formatEquationString(a: number, b: number, c: number): string {
+export function formatEquationString(a: number, b: number, c: number, d?: number): string {
   let left = '';
-  if (a === 1) {
+  if (d && d > 1) {
+    left = `Y ÷ ${d}`;
+  } else if (a === 1) {
     left = 'Y';
   } else {
     left = `${a} x Y`;
@@ -210,12 +283,30 @@ export function formatEquationString(a: number, b: number, c: number): string {
   return `${left} = ${c}`;
 }
 
+export const ALL_EQUATION_FAMILIES: EquationFamily[] = [
+  'x_plus_b',
+  'x_minus_b',
+  'ax',
+  'ax_plus_b',
+  'ax_minus_b',
+  'x_div_d',
+  'x_div_d_plus_b',
+  'x_div_d_minus_b'
+];
+
+export function generateRandomPuzzle(levelNumber: number, rngSeed?: number): LinearEquationDef {
+  const seed = rngSeed !== undefined ? rngSeed : Date.now() + levelNumber * 10007;
+  const rng = createRng(seed);
+  const familyIdx = Math.floor(rng() * ALL_EQUATION_FAMILIES.length);
+  const family = ALL_EQUATION_FAMILIES[familyIdx];
+  return generatePuzzle(family, seed, `${levelNumber}`);
+}
+
 export function generateCuratedLevelSet(): LinearEquationDef[] {
   return [
-    TUTORIAL_PUZZLE,
-    BENCHMARK_PUZZLE,
-    generatePuzzle('x_minus_b', 101, '3'),
-    generatePuzzle('ax', 202, '4'),
-    generatePuzzle('ax_plus_b', 303, '5'),
+    PURE_PLUS_PUZZLE,
+    PURE_MINUS_PUZZLE,
+    PURE_TIMES_PUZZLE,
+    PURE_DIVIDE_PUZZLE
   ];
 }

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="magic-item-svg potion-svg" aria-hidden="true" fill="none">
+  <rect x="21" y="8" width="6" height="6" rx="1" fill="#94a3b8" stroke="#cbd5e1" stroke-width="1.5"/>
+  <path d="M20 14 L12 36 C10 40, 14 42, 24 42 C34 42, 38 40, 36 36 L28 14 Z" fill="#ec4899" stroke="#f472b6" stroke-width="2"/>
+  <ellipse cx="24" cy="24" rx="8" ry="3" fill="#fbcfe8" opacity="0.6"/>
+  <circle cx="21" cy="32" r="2" fill="#ffffff" opacity="0.8"/>
+  <circle cx="27" cy="28" r="1.5" fill="#ffffff" opacity="0.8"/>
+</svg>

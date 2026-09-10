@@ -374,11 +374,11 @@
 }
 
 .bubble-twin.op-plus {
-  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.5) 0%, rgba(15, 23, 42, 0.94) 75%);
+  background: radial-gradient(circle at 35% 35%, rgba(52, 211, 153, 0.5) 0%, rgba(15, 23, 42, 0.94) 75%);
 }
 
 .bubble-twin.op-minus {
-  background: radial-gradient(circle at 35% 35%, rgba(30, 41, 59, 0.75) 0%, #020617 80%);
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.4) 0%, rgba(15, 23, 42, 0.94) 75%);
 }
 
 .bubble-twin.op-times {

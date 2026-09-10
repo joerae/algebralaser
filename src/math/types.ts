@@ -1,17 +1,21 @@
 export type EquationFamily = 
-  | 'x_plus_b'    // Y + b = c
-  | 'x_minus_b'   // Y - b = c
-  | 'ax'          // a x Y = c
-  | 'ax_plus_b'   // a x Y + b = c
-  | 'ax_minus_b'; // a x Y - b = c
+  | 'x_plus_b'           // Y + b = c
+  | 'x_minus_b'          // Y - b = c
+  | 'ax'                 // a x Y = c
+  | 'ax_plus_b'          // a x Y + b = c
+  | 'ax_minus_b'         // a x Y - b = c
+  | 'x_div_d'            // Y ÷ d = c
+  | 'x_div_d_plus_b'     // Y ÷ d + b = c
+  | 'x_div_d_minus_b';   // Y ÷ d - b = c
 
 export interface LinearEquationDef {
   id: string;
   family: EquationFamily;
-  a: number;         // coefficient of Y (>= 1)
+  a: number;         // coefficient of Y (>= 1, or 1 for division)
   b: number;         // constant term (can be positive, negative, or 0)
   c: number;         // right-hand side constant
   solution: number;  // Y value
+  d?: number;        // denominator of Y for division equations (>= 2)
   description?: string;
 }
 

@@ -231,16 +231,26 @@ export class EquationView {
           ? this.renderVarSpan()
           : variableHtml;
       } else if (isCoeff) {
-        leftHtml = `
-          <div ${cleanupId} class="${cleanupClass} op-divide" role="button" aria-label="Blast away ${currentA} divided by ${currentA}">
-            <div class="fraction mode-b-identity-fraction">
-              <div class="num">${currentA}</div>
-              <div class="fraction-bar"></div>
-              <div class="denom">${state.forgedOperation?.forgedOperand || currentA}</div>
+        const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+        if (isDivision) {
+          leftHtml = `
+            ${this.renderVarSpan()}
+            <div ${cleanupId} class="${cleanupClass} op-times" role="button" aria-label="Blast away division and multiplication pair">
+              <span class="math-symbol op-times" style="font-size: 36px; padding: 0 8px;">÷ ${state.problem.d} × ${state.forgedOperation?.forgedOperand || state.problem.d}</span>
             </div>
-          </div>
-          ${this.renderVarSpan()}
-        `;
+          `;
+        } else {
+          leftHtml = `
+            <div ${cleanupId} class="${cleanupClass} op-divide" role="button" aria-label="Blast away ${currentA} divided by ${currentA}">
+              <div class="fraction mode-b-identity-fraction">
+                <div class="num">${currentA}</div>
+                <div class="fraction-bar"></div>
+                <div class="denom">${state.forgedOperation?.forgedOperand || currentA}</div>
+              </div>
+            </div>
+            ${this.renderVarSpan()}
+          `;
+        }
       } else {
         const isNeg = currentB < 0;
         const originalSign = isNeg ? '&minus;' : '+';
@@ -472,8 +482,18 @@ export class EquationView {
       const isConst = carriedTerm === 'constant';
       const isApplying = phase === 'applying';
 
-      // Coefficient
-      if (currentA > 1) {
+      // Coefficient or Division
+      const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+      if (isDivision && currentA === 1) {
+        const denom = state.problem.d!;
+        leftHtml += `
+          ${this.renderVarDiv()}
+          <div class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</div>
+          <div id="term-coefficient" class="term-tile op-divide ${isCoeff && !isApplying ? 'selected-term' : ''}" data-term="coefficient">
+            ${denom}
+          </div>
+        `;
+      } else if (currentA > 1) {
         leftHtml += `
           <div id="term-coefficient" class="term-tile op-times ${isCoeff && !isApplying ? 'selected-term' : ''}" data-term="coefficient">
             ${currentA}
@@ -853,8 +873,20 @@ export class EquationView {
     // 7. Ready Phase & Mode D Choose Inverse Phase
     let leftHtml = '';
 
-    // Coefficient + multiplication + Y
-    if (currentA > 1) {
+    // Coefficient + multiplication + Y or Division + Y
+    const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+    if (isDivision && currentA === 1) {
+      const denom = state.problem.d!;
+      const isInteractiveCoeff = stage === 'undo_coefficient';
+      const isNotYet = (mode === 'mode_b' || mode === 'mode_c' || mode === 'mode_d') && currentB !== 0;
+      const isSelected = mode === 'mode_d' && phase === 'choose_inverse' && state.modeDState?.targetTerm === 'coefficient';
+      const coeffClass = isSelected ? 'selected-term' : (isInteractiveCoeff ? 'interactive' : (isNotYet ? 'not-yet-target' : ''));
+      leftHtml += `
+        ${this.renderVarDiv()}
+        <div class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</div>
+        <div id="term-coefficient" class="term-tile op-divide ${coeffClass}" data-term="coefficient">${denom}</div>
+      `;
+    } else if (currentA > 1) {
       const isInteractiveCoeff = stage === 'undo_coefficient';
       const isNotYet = (mode === 'mode_b' || mode === 'mode_c' || mode === 'mode_d') && currentB !== 0;
       const isSelected = mode === 'mode_d' && phase === 'choose_inverse' && state.modeDState?.targetTerm === 'coefficient';

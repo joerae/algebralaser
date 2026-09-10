@@ -1,9 +1,14 @@
 TODO
 
-[ ] Add in MANY more equations that can appear, randomly selected after the first four. 
 
-[ ] make the first four  equations just be + - / *, pure form, so no mix of + and x, for example. Make each have a different item to purchase. This includes something where you could buy 1/4 of something, e.g. 1/4 of a block of magical chocolate, and it cost, say $7. How much does a whole block cost? This could be the 4th equation 
+[ ]Allow Mode B to work with mouse control. Specifically, I can't clock on the "opposite sign" (still not done)
 
-[ ] Hide Mode select behind a button (e.g. M), and we can free up that space in the UI.
+[  ] Turn off the tips like "Great! Now Solve the calculation on the right", all of those gold coloured tips, just disable them. (still not done, like "balancing it out is still there)
 
-[ ] Notice how x and / have complementory colours (red and purple). We need those for + and -, like + could be Green, and minus could stay white. How about that?
+[  ] Finger tracking didn't work very well for my daughter, we need to improve it! Can we make it much more liberal for shooting out a laser from the index finger? It doesn't need to be a strict pointing. E.g. if I'm pointing slightly in to the camera, right now it doesn't work.
+
+
+Below are more complex. Leave for later
+[  ] Introduce an alternate way to to shoot out the two bubbles. Instead of just pointing to the equation, you actually need to fire one to each side. Each side has a nice big hitbox though, and it just requires you passing over it rather than holding. I'd like to try this, so make it togglable to the original animated mode by pressing "s". By default, make it this new way though.
+
+[  ] When I'm in a smaller window size, it isn't very responsive. Namely, the boxes on the left and right for select aren't scaling to the size of my video window. So it is hard to point at the bottom of the boxes, or they might be off the screen

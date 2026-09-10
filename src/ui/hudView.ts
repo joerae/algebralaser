@@ -53,17 +53,22 @@ export class HudView {
     this.callbacks = callbacks;
     this.currentMode = initialMode;
     this.storyModeEnabled = initialStoryMode;
-    this.renderHeader(1, 5);
+    this.renderHeader(1, 4);
     this.renderFooter('Get Y on its own.');
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        this.toggleSettingsModal();
+      } else if (e.key === 'Escape' && this.isModalOpen) {
+        this.toggleSettingsModal();
+      }
+    });
   }
 
   public setStoryMode(enabled: boolean) {
     this.storyModeEnabled = enabled;
-    const btn = this.headerEl.querySelector<HTMLButtonElement>('#btn-toggle-story');
-    if (btn) {
-      btn.classList.toggle('active', enabled);
-      btn.innerHTML = `📖 Story: ${enabled ? 'ON' : 'OFF'}`;
-    }
     const chk = this.modalEl.querySelector<HTMLInputElement>('#chk-story-mode');
     if (chk) {
       chk.checked = enabled;
@@ -72,7 +77,7 @@ export class HudView {
 
   public setMode(mode: SolverMode) {
     this.currentMode = mode;
-    this.headerEl.querySelectorAll<HTMLButtonElement>('.mode-toggle-btn').forEach(btn => {
+    this.modalEl.querySelectorAll<HTMLButtonElement>('.mode-toggle-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
   }
@@ -158,49 +163,15 @@ export class HudView {
         <span>Magic Finger Algebra</span>
         <span class="brand-badge">Laser Powered</span>
       </div>
-      <div class="mode-toggle-group" role="group" aria-label="Equation interaction mode">
-        ${MODE_DEFINITIONS.map(m => `
-          <button id="btn-${m.id.replace('_', '-')}" data-mode="${m.id}" class="mode-toggle-btn ${this.currentMode === m.id ? 'active' : ''}" title="${m.title}">
-            <span class="mode-icon">${m.icon}</span>
-            <span class="mode-label">${m.label}</span>
-          </button>
-        `).join('')}
-      </div>
+      <div class="level-indicator">Level ${level} of ${total}</div>
       <div class="header-controls">
-        <div class="level-indicator">Level ${level} of ${total}</div>
-        <button id="btn-toggle-story" class="icon-btn story-toggle-btn ${this.storyModeEnabled ? 'active' : ''}" title="Toggle Concrete Story Mode">📖 Story: ${this.storyModeEnabled ? 'ON' : 'OFF'}</button>
         <button id="btn-toggle-camera" class="icon-btn">📷 Enable Camera</button>
-        <button id="btn-mute" class="icon-btn">${this.isMuted ? '🔇' : '🔊'}</button>
-        <button id="btn-settings" class="icon-btn">⚙️ Settings</button>
+        <button id="btn-settings" class="icon-btn" title="Settings & Solver Modes (Press M)">⚙️ Settings</button>
       </div>
     `;
 
-    this.headerEl.querySelector('.mode-toggle-group')?.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.mode-toggle-btn');
-      if (!btn) return;
-      const mode = btn.dataset.mode as SolverMode;
-      if (mode && this.currentMode !== mode) {
-        this.setMode(mode);
-        this.callbacks.onModeChange(mode);
-      }
-    });
-
-    this.headerEl.querySelector('#btn-toggle-story')?.addEventListener('click', () => {
-      const next = !this.storyModeEnabled;
-      this.setStoryMode(next);
-      this.callbacks.onToggleStoryMode(next);
-    });
-
     this.headerEl.querySelector('#btn-toggle-camera')?.addEventListener('click', () => {
       this.callbacks.onEnableCamera();
-    });
-
-    this.headerEl.querySelector('#btn-mute')?.addEventListener('click', () => {
-      this.isMuted = !this.isMuted;
-      soundManager.setMuted(this.isMuted);
-      const muteBtn = this.headerEl.querySelector('#btn-mute');
-      if (muteBtn) muteBtn.textContent = this.isMuted ? '🔇' : '🔊';
-      this.callbacks.onToggleMute();
     });
 
     this.headerEl.querySelector('#btn-settings')?.addEventListener('click', () => {
@@ -217,7 +188,7 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.9.1</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.9.2</button>
       </div>
     `;
 
@@ -256,7 +227,28 @@ export class HudView {
       <div class="modal-content">
         <div class="modal-header">
           <div class="modal-title">Settings</div>
-          <button id="modal-close" class="icon-btn" style="padding: 4px 10px;">✕</button>
+          <button id="modal-close" class="icon-btn" style="padding: 4px 10px;" title="Close (Escape)">✕</button>
+        </div>
+        <div class="setting-section">
+          <div class="setting-section-title">Solver Mode</div>
+          <div class="mode-toggle-group in-settings" role="group" aria-label="Equation interaction mode">
+            ${MODE_DEFINITIONS.map(m => `
+              <button id="btn-${m.id.replace('_', '-')}" data-mode="${m.id}" class="mode-toggle-btn ${this.currentMode === m.id ? 'active' : ''}" title="${m.title}">
+                <span class="mode-icon">${m.icon}</span>
+                <span class="mode-label">${m.label}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Sound Effects</div>
+            <div class="setting-desc">Laser audio feedback and celebration sounds</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="chk-sound" ${!this.isMuted ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
         </div>
         <div class="setting-row">
           <div>
@@ -309,23 +301,45 @@ export class HudView {
     `;
 
     this.modalEl.querySelector('#modal-close')?.addEventListener('click', () => this.toggleSettingsModal());
+
+    this.modalEl.querySelector('.mode-toggle-group')?.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.mode-toggle-btn');
+      if (!btn) return;
+      const mode = btn.dataset.mode as SolverMode;
+      if (mode && this.currentMode !== mode) {
+        this.setMode(mode);
+        this.callbacks.onModeChange(mode);
+      }
+    });
+
+    this.modalEl.querySelector('#chk-sound')?.addEventListener('change', (e) => {
+      const checked = (e.target as HTMLInputElement).checked;
+      this.isMuted = !checked;
+      soundManager.setMuted(this.isMuted);
+      this.callbacks.onToggleMute();
+    });
+
     this.modalEl.querySelector('#chk-story-mode')?.addEventListener('change', (e) => {
       const val = (e.target as HTMLInputElement).checked;
       this.setStoryMode(val);
       this.callbacks.onToggleStoryMode(val);
     });
+
     this.modalEl.querySelector('#chk-hands-only')?.addEventListener('change', (e) => {
       this.handsOnly = (e.target as HTMLInputElement).checked;
       this.callbacks.onToggleHandsOnly();
     });
+
     this.modalEl.querySelector('#chk-reduced-motion')?.addEventListener('change', (e) => {
       this.reducedMotion = (e.target as HTMLInputElement).checked;
       this.callbacks.onToggleReducedMotion();
     });
+
     this.modalEl.querySelector('#chk-debug')?.addEventListener('change', (e) => {
       this.showDebug = (e.target as HTMLInputElement).checked;
       this.callbacks.onToggleDebug();
     });
+
     this.modalEl.querySelector('#range-dwell')?.addEventListener('input', (e) => {
       this.dwellMs = Number((e.target as HTMLInputElement).value);
       const valEl = this.modalEl.querySelector('#dwell-val');

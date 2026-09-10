@@ -25,7 +25,10 @@ describe('equationChoices', () => {
   });
 
   it('ensures no incorrect candidate is mathematically satisfied by the original solution', () => {
-    const families: EquationFamily[] = ['x_plus_b', 'x_minus_b', 'ax', 'ax_plus_b', 'ax_minus_b'];
+    const families: EquationFamily[] = [
+      'x_plus_b', 'x_minus_b', 'ax', 'ax_plus_b', 'ax_minus_b',
+      'x_div_d', 'x_div_d_plus_b', 'x_div_d_minus_b'
+    ];
 
     for (const family of families) {
       for (let seed = 1; seed <= 15; seed++) {
@@ -38,7 +41,9 @@ describe('equationChoices', () => {
         for (const choice of choices) {
           if (!choice.isCorrect) {
             // Must NOT evaluate to true for the correct solution!
-            const evalResult = choice.a * puzzle.solution + choice.b;
+            const evalResult = choice.d && choice.d > 0
+              ? (puzzle.solution / choice.d) + choice.b
+              : choice.a * puzzle.solution + choice.b;
             expect(evalResult).not.toBe(choice.c);
           }
         }
@@ -46,14 +51,17 @@ describe('equationChoices', () => {
     }
   });
 
-  it('produces unique expressions with positive coefficients and totals', () => {
-    const families: EquationFamily[] = ['x_plus_b', 'x_minus_b', 'ax', 'ax_plus_b', 'ax_minus_b'];
+  it('produces unique expressions with positive coefficients/denominators and totals', () => {
+    const families: EquationFamily[] = [
+      'x_plus_b', 'x_minus_b', 'ax', 'ax_plus_b', 'ax_minus_b',
+      'x_div_d', 'x_div_d_plus_b', 'x_div_d_minus_b'
+    ];
 
     for (const family of families) {
       const puzzle = generatePuzzle(family, 77);
       const choices = generateEquationChoices(puzzle, MAGIC_ITEMS[1]);
 
-      const keys = choices.map(c => `${c.a}:${c.b}:${c.c}`);
+      const keys = choices.map(c => `${c.a}:${c.d || ''}:${c.b}:${c.c}`);
       const uniqueKeys = new Set(keys);
       expect(uniqueKeys.size).toBe(3);
 

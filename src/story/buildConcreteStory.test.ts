@@ -5,8 +5,11 @@ import { generateCuratedLevelSet, generatePuzzle } from '../math/puzzleGenerator
 import { EquationFamily, LinearEquationDef } from '../math/types';
 
 describe('buildConcreteStory', () => {
-  it('generates at most 4 sentences for all 5 families and 4 items', () => {
-    const families: EquationFamily[] = ['x_plus_b', 'x_minus_b', 'ax', 'ax_plus_b', 'ax_minus_b'];
+  it('generates at most 4 sentences for all 8 families and all magic items', () => {
+    const families: EquationFamily[] = [
+      'x_plus_b', 'x_minus_b', 'ax', 'ax_plus_b', 'ax_minus_b',
+      'x_div_d', 'x_div_d_plus_b', 'x_div_d_minus_b'
+    ];
 
     for (const family of families) {
       const puzzle = generatePuzzle(family, 42);
@@ -60,6 +63,25 @@ describe('buildConcreteStory', () => {
     expect(story.fullStoryText).toContain(`${story.modifierReason} fee of 5 gold`);
   });
 
+  it('generates division fraction story for magical chocolate', () => {
+    const puzzle: LinearEquationDef = {
+      id: 'curated-4',
+      family: 'x_div_d',
+      a: 1,
+      d: 4,
+      b: 0,
+      c: 7,
+      solution: 28
+    };
+    const item = MAGIC_ITEMS.find(m => m.id === 'chocolate')!;
+    const story = buildConcreteStory(puzzle, item);
+
+    expect(story.fullStoryText).toContain('1/4 of a block of magical chocolate');
+    expect(story.fullStoryText).toContain('paid 7 gold');
+    expect(story.shortQuestion).toBe('How much does a whole block of magical chocolate cost?');
+    expect(story.verification.numericCheckLine).toBe('28 ÷ 4 = 7');
+  });
+
   it('produces accurate verification lines on solve', () => {
     const puzzle: LinearEquationDef = {
       id: 'benchmark-3x-minus-1',
@@ -78,12 +100,11 @@ describe('buildConcreteStory', () => {
     expect(story.verification.numericCheckLine).toBe('3 × 4 − 1 = 11');
   });
 
-  it('deterministically selects magic items for the curated level set', () => {
+  it('deterministically maps the 4 curated pure levels to wand, broomstick, cauldron, chocolate', () => {
     const levels = generateCuratedLevelSet();
+    expect(levels.length).toBe(4);
     const items = levels.map(lvl => getMagicItemForPuzzle(lvl.id));
 
-    // Must be reproducible
-    const itemsSecondPass = levels.map(lvl => getMagicItemForPuzzle(lvl.id));
-    expect(items.map(i => i.id)).toEqual(itemsSecondPass.map(i => i.id));
+    expect(items.map(i => i.id)).toEqual(['wand', 'broomstick', 'cauldron', 'chocolate']);
   });
 });

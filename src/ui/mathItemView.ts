@@ -53,6 +53,24 @@ export function renderProduct(
   `.trim();
 }
 
+export function renderDivision(
+  d: number,
+  item: MagicItem,
+  options?: {
+    divideClass?: string;
+    tileClass?: string;
+  }
+): string {
+  const iconHtml = renderItemIcon(item);
+  const divideCls = options?.divideClass || 'choice-op op-divide';
+  const tileCls = options?.tileClass || 'choice-num';
+  return `
+    ${iconHtml}
+    <span class="${divideCls}">÷</span>
+    <span class="${tileCls}">${d}</span>
+  `.trim();
+}
+
 /**
  * Formats display-only strings (like history lines or arithmetic captions)
  * replacing 'Y' or 'y' variables with clean item references.

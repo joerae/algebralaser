@@ -20,9 +20,11 @@ import {
 } from './types';
 import { createPendingArithmetic, shuffleArray } from './puzzleGenerator';
 
-export function formatEquationLine(a: number, b: number, c: number, compactCoefficient: boolean = false): string {
+export function formatEquationLine(a: number, b: number, c: number, compactCoefficient: boolean = false, d?: number): string {
   let left = '';
-  if (a === 1) {
+  if (d && d > 1) {
+    left = `Y ÷ ${d}`;
+  } else if (a === 1) {
     left = 'Y';
   } else {
     left = compactCoefficient ? `${a}Y` : `${a} x Y`;
@@ -76,9 +78,10 @@ export function createInitialModeDState(): ModeDState {
 }
 
 export function createInitialState(problem: LinearEquationDef, mode: SolverMode = DEFAULT_MODE): EquationState {
+  const isDivision = Boolean(problem.d && problem.d > 1);
   const stage = problem.b !== 0 
     ? 'undo_constant' 
-    : (problem.a > 1 ? 'undo_coefficient' : 'solved');
+    : ((problem.a > 1 || isDivision) ? 'undo_coefficient' : 'solved');
 
   return {
     problem,
@@ -154,7 +157,8 @@ export function pickUpTerm(
     return { state, success: false };
   }
 
-  if (term === 'coefficient' && state.currentA <= 1) {
+  const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+  if (term === 'coefficient' && state.currentA <= 1 && !isDivision) {
     return { state, success: false };
   }
 
@@ -192,6 +196,14 @@ export function getRequiredForge(state: EquationState): {
   }
 
   if (state.carriedTerm === 'coefficient') {
+    const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+    if (isDivision) {
+      return {
+        originalSign: '÷',
+        requiredSign: '×',
+        operand: state.problem.d!
+      };
+    }
     return {
       originalSign: '×',
       requiredSign: '÷',
@@ -276,19 +288,35 @@ export function applyToBothSides(
       rng
     );
   } else {
-    // coefficient
-    leftBefore = `${state.currentA} x Y`;
-    leftAdded = `÷ ${forgedOperand}`;
-    rightAdded = `÷ ${forgedOperand}`;
-    cancellingLhs = `${state.currentA} x ... ÷ ${forgedOperand}`;
-    simplifiedLhs = 'Y';
+    // coefficient or division denominator
+    const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+    if (isDivision) {
+      leftBefore = `Y ÷ ${forgedOperand}`;
+      leftAdded = `× ${forgedOperand}`;
+      rightAdded = `× ${forgedOperand}`;
+      cancellingLhs = `Y ÷ ${forgedOperand} × ${forgedOperand}`;
+      simplifiedLhs = 'Y';
 
-    pendingArithmetic = createPendingArithmetic(
-      state.currentC,
-      forgedOperand,
-      '÷',
-      rng
-    );
+      pendingArithmetic = createPendingArithmetic(
+        state.currentC,
+        forgedOperand,
+        '×',
+        rng
+      );
+    } else {
+      leftBefore = `${state.currentA} x Y`;
+      leftAdded = `÷ ${forgedOperand}`;
+      rightAdded = `÷ ${forgedOperand}`;
+      cancellingLhs = `${state.currentA} x ... ÷ ${forgedOperand}`;
+      simplifiedLhs = 'Y';
+
+      pendingArithmetic = createPendingArithmetic(
+        state.currentC,
+        forgedOperand,
+        '÷',
+        rng
+      );
+    }
   }
 
   const balancedDisplay: BalancedDisplay = {
@@ -340,9 +368,10 @@ function completeModeBStep(state: EquationState): EquationState {
   const currentA = state.stage === 'undo_coefficient' ? 1 : state.currentA;
   const currentB = state.stage === 'undo_constant' ? 0 : state.currentB;
   const currentC = state.pendingArithmetic.correctAnswer;
+  const isDivision = Boolean(state.problem.d && state.problem.d > 1);
   const stage: SolverStage = currentB !== 0
     ? 'undo_constant'
-    : (currentA > 1 ? 'undo_coefficient' : 'solved');
+    : ((currentA > 1 || (state.stage !== 'undo_coefficient' && isDivision)) ? 'undo_coefficient' : 'solved');
 
   return {
     ...state,

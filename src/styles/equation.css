@@ -625,12 +625,27 @@
 
 
 /* =========================================================
-   Operation Color Duality (Plus: White, Minus: Dark, Mult: Red, Div: Purple)
+   Operation Color Duality (Plus: Green, Minus: White, Mult: Red, Div: Purple)
    ========================================================= */
 
-/* Plus (+): Radiant Ice White */
+/* Plus (+): Radiant Emerald Green */
 .op-plus,
 .term-tile.op-plus {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.75);
+  background: rgba(52, 211, 153, 0.12);
+  box-shadow: 0 0 22px rgba(52, 211, 153, 0.4), inset 0 0 12px rgba(52, 211, 153, 0.2);
+  text-shadow: 0 0 14px rgba(52, 211, 153, 0.9);
+}
+
+.term-tile.op-plus.interactive:hover {
+  background: rgba(52, 211, 153, 0.22);
+  box-shadow: 0 0 32px rgba(52, 211, 153, 0.65), inset 0 0 18px rgba(52, 211, 153, 0.35);
+}
+
+/* Minus (−): Radiant Ice White */
+.op-minus,
+.term-tile.op-minus {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.75);
   background: rgba(255, 255, 255, 0.1);
@@ -638,25 +653,10 @@
   text-shadow: 0 0 14px rgba(255, 255, 255, 0.95);
 }
 
-.term-tile.op-plus.interactive:hover {
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 32px rgba(255, 255, 255, 0.65), inset 0 0 18px rgba(255, 255, 255, 0.35);
-}
-
-/* Minus (−): Void Obsidian / Dark Black with deep contrast */
-.op-minus,
-.term-tile.op-minus {
-  color: #f1f5f9;
-  border-color: rgba(148, 163, 184, 0.55);
-  background: #020617;
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.95), 0 4px 14px rgba(0, 0, 0, 0.9), inset 0 0 14px rgba(30, 41, 59, 0.8);
-  text-shadow: 0 0 10px rgba(148, 163, 184, 0.6);
-}
-
 .term-tile.op-minus.interactive:hover {
-  background: #090d16;
-  border-color: #94a3b8;
-  box-shadow: 0 0 35px rgba(0, 0, 0, 1), 0 0 15px rgba(148, 163, 184, 0.4);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #ffffff;
+  box-shadow: 0 0 32px rgba(255, 255, 255, 0.65), inset 0 0 18px rgba(255, 255, 255, 0.35);
 }
 
 /* Multiplication (x): Solar Crimson Red */
