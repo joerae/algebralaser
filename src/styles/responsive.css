@@ -1811,6 +1811,16 @@ body {
   width: min(680px, calc(100vw - max(32px, 8vw)));
 }
 
+/* Above the portrait-camera layout, size the story to its copy rather than to
+   the play area. Ordinary stories use the compact floor; long item names may
+   grow to the cap before wrapping. */
+#app:not(.layout-portrait)[data-story-phase="reading"] .story-presentation-panel,
+#app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-presentation-panel {
+  width: max-content;
+  min-width: min(360px, calc(100vw - max(32px, 8vw)));
+  max-width: min(520px, calc(100vw - max(32px, 8vw)));
+}
+
 #app[data-story-phase="reading"] .story-card,
 #app[data-story-phase="choosing_equation"] .story-card {
   padding: 6px 14px;

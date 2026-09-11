@@ -1,3 +1,10 @@
+Version 1.12.13
+Date: 2026-09-11
+
+Release Notes:
+- Give non-portrait story cards a compact content-driven width, with room to grow for unusually long item names.
+- Files: src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.12
 Date: 2026-09-11
 
