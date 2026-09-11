@@ -23,6 +23,10 @@ export class CarriedBubbleView {
   private wasCrossed: boolean = false;
   private snapStartTime: number | null = null;
   private isPopping: boolean = false;
+  private cachedDropTargetRect: DOMRect | null = null;
+  private cachedDestRect: DOMRect | null = null;
+  private currentOpClass: string | null = null;
+  private lastPhase: string | null = null;
 
   constructor(bubbleEl: HTMLElement | null) {
     this.bubbleEl = bubbleEl;
@@ -37,16 +41,30 @@ export class CarriedBubbleView {
     return this.isPopping;
   }
 
+  public invalidateTargetRect(): void {
+    this.cachedDropTargetRect = null;
+    this.cachedDestRect = null;
+  }
+
   public hide(): void {
     if (!this.bubbleEl) return;
-    this.bubbleEl.style.display = 'none';
-    if (this.twinEl) this.twinEl.style.display = 'none';
+    if (this.bubbleEl.style.display !== 'none') {
+      this.bubbleEl.style.display = 'none';
+    }
+    if (this.twinEl && this.twinEl.style.display !== 'none') {
+      this.twinEl.style.display = 'none';
+    }
     if (this.ringFillEl) {
       this.ringFillEl.style.strokeDashoffset = `${this.circumference}`;
     }
     this.wasSnapped = false;
     this.wasCrossed = false;
     this.snapStartTime = null;
+    if (this.currentOpClass) {
+      this.bubbleEl.classList.remove(this.currentOpClass);
+      this.currentOpClass = null;
+    }
+    this.bubbleEl.classList.remove('snapped', 'double-charge', 'crossed');
   }
 
   public update(
@@ -63,11 +81,21 @@ export class CarriedBubbleView {
     let triggerPop = false;
     let triggerSplit = false;
 
+    if (gameState.phase !== this.lastPhase) {
+      this.lastPhase = gameState.phase;
+      this.invalidateTargetRect();
+    }
+
     // 1. Snapping computation
     if (gameState.phase === 'carrying') {
-      const destEl = document.getElementById('drop-destination');
-      if (destEl) {
-        const destRect = destEl.getBoundingClientRect();
+      if (!this.cachedDestRect) {
+        const destEl = document.getElementById('drop-destination');
+        if (destEl) {
+          this.cachedDestRect = destEl.getBoundingClientRect();
+        }
+      }
+      if (this.cachedDestRect) {
+        const destRect = this.cachedDestRect;
         const destCenter = {
           x: destRect.left + destRect.width / 2,
           y: destRect.top + destRect.height / 2
@@ -98,9 +126,14 @@ export class CarriedBubbleView {
         }
       }
     } else if (gameState.phase === 'applying') {
-      const dropTargetEl = document.getElementById('equation-drop-target') || document.getElementById('eq-equals-target');
-      if (dropTargetEl) {
-        const rect = dropTargetEl.getBoundingClientRect();
+      if (!this.cachedDropTargetRect) {
+        const dropTargetEl = document.getElementById('equation-drop-target') || document.getElementById('eq-equals-target');
+        if (dropTargetEl) {
+          this.cachedDropTargetRect = dropTargetEl.getBoundingClientRect();
+        }
+      }
+      if (this.cachedDropTargetRect) {
+        const rect = this.cachedDropTargetRect;
         const targetCenterY = rect.top + rect.height / 2;
         let aimX = targetX;
         let aimY = targetY;
@@ -139,52 +172,68 @@ export class CarriedBubbleView {
       return { isSnapped, targetPos: { x: targetX, y: targetY }, isDestinationHovered, triggerPop, triggerSplit };
     }
 
+    // Helpers to guard against redundant DOM layout/style recalculation
+    const setText = (el: HTMLElement | null, text: string) => {
+      if (el && el.textContent !== text) el.textContent = text;
+    };
+    const setOpClass = (newClass: string | null) => {
+      if (newClass === this.currentOpClass) return;
+      if (this.currentOpClass) this.bubbleEl?.classList.remove(this.currentOpClass);
+      if (newClass) this.bubbleEl?.classList.add(newClass);
+      this.currentOpClass = newClass;
+    };
+
     // 2. DOM Updates
-    this.bubbleEl.style.display = 'flex';
+    if (this.bubbleEl.style.display !== 'flex') {
+      this.bubbleEl.style.display = 'flex';
+    }
     this.bubbleEl.style.left = `${targetX}px`;
     this.bubbleEl.style.top = `${targetY}px`;
     this.bubbleEl.classList.toggle('snapped', isSnapped);
     this.bubbleEl.classList.toggle('double-charge', gameState.phase === 'applying');
-    this.bubbleEl.classList.remove('op-plus', 'op-minus', 'op-times', 'op-divide');
 
     // 3. Phase-specific bubble content
     if (gameState.phase === 'forging') {
-      if (this.twinEl) this.twinEl.style.display = 'none';
+      if (this.twinEl && this.twinEl.style.display !== 'none') {
+        this.twinEl.style.display = 'none';
+      }
       this.bubbleEl.classList.remove('crossed');
-      if (this.termEl) {
-        if (gameState.carriedTerm === 'constant') {
-          const isNeg = gameState.currentB < 0;
-          const absB = Math.abs(gameState.currentB);
-          this.termEl.textContent = `${isNeg ? '−' : '+'}${absB}`;
-          this.bubbleEl.classList.add(isNeg ? 'op-minus' : 'op-plus');
-        } else if (gameState.carriedTerm === 'coefficient') {
-          const isDivision = Boolean(gameState.problem.d && gameState.problem.d > 1);
-          const operand = isDivision ? gameState.problem.d : gameState.currentA;
-          this.termEl.textContent = isDivision ? `÷ ${operand}` : `x ${operand}`;
-          this.bubbleEl.classList.add(isDivision ? 'op-divide' : 'op-times');
-        }
+      if (gameState.carriedTerm === 'constant') {
+        const isNeg = gameState.currentB < 0;
+        const absB = Math.abs(gameState.currentB);
+        setText(this.termEl, `${isNeg ? '−' : '+'}${absB}`);
+        setOpClass(isNeg ? 'op-minus' : 'op-plus');
+      } else if (gameState.carriedTerm === 'coefficient') {
+        const isDivision = Boolean(gameState.problem.d && gameState.problem.d > 1);
+        const operand = isDivision ? gameState.problem.d : gameState.currentA;
+        setText(this.termEl, isDivision ? `÷ ${operand}` : `x ${operand}`);
+        setOpClass(isDivision ? 'op-divide' : 'op-times');
       }
-      if (this.captionEl) {
-        this.captionEl.textContent = 'Hold on opposite sign ⚡';
-      }
+      setText(this.captionEl, 'Hold on opposite sign ⚡');
       if (this.ringFillEl) {
         this.ringFillEl.style.strokeDashoffset = `${this.circumference}`;
       }
     } else if (gameState.phase === 'applying') {
       this.bubbleEl.classList.remove('crossed');
       const forged = gameState.forgedOperation;
-      if (forged && this.termEl) {
+      if (forged) {
         const opSymbol = forged.forgedOperator === '-' ? '−' : forged.forgedOperator;
-        this.termEl.textContent = `${opSymbol}${forged.forgedOperand}`;
+        setText(this.termEl, `${opSymbol}${forged.forgedOperand}`);
         const opClass = forged.forgedOperator === '+' 
           ? 'op-plus' 
           : (forged.forgedOperator === '-' ? 'op-minus' : (forged.forgedOperator === '×' ? 'op-times' : 'op-divide'));
-        this.bubbleEl.classList.add(opClass);
+        setOpClass(opClass);
+
         if (this.twinEl) {
-          this.twinEl.className = `bubble-twin ${opClass}`;
-          this.twinEl.style.display = 'flex';
+          const twinClass = `bubble-twin ${opClass}`;
+          if (this.twinEl.className !== twinClass) {
+            this.twinEl.className = twinClass;
+          }
+          if (this.twinEl.style.display !== 'flex') {
+            this.twinEl.style.display = 'flex';
+          }
         }
-        if (this.twinTermEl) this.twinTermEl.textContent = `${opSymbol}${forged.forgedOperand}`;
+        setText(this.twinTermEl, `${opSymbol}${forged.forgedOperand}`);
       }
 
       if (isSnapped) {
@@ -202,9 +251,7 @@ export class CarriedBubbleView {
           soundManager.playDwellTick(progress);
         }
 
-        if (this.captionEl) {
-          this.captionEl.textContent = '';
-        }
+        setText(this.captionEl, '');
 
         if (progress >= 1.0) {
           triggerSplit = true;
@@ -214,12 +261,12 @@ export class CarriedBubbleView {
         if (this.ringFillEl) {
           this.ringFillEl.style.strokeDashoffset = `${this.circumference}`;
         }
-        if (this.captionEl) {
-          this.captionEl.textContent = '';
-        }
+        setText(this.captionEl, '');
       }
     } else if (gameState.phase === 'carrying') {
-      if (this.twinEl) this.twinEl.style.display = 'none';
+      if (this.twinEl && this.twinEl.style.display !== 'none') {
+        this.twinEl.style.display = 'none';
+      }
       const isCrossed = targetX >= equalsX;
 
       if (isCrossed && !this.wasCrossed) {
@@ -232,29 +279,27 @@ export class CarriedBubbleView {
 
       this.bubbleEl.classList.toggle('crossed', isCrossed);
 
-      if (this.termEl) {
-        if (gameState.carriedTerm === 'constant') {
-          const isNeg = gameState.currentB < 0;
-          const absB = Math.abs(gameState.currentB);
-          if (isCrossed) {
-            const flippedSign = isNeg ? '+' : '−';
-            this.termEl.textContent = `${flippedSign}${absB}`;
-            this.bubbleEl.classList.add(isNeg ? 'op-plus' : 'op-minus');
-          } else {
-            const origSign = isNeg ? '−' : '+';
-            this.termEl.textContent = `${origSign}${absB}`;
-            this.bubbleEl.classList.add(isNeg ? 'op-minus' : 'op-plus');
-          }
-        } else if (gameState.carriedTerm === 'coefficient') {
-          const isDivision = Boolean(gameState.problem.d && gameState.problem.d > 1);
-          const operand = isDivision ? gameState.problem.d : gameState.currentA;
-          if (isCrossed) {
-            this.termEl.textContent = isDivision ? `× ${operand}` : `÷ ${operand}`;
-            this.bubbleEl.classList.add(isDivision ? 'op-times' : 'op-divide');
-          } else {
-            this.termEl.textContent = isDivision ? `÷ ${operand}` : `x ${operand}`;
-            this.bubbleEl.classList.add(isDivision ? 'op-divide' : 'op-times');
-          }
+      if (gameState.carriedTerm === 'constant') {
+        const isNeg = gameState.currentB < 0;
+        const absB = Math.abs(gameState.currentB);
+        if (isCrossed) {
+          const flippedSign = isNeg ? '+' : '−';
+          setText(this.termEl, `${flippedSign}${absB}`);
+          setOpClass(isNeg ? 'op-plus' : 'op-minus');
+        } else {
+          const origSign = isNeg ? '−' : '+';
+          setText(this.termEl, `${origSign}${absB}`);
+          setOpClass(isNeg ? 'op-minus' : 'op-plus');
+        }
+      } else if (gameState.carriedTerm === 'coefficient') {
+        const isDivision = Boolean(gameState.problem.d && gameState.problem.d > 1);
+        const operand = isDivision ? gameState.problem.d : gameState.currentA;
+        if (isCrossed) {
+          setText(this.termEl, isDivision ? `× ${operand}` : `÷ ${operand}`);
+          setOpClass(isDivision ? 'op-times' : 'op-divide');
+        } else {
+          setText(this.termEl, isDivision ? `÷ ${operand}` : `x ${operand}`);
+          setOpClass(isDivision ? 'op-divide' : 'op-times');
         }
       }
 
@@ -275,14 +320,12 @@ export class CarriedBubbleView {
           soundManager.playDwellTick(progress);
         }
 
-        if (this.captionEl) {
-          if (progress < 0.5) {
-            this.captionEl.textContent = 'Hold...';
-          } else if (progress < 0.85) {
-            this.captionEl.textContent = 'Almost...';
-          } else {
-            this.captionEl.textContent = 'POP!';
-          }
+        if (progress < 0.5) {
+          setText(this.captionEl, 'Hold...');
+        } else if (progress < 0.85) {
+          setText(this.captionEl, 'Almost...');
+        } else {
+          setText(this.captionEl, 'POP!');
         }
 
         if (progress >= 1.0) {
@@ -293,9 +336,7 @@ export class CarriedBubbleView {
         if (this.ringFillEl) {
           this.ringFillEl.style.strokeDashoffset = `${this.circumference}`;
         }
-        if (this.captionEl) {
-          this.captionEl.textContent = isCrossed ? 'Drag to Landing Slot' : 'Move across =';
-        }
+        setText(this.captionEl, isCrossed ? 'Drag to Landing Slot' : 'Move across =');
       }
     }
 

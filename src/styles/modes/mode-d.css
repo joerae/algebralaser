@@ -212,33 +212,36 @@
 /* Unmatched Side Pulsing Glow */
 @keyframes unmatchedGlow {
   0%, 100% {
-    box-shadow: 0 0 15px rgba(56, 189, 248, 0.4), inset 0 0 10px rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.4), inset 0 0 6px rgba(56, 189, 248, 0.2);
     border-color: rgba(56, 189, 248, 0.6);
+    opacity: 0.9;
   }
   50% {
-    box-shadow: 0 0 35px rgba(56, 189, 248, 0.95), inset 0 0 18px rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.75), inset 0 0 10px rgba(56, 189, 248, 0.35);
     border-color: #38bdf8;
-    transform: scale(1.08);
+    transform: scale(1.05);
+    opacity: 1;
   }
 }
 
 .unmatched-side-glow {
   animation: unmatchedGlow 1.2s infinite ease-in-out !important;
   border-radius: 12px;
+  will-change: transform;
 }
 
 /* Down Pan Out-of-Balance Glowing Effect */
 @keyframes downSidePulse {
   0%, 100% {
-    box-shadow: 0 0 16px #fbbf24, 0 0 28px rgba(251, 191, 36, 0.6), inset 0 0 10px #fbbf24;
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.5), inset 0 0 6px rgba(251, 191, 36, 0.3);
     border-color: #fbbf24;
-    filter: drop-shadow(0 0 8px #f59e0b);
+    opacity: 0.9;
   }
   50% {
-    box-shadow: 0 0 32px #f59e0b, 0 0 55px rgba(245, 158, 11, 0.9), inset 0 0 16px #f59e0b;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.8), inset 0 0 10px rgba(245, 158, 11, 0.5);
     border-color: #fef08a;
-    filter: drop-shadow(0 0 18px #f59e0b);
-    transform: scale(1.15);
+    transform: scale(1.08);
+    opacity: 1;
   }
 }
 
@@ -246,6 +249,7 @@
   animation: downSidePulse 1.2s infinite ease-in-out !important;
   border-color: #fbbf24 !important;
   background: rgba(251, 191, 36, 0.25) !important;
+  will-change: transform;
 }
 
 /* Large Equation Side Blast Targets */
@@ -261,25 +265,27 @@
 .equation-side.blast-target-side.hovered {
   border-color: var(--cyan-bright);
   background: rgba(56, 189, 248, 0.12);
-  box-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
 }
 
 .equation-side.blast-target-side.active {
   border-color: #fbbf24;
   background: rgba(251, 191, 36, 0.2);
-  box-shadow: 0 0 32px rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
 }
 
 /* Pulsing Affordance on Terms Awaiting Simplification */
 @keyframes pulseSimplifyTarget {
   0%, 100% {
-    box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
     border-color: rgba(251, 191, 36, 0.5);
+    opacity: 0.92;
   }
   50% {
-    box-shadow: 0 0 32px rgba(251, 191, 36, 0.9), inset 0 0 14px rgba(251, 191, 36, 0.4);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.75), inset 0 0 8px rgba(251, 191, 36, 0.3);
     border-color: #fbbf24;
-    transform: scale(1.06);
+    transform: scale(1.04);
+    opacity: 1;
   }
 }
 

@@ -380,6 +380,7 @@ class App {
     this.layoutDirty = true;
     this.needTargetsRefresh = true;
     this.cachedCameraViewport = null;
+    this.carriedBubbleView.invalidateTargetRect();
   }
 
   private computeCameraViewport(): ViewportRect {
