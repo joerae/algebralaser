@@ -1,3 +1,11 @@
+Version 1.12.6
+Date: 2026-09-11
+
+Release Notes:
+- Speed up Mode B's two-side forged-bubble sequence by 20%.
+- Move bubble travel and impacts to compositor-only transforms to avoid layout and repaint churn on Chromebooks.
+- Files: src/ui/animations/splitBalanceAnimation.ts, src/styles/modes/mode-b.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.5
 Date: 2026-09-11
 

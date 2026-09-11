@@ -48,12 +48,45 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
       ? 'op-minus'
       : (forgedOp?.forgedOperator === '×' ? 'op-times' : 'op-divide'));
 
+  // Run the original sequence at 1.25x speed (20% shorter durations).
+  const duration = (milliseconds: number) => Math.round(milliseconds * 0.8);
+  const transformAt = (point: { x: number; y: number }, scale: number) =>
+    `translate3d(${point.x}px, ${point.y}px, 0) translate(-50%, -50%) scale(${scale})`;
+  const sourcePoints = [
+    { x: source.x - 46, y: source.y },
+    { x: source.x + 46, y: source.y }
+  ];
+
+  const animateTransform = (
+    element: HTMLElement,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    milliseconds: number,
+    fromScale: number,
+    toScale: number,
+    easing: string
+  ) => {
+    const fromTransform = transformAt(from, fromScale);
+    const toTransform = transformAt(to, toScale);
+    element.style.transform = fromTransform;
+    const animation = element.animate(
+      [{ transform: fromTransform }, { transform: toTransform }],
+      { duration: milliseconds, easing, fill: 'forwards' }
+    );
+    animation.onfinish = () => {
+      element.style.transform = toTransform;
+      animation.cancel();
+    };
+  };
+
   [splitLeftEl, splitRightEl].forEach((el, index) => {
     el.className = `carried-bubble split-clone ${opClass}`;
     el.style.display = 'none';
-    el.style.left = `${source.x + (index === 0 ? -46 : 46)}px`;
-    el.style.top = `${source.y}px`;
-    el.style.transform = 'translate(-50%, -50%) scale(1)';
+    // Keep layout coordinates fixed. All travel happens on the compositor via transform.
+    el.style.left = '0px';
+    el.style.top = '0px';
+    el.style.opacity = '1';
+    el.style.transform = transformAt(sourcePoints[index], 0.84);
     const term = el.querySelector('.bubble-term');
     if (term) term.textContent = symbol;
   });
@@ -86,28 +119,41 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
     projectile.classList.add('split-projectile');
     projectile.style.opacity = '1';
 
-    window.requestAnimationFrame(() => {
-      projectile.classList.add('hovering');
-      projectile.style.left = `${hover.x}px`;
-      projectile.style.top = `${hover.y}px`;
-    });
+    projectile.classList.add('hovering');
 
     window.setTimeout(() => {
       projectile.classList.remove('hovering');
       projectile.classList.add('smashing');
-      projectile.style.left = `${smash.x}px`;
-      projectile.style.top = `${smash.y}px`;
+      animateTransform(
+        projectile,
+        hover,
+        smash,
+        duration(280),
+        0.94,
+        1.18,
+        'cubic-bezier(0.55, 0.055, 0.675, 0.19)'
+      );
 
       window.setTimeout(() => {
         impactSound();
         onImpact();
         projectile.classList.add('smashed');
+        const impactTransform = transformAt(smash, 1.18);
+        const burstTransform = transformAt(smash, 1.4);
+        const burstAnimation = projectile.animate(
+          [
+            { transform: impactTransform, opacity: 1 },
+            { transform: burstTransform, opacity: 0 }
+          ],
+          { duration: duration(180), easing: 'ease-out', fill: 'forwards' }
+        );
         window.setTimeout(() => {
+          burstAnimation.cancel();
           projectile.style.display = 'none';
           done();
-        }, 240);
-      }, 280);
-    }, 100);
+        }, duration(240));
+      }, duration(280));
+    }, duration(100));
   };
 
   window.requestAnimationFrame(() => {
@@ -115,10 +161,24 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
       el.classList.remove('queued-charge', 'waiting-charge');
       el.classList.add('moving-to-hold');
     });
-    splitLeftEl.style.left = `${targets.left.hover.x}px`;
-    splitLeftEl.style.top = `${targets.left.hover.y}px`;
-    splitRightEl.style.left = `${targets.right.hover.x}px`;
-    splitRightEl.style.top = `${targets.right.hover.y}px`;
+    animateTransform(
+      splitLeftEl,
+      sourcePoints[0],
+      targets.left.hover,
+      duration(550),
+      0.84,
+      0.9,
+      'cubic-bezier(0.16, 1, 0.3, 1)'
+    );
+    animateTransform(
+      splitRightEl,
+      sourcePoints[1],
+      targets.right.hover,
+      duration(550),
+      0.84,
+      0.9,
+      'cubic-bezier(0.16, 1, 0.3, 1)'
+    );
   });
 
   window.setTimeout(() => {
@@ -131,12 +191,12 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
       launchAt(splitLeftEl, targets.left.hover, targets.left.smash, onLhsImpact, () => soundManager.playPop(), () => {
         window.setTimeout(() => {
           launchAt(splitRightEl, targets.right.hover, targets.right.smash, onRhsImpact, () => soundManager.playSnap(), () => {
-            window.setTimeout(onComplete, 420);
+            window.setTimeout(onComplete, duration(420));
           });
-        }, 520);
+        }, duration(520));
       });
-    }, 520);
-  }, 700);
+    }, duration(520));
+  }, duration(700));
 }
 
 export interface ForgeRoundTripParams {

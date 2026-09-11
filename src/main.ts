@@ -537,7 +537,7 @@ class App {
       } else if (storyState.phase === 'condensing') {
         this.hudView.updateInstruction('✨ Writing down the equation...');
       } else if (storyState.phase === 'completed') {
-        this.hudView.updateInstruction('✨ Purchase verified! Open palm or dwell on Next to continue');
+        this.hudView.updateInstruction('✨ Correct! Open palm or point at Next to continue');
       }
     }
 
