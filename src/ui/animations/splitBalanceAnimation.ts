@@ -197,7 +197,7 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
           });
         }, duration(520));
       });
-    }, duration(520));
+    }, duration(312));
   }, duration(700));
 }
 
