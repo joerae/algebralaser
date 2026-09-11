@@ -1,3 +1,11 @@
+Version 1.12.8
+Date: 2026-09-11
+
+Release Notes:
+- Let story cards use available screen width instead of matching narrow camera widths.
+- Fit Mode B equations on narrow screens with content-sized sides, compact cleanup terms, and left-overflow-aware scaling.
+- Files: src/styles/responsive.css, src/main.ts, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.7
 Date: 2026-09-11
 

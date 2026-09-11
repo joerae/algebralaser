@@ -1100,9 +1100,16 @@ class App {
     if (window.innerWidth > 768 || window.innerHeight <= window.innerWidth) return;
 
     const availableWidth = Math.max(240, Math.min(window.innerWidth - 16, this.equationAreaEl?.clientWidth || window.innerWidth));
-    const naturalWidth = Math.max(rail.scrollWidth, rail.offsetWidth);
+    const railRect = rail.getBoundingClientRect();
+    const childRects = Array.from(rail.children).map(child => child.getBoundingClientRect());
+    const contentLeft = childRects.reduce((left, rect) => Math.min(left, rect.left), railRect.left);
+    const contentRight = childRects.reduce((right, rect) => Math.max(right, rect.right), railRect.right);
+    // scrollWidth misses content overflowing to the left of a flex container.
+    const overflowLeft = Math.max(0, railRect.left - contentLeft);
+    const overflowRight = Math.max(0, contentRight - railRect.right);
+    const naturalWidth = Math.max(rail.scrollWidth, rail.offsetWidth + overflowLeft + overflowRight);
     if (naturalWidth > availableWidth) {
-      rail.style.setProperty('zoom', String(Math.max(0.62, availableWidth / naturalWidth)));
+      rail.style.setProperty('zoom', String(Math.max(0.5, availableWidth / naturalWidth)));
     }
   }
 

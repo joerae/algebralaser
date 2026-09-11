@@ -590,8 +590,8 @@ body {
 }
 
 #app[data-story-phase="choosing_equation"] .story-presentation-panel {
-  width: var(--camera-inline-size, 100%);
-  max-width: 100%;
+  width: min(780px, calc(100vw - (2 * var(--responsive-edge))));
+  max-width: calc(100vw - (2 * var(--responsive-edge)));
 }
 
 /* Equal camera-height lanes for every side-mounted target set. */
@@ -1566,7 +1566,7 @@ body {
   }
 
   #app[data-story-phase="choosing_equation"] .story-presentation-panel {
-    width: min(calc(100vw - 16px), 440px);
+    width: min(calc(100vw - 16px), 620px);
   }
 
   .camera-box {
@@ -1826,6 +1826,43 @@ body {
     min-width: 0 !important;
     max-width: calc(100vw - 16px) !important;
     transform-origin: center center;
+  }
+
+  /* A centred equals sign wastes half the rail when one side is much longer.
+     Let each side claim its natural share on narrow screens. */
+  #app[data-mode="mode_b"] .equation-rail.mode-b-rail {
+    justify-content: center;
+    gap: clamp(5px, 1.5vw, 10px) !important;
+    padding-inline: 6px !important;
+  }
+
+  #app[data-mode="mode_b"] .equation-rail.mode-b-rail .equation-side {
+    flex: 0 1 auto !important;
+    width: auto;
+    gap: clamp(4px, 1.2vw, 8px);
+  }
+
+  #app[data-mode="mode_b"] .equation-rail.mode-b-rail .symbol-equals {
+    margin-inline: clamp(2px, 0.8vw, 5px);
+  }
+
+  #app[data-mode="mode_b"] .mode-b-cleanup-preview,
+  #app[data-mode="mode_b"] .mode-b-cleanup-target,
+  #app[data-mode="mode_b"] .mode-b-solve-target {
+    min-width: 0;
+    min-height: clamp(48px, 8dvh, 62px);
+    padding: 4px clamp(6px, 1.5vw, 10px);
+    gap: clamp(4px, 1vw, 7px);
+    font-size: clamp(24px, 7vw, 36px);
+  }
+
+  #app[data-mode="mode_b"] .mode-b-rhs-operation {
+    padding: 4px clamp(6px, 1.5vw, 10px);
+    gap: 4px;
+  }
+
+  #app[data-mode="mode_b"] .mode-b-rhs-operation .math-symbol {
+    font-size: clamp(24px, 7vw, 36px) !important;
   }
 
   .blaster-panel.panel-portrait-dock,
