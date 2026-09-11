@@ -101,10 +101,10 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
         return 'Put bubble on the opposite sign (+, −, ×, ÷).';
       }
       if (phase === 'applying') {
-        return 'Pull forged bubble up to the equation to balance both sides!';
+        return 'Pull bubble up to the equation to balance both sides!';
       }
       if (phase === 'balancing') {
-        return 'Watch the forged operation power up one side at a time...';
+        return 'Watch the same operation change both sides...';
       }
       if (phase === 'awaiting_cleanup') {
         if (state.balancedDisplay?.lhsCleaned) return 'Now solve the calculation on the right.';
