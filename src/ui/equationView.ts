@@ -57,6 +57,17 @@ export class EquationView {
   public magicItem: MagicItem | null = null;
   private cachedEqualsX: number | null = null;
 
+  // Solved screen cached elements & dirty check state to eliminate 60 FPS DOM reads/writes
+  private cachedSolvedNextBtn: HTMLElement | null = null;
+  private cachedSolvedNextFill: SVGCircleElement | null = null;
+  private cachedSolvedPalmBadge: HTMLElement | null = null;
+  private cachedSolvedPalmFill: SVGCircleElement | null = null;
+  private lastSolvedNextHovered: boolean = false;
+  private lastSolvedNextProgress: number = -1;
+  private lastSolvedPalmActive: boolean = false;
+  private lastSolvedPalmProgress: number = -1;
+  private lastDestinationHovered: boolean = false;
+
   public setMagicItem(item: MagicItem | null) {
     this.magicItem = item;
   }
@@ -135,6 +146,7 @@ export class EquationView {
     _carriedPos: { x: number; y: number } | null = null
   ) {
     this.cachedEqualsX = null;
+    this.lastDestinationHovered = false;
     const {
       mode,
       currentA,
@@ -189,10 +201,24 @@ export class EquationView {
         </div>
       `;
 
-      this.container.querySelector('#btn-next')?.addEventListener('click', () => this.onNextCallback());
+      this.cachedSolvedNextBtn = this.container.querySelector<HTMLElement>('#btn-next');
+      this.cachedSolvedNextFill = this.cachedSolvedNextBtn?.querySelector<SVGCircleElement>('.dwell-fill') ?? null;
+      this.cachedSolvedPalmBadge = this.container.querySelector<HTMLElement>('#open-palm-advance');
+      this.cachedSolvedPalmFill = this.cachedSolvedPalmBadge?.querySelector<SVGCircleElement>('.palm-fill') ?? null;
+      this.lastSolvedNextHovered = false;
+      this.lastSolvedNextProgress = -1;
+      this.lastSolvedPalmActive = false;
+      this.lastSolvedPalmProgress = -1;
+
+      this.cachedSolvedNextBtn?.addEventListener('click', () => this.onNextCallback());
       this.container.querySelector('#btn-replay')?.addEventListener('click', () => this.onReplayCallback());
       return;
     }
+
+    this.cachedSolvedNextBtn = null;
+    this.cachedSolvedNextFill = null;
+    this.cachedSolvedPalmBadge = null;
+    this.cachedSolvedPalmFill = null;
 
     // 2. Cancellation Animation Phase
     if (phase === 'cancelling' && cancellation) {
@@ -1114,6 +1140,9 @@ export class EquationView {
    * Ultra-fast update of drop destination active state without rebuilding DOM!
    */
   public setDestinationHovered(isHovered: boolean) {
+    if (this.lastDestinationHovered === isHovered) return;
+    this.lastDestinationHovered = isHovered;
+
     const dest = this.container.querySelector('#drop-destination');
     if (dest) {
       dest.classList.toggle('active', isHovered);
@@ -1229,30 +1258,45 @@ export class EquationView {
   }
 
   /**
-   * Ultra-fast update of solved state dwell and open palm progress without DOM rebuilding
+   * Ultra-fast update of solved state dwell and open palm progress without DOM rebuilding or redundant writes
    */
   public updateSolvedDwell(activeTargetId: string | null, dwellProgress: number, openPalmProgress: number) {
-    const nextBtn = this.container.querySelector<HTMLElement>('#btn-next');
-    if (nextBtn) {
-      const isHovered = activeTargetId === 'btn-next';
-      nextBtn.classList.toggle('hovered', isHovered);
-      const fillCircle = nextBtn.querySelector<SVGCircleElement>('.dwell-fill');
-      if (fillCircle) {
+    if (!this.cachedSolvedNextBtn && this.container.querySelector('#btn-next')) {
+      this.cachedSolvedNextBtn = this.container.querySelector<HTMLElement>('#btn-next');
+      this.cachedSolvedNextFill = this.cachedSolvedNextBtn?.querySelector<SVGCircleElement>('.dwell-fill') ?? null;
+      this.cachedSolvedPalmBadge = this.container.querySelector<HTMLElement>('#open-palm-advance');
+      this.cachedSolvedPalmFill = this.cachedSolvedPalmBadge?.querySelector<SVGCircleElement>('.palm-fill') ?? null;
+    }
+
+    const isHovered = activeTargetId === 'btn-next';
+    if (this.cachedSolvedNextBtn) {
+      if (this.lastSolvedNextHovered !== isHovered) {
+        this.lastSolvedNextHovered = isHovered;
+        this.cachedSolvedNextBtn.classList.toggle('hovered', isHovered);
+      }
+      if (this.cachedSolvedNextFill) {
         const circumference = 113.1;
         const progress = isHovered ? Math.max(0, Math.min(1, dwellProgress)) : 0;
-        fillCircle.style.strokeDashoffset = `${circumference * (1 - progress)}`;
+        if (Math.abs(progress - this.lastSolvedNextProgress) > 0.005) {
+          this.lastSolvedNextProgress = progress;
+          this.cachedSolvedNextFill.style.strokeDashoffset = `${circumference * (1 - progress)}`;
+        }
       }
     }
 
-    const palmIndicator = this.container.querySelector<HTMLElement>('#open-palm-advance');
-    if (palmIndicator) {
-      const isActive = openPalmProgress > 0;
-      palmIndicator.classList.toggle('active', isActive);
-      const palmFill = palmIndicator.querySelector<SVGCircleElement>('.palm-fill');
-      if (palmFill) {
+    const isPalmActive = openPalmProgress > 0;
+    if (this.cachedSolvedPalmBadge) {
+      if (this.lastSolvedPalmActive !== isPalmActive) {
+        this.lastSolvedPalmActive = isPalmActive;
+        this.cachedSolvedPalmBadge.classList.toggle('active', isPalmActive);
+      }
+      if (this.cachedSolvedPalmFill) {
         const circumference = 125.66;
         const progress = Math.max(0, Math.min(1, openPalmProgress));
-        palmFill.style.strokeDashoffset = `${circumference * (1 - progress)}`;
+        if (Math.abs(progress - this.lastSolvedPalmProgress) > 0.005) {
+          this.lastSolvedPalmProgress = progress;
+          this.cachedSolvedPalmFill.style.strokeDashoffset = `${circumference * (1 - progress)}`;
+        }
       }
     }
   }
