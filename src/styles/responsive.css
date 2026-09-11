@@ -1940,19 +1940,48 @@ body {
   transition-property: border-color, box-shadow;
 }
 
-/* Desktop Mode B shares one horizontal geometry: the forge heading occupies
-   the side-card lane while the equation begins at the camera's left edge.
-   Portrait already gives both pieces their own collision-free arrangement. */
+/* The desktop equation begins at the camera's inner edge, but may grow across
+   spare width when a short viewport makes the camera height-limited. */
 #app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .equation-rail.mode-b-rail {
-  width: var(--mode-b-camera-width, min(calc(100vw - 580px), 1100px));
+  width: var(--mode-b-equation-width, var(--mode-b-camera-width, min(calc(100vw - 580px), 1100px)));
   max-width: none;
-  transform: translateX(var(--mode-b-camera-offset, 0px));
+  transform: translateX(var(--mode-b-equation-offset, var(--mode-b-camera-offset, 0px)));
 }
 
 /* The solving prompt and equation share the same visual centre when the
    desktop camera/equation group shifts around the side-card lane. */
 #app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .story-solving-bar {
-  transform: translateX(var(--mode-b-camera-offset, 0px));
+  transform: translateX(var(--mode-b-equation-offset, var(--mode-b-camera-offset, 0px)));
+}
+
+/* Below ordinary laptop height, let the equation contents continue shrinking
+   instead of sticking at their old 30–46px floors. Width expansion does most
+   of the work; these floors protect unusually short browser windows. */
+@media (max-height: 700px) and (orientation: landscape) {
+  #app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .equation-rail.mode-b-rail,
+  #app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .equation-rail.mode-b-rail .math-symbol,
+  #app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .equation-rail.mode-b-rail .term-tile {
+    font-size: clamp(20px, 5.2dvh, 58px);
+  }
+
+  #app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .equation-rail.mode-b-rail .term-tile {
+    min-width: clamp(34px, 7dvh, 80px);
+    min-height: clamp(36px, 7.5dvh, 82px);
+  }
+
+  #app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .equation-rail .math-item-token {
+    width: clamp(30px, 7dvh, 68px);
+    height: clamp(30px, 7dvh, 68px);
+    min-width: clamp(30px, 7dvh, 68px);
+    min-height: clamp(30px, 7dvh, 68px);
+  }
+
+  #app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .equation-rail .term-tile .math-item-token {
+    width: clamp(28px, 6dvh, 58px);
+    height: clamp(28px, 6dvh, 58px);
+    min-width: clamp(28px, 6dvh, 58px);
+    min-height: clamp(28px, 6dvh, 58px);
+  }
 }
 
 /* Keep equation choices continuous across the desktop/portrait-dock handoff.

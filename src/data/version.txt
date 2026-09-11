@@ -1,3 +1,12 @@
+Version 1.12.16
+Date: 2026-09-11
+
+Release Notes:
+- Let Mode B equations expand into spare horizontal space when short screens make the camera narrow.
+- Scale equation tiles and symbols below their old minimum sizes on unusually short landscape windows.
+- Keep the solving prompt aligned with the expanded equation.
+- Files: src/main.ts, src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.15
 Date: 2026-09-11
 

@@ -460,6 +460,8 @@ class App {
       appEl.style.removeProperty('--mode-b-camera-width');
       appEl.style.removeProperty('--mode-b-camera-aspect');
       appEl.style.removeProperty('--mode-b-camera-offset');
+      appEl.style.removeProperty('--mode-b-equation-width');
+      appEl.style.removeProperty('--mode-b-equation-offset');
       return;
     }
 
@@ -486,9 +488,26 @@ class App {
     const cameraWidth = Math.max(200, Math.floor(Math.min(horizontalBudget, maxHeight * mediaAspect, maxWidth)));
     const cameraOffset = (panelWidth + panelGap) / 2 * (this.desktopDock === 'right' ? -1 : 1);
 
+    // A short viewport can make the camera very narrow even when the workspace
+    // has ample horizontal room. Keep the equation's inner edge aligned with
+    // the camera, then let it grow away from the side-card lane.
+    const cameraCentre = workspaceRect.width / 2 + cameraOffset;
+    const cameraLeft = cameraCentre - cameraWidth / 2;
+    const cameraRight = cameraCentre + cameraWidth / 2;
+    const equationEdgeInset = 12;
+    const equationLeft = this.desktopDock === 'right' ? equationEdgeInset : cameraLeft;
+    const equationRight = this.desktopDock === 'right'
+      ? cameraRight
+      : workspaceRect.width - equationEdgeInset;
+    const equationWidth = Math.max(cameraWidth, Math.floor(equationRight - equationLeft));
+    const equationCentre = equationLeft + equationWidth / 2;
+    const equationOffset = equationCentre - workspaceRect.width / 2;
+
     const widthValue = `${cameraWidth}px`;
     const aspectValue = String(mediaAspect);
     const offsetValue = `${cameraOffset}px`;
+    const equationWidthValue = `${equationWidth}px`;
+    const equationOffsetValue = `${equationOffset}px`;
     if (appEl.style.getPropertyValue('--mode-b-camera-width') !== widthValue) {
       appEl.style.setProperty('--mode-b-camera-width', widthValue);
     }
@@ -497,6 +516,12 @@ class App {
     }
     if (appEl.style.getPropertyValue('--mode-b-camera-offset') !== offsetValue) {
       appEl.style.setProperty('--mode-b-camera-offset', offsetValue);
+    }
+    if (appEl.style.getPropertyValue('--mode-b-equation-width') !== equationWidthValue) {
+      appEl.style.setProperty('--mode-b-equation-width', equationWidthValue);
+    }
+    if (appEl.style.getPropertyValue('--mode-b-equation-offset') !== equationOffsetValue) {
+      appEl.style.setProperty('--mode-b-equation-offset', equationOffsetValue);
     }
   }
 
