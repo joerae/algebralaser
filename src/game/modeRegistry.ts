@@ -98,7 +98,7 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
         }
       }
       if (phase === 'forging') {
-        return 'Hold bubble on the opposite sign (+, −, ×, ÷) for 1s to forge it, or click.';
+        return 'Put bubble on the opposite sign (+, −, ×, ÷).';
       }
       if (phase === 'applying') {
         return 'Pull forged bubble up to the equation to balance both sides!';

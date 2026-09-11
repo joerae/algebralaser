@@ -35,9 +35,6 @@ export class ForgePanelView {
     this.container.style.display = 'flex';
 
     const isApplying = mode === 'applying';
-    const subTitle = isApplying
-      ? 'Pull forged bubble up to the equation ☝️'
-      : 'Hold bubble on the opposite sign for 1s, or click';
 
     const signs: Array<{ id: string; sign: ForgeSign; display: string; className: string }> = [
       { id: 'forge-op-plus', sign: '+', display: '+', className: 'op-plus' },
@@ -76,7 +73,6 @@ export class ForgePanelView {
     this.container.innerHTML = `
       <div class="forge-header ${isApplying ? 'applying' : ''}">
         <div class="forge-badge">${isApplying ? '✨ Balanced' : 'Choose Opposite'}</div>
-        <div class="forge-subtitle">${subTitle}</div>
       </div>
       <div class="forge-cards-vertical">
         ${cardsHtml}
