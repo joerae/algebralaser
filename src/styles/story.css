@@ -118,12 +118,11 @@
 /* Main Story Card */
 .story-card {
   width: 100%;
-  background: linear-gradient(145deg, rgba(30, 27, 75, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+  background: linear-gradient(145deg, rgba(30, 27, 75, 0.96) 0%, rgba(15, 23, 42, 0.98) 100%);
   border: 1.5px solid rgba(251, 191, 36, 0.4);
   border-radius: 12px;
   padding: 8px 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 15px rgba(251, 191, 36, 0.15);
-  backdrop-filter: blur(12px);
   box-sizing: border-box;
   min-height: 0;
 }
@@ -404,12 +403,11 @@
 }
 
 .story-choices-column .choices-prompt.arithmetic-question {
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(15, 23, 42, 0.96);
   border: 1px solid rgba(56, 189, 248, 0.35);
   border-radius: 16px;
   padding: 8px 14px;
   text-align: center;
-  backdrop-filter: blur(12px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   flex-shrink: 0;
   box-sizing: border-box;
@@ -727,8 +725,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.85);
   z-index: 999;
   display: flex;
   align-items: center;

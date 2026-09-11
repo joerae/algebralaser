@@ -35,21 +35,36 @@ function getBlasterTheme(type: string | null | undefined): BlasterTheme {
   }
 }
 
+interface OverlayParticle {
+  active: boolean;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: string;
+  text?: string;
+  size?: number;
+}
+
 export class CanvasOverlay {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   public handsOnly: boolean = false;
   public showDebug: boolean = false;
-  private particles: Array<{
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    life: number;
-    color: string;
-    text?: string;
-    size?: number;
-  }> = [];
+
+  private static readonly MAX_PARTICLES = 64;
+  private particlePool: OverlayParticle[] = Array.from({ length: CanvasOverlay.MAX_PARTICLES }, () => ({
+    active: false,
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    life: 0,
+    color: '',
+    text: undefined,
+    size: 16
+  }));
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -61,7 +76,7 @@ export class CanvasOverlay {
   }
 
   public resize() {
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.0);
     this.canvas.width = window.innerWidth * dpr;
     this.canvas.height = window.innerHeight * dpr;
     this.ctx.resetTransform();
@@ -127,21 +142,26 @@ export class CanvasOverlay {
     ];
 
     ctx.save();
-    // Luminous Bones
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
-    ctx.lineWidth = 3.5;
     ctx.lineCap = 'round';
-    ctx.shadowColor = '#06b6d4';
-    ctx.shadowBlur = 12;
 
+    // Batch all bone lines into a single path for high-performance rendering (2 draw calls vs 42)
+    ctx.beginPath();
     for (const [fromIdx, toIdx] of connections) {
       const from = transformLandmarkToViewport(landmarks[fromIdx], viewport, true);
       const to = transformLandmarkToViewport(landmarks[toIdx], viewport, true);
-      ctx.beginPath();
       ctx.moveTo(from.x, from.y);
       ctx.lineTo(to.x, to.y);
-      ctx.stroke();
     }
+
+    // Pass 1: Outer soft cyan glow
+    ctx.strokeStyle = 'rgba(6, 182, 212, 0.28)';
+    ctx.lineWidth = 7;
+    ctx.stroke();
+
+    // Pass 2: Core luminous bone
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.88)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
 
     // Glowing Joints & Finger Point Trackers
     const tipIndices = [4, 8, 12, 16, 20];
@@ -152,25 +172,29 @@ export class CanvasOverlay {
 
       // Draw Joint Dot
       ctx.beginPath();
-      const radius = isIndexTip ? 6.5 : (isOtherTip ? 5 : 4);
+      const radius = isIndexTip ? 6.5 : (isOtherTip ? 4.5 : 3.5);
       ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = isIndexTip ? '#fbbf24' : '#38bdf8';
-      ctx.shadowColor = isIndexTip ? '#f59e0b' : '#06b6d4';
-      ctx.shadowBlur = isIndexTip ? 20 : 10;
       ctx.fill();
 
-      // Outer rings on fingertips
+      // High-performance concentric rings on fingertips
       if (isIndexTip) {
+        // Outer soft glow ring
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 12, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(251, 191, 36, 0.85)';
-        ctx.lineWidth = 2;
-        ctx.shadowColor = '#fbbf24';
-        ctx.shadowBlur = 15;
+        ctx.arc(pt.x, pt.y, 13, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        // Inner crisp ring
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 9.5, 0, Math.PI * 2);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       } else if (isOtherTip) {
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
         ctx.lineWidth = 1.5;
         ctx.stroke();
@@ -199,60 +223,74 @@ export class CanvasOverlay {
       const t = Math.random() * 0.85 + 0.1;
       const px = origin.x + (endX - origin.x) * t;
       const py = origin.y + (endY - origin.y) * t;
-      this.particles.push({
-        x: px,
-        y: py,
-        vx: (Math.random() - 0.5) * 1.8,
-        vy: (Math.random() - 0.5) * 1.8 - 0.8,
-        life: 0.85,
-        color: theme.primary,
-        text: theme.symbol,
-        size: 16
-      });
+      this.spawnParticle(
+        px,
+        py,
+        (Math.random() - 0.5) * 1.8,
+        (Math.random() - 0.5) * 1.8 - 0.8,
+        0.85,
+        theme.primary,
+        theme.symbol,
+        16
+      );
     }
 
     ctx.save();
+    ctx.lineCap = 'round';
 
-    // Outer glow
+    // 1. Ray Pass 1: Wide diffuse glow (zero shadowBlur!)
     ctx.beginPath();
     ctx.moveTo(origin.x, origin.y);
     ctx.lineTo(endX, endY);
     ctx.strokeStyle = theme.glowAlpha;
-    ctx.lineWidth = 9;
-    ctx.shadowColor = theme.glow;
-    ctx.shadowBlur = 20;
-    ctx.lineCap = 'round';
+    ctx.lineWidth = 14;
     ctx.stroke();
 
-    // Inner bright core
-    ctx.beginPath();
-    ctx.moveTo(origin.x, origin.y);
-    ctx.lineTo(endX, endY);
+    // 1. Ray Pass 2: Intense mid-glow
+    ctx.strokeStyle = theme.glow;
+    ctx.lineWidth = 6;
+    ctx.globalAlpha = 0.55;
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+
+    // 1. Ray Pass 3: Brilliant razor core
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = theme.primary;
-    ctx.shadowBlur = 8;
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Fingertip emitter ring
+    // 2. Fingertip emitter: layered concentric circles
     ctx.beginPath();
-    ctx.arc(origin.x, origin.y, 11, 0, Math.PI * 2);
-    ctx.fillStyle = theme.primary;
-    ctx.shadowColor = theme.glow;
-    ctx.shadowBlur = 22;
+    ctx.arc(origin.x, origin.y, 14, 0, Math.PI * 2);
+    ctx.fillStyle = theme.glowAlpha;
     ctx.fill();
 
-    // Hit impact burst
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = theme.primary;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    // 3. Hit impact burst: layered halo and core
     if (hit) {
       ctx.beginPath();
-      ctx.arc(endX, endY, 14, 0, Math.PI * 2);
+      ctx.arc(endX, endY, 16, 0, Math.PI * 2);
       ctx.fillStyle = theme.glowAlpha;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(endX, endY, 9, 0, Math.PI * 2);
       ctx.strokeStyle = theme.primary;
       ctx.lineWidth = 2;
-      ctx.shadowColor = theme.glow;
-      ctx.shadowBlur = 25;
-      ctx.fill();
       ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(endX, endY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
     }
 
     ctx.restore();
@@ -284,22 +322,29 @@ export class CanvasOverlay {
   private drawCarriedDivisionBadge(x: number, y: number, denominator: string, color: string) {
     const ctx = this.ctx;
     ctx.save();
+
+    // Outer soft halo
+    ctx.beginPath();
+    ctx.arc(x, y, 27, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Main bubble
     ctx.beginPath();
     ctx.arc(x, y, 25, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
     ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 18;
+    ctx.lineWidth = 2.5;
     ctx.fill();
     ctx.stroke();
 
+    // Division bar
     ctx.beginPath();
     ctx.moveTo(x - 12, y - 5);
     ctx.lineTo(x + 12, y - 5);
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.shadowBlur = 8;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
@@ -313,14 +358,20 @@ export class CanvasOverlay {
   private drawCarriedOperandBadge(x: number, y: number, text: string, color: string) {
     const ctx = this.ctx;
     ctx.save();
-    // Glowing outer bubble
+
+    // Outer soft halo
+    ctx.beginPath();
+    ctx.arc(x, y, 24, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Main bubble
     ctx.beginPath();
     ctx.arc(x, y, 22, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
     ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 18;
+    ctx.lineWidth = 2.5;
     ctx.fill();
     ctx.stroke();
 
@@ -339,48 +390,68 @@ export class CanvasOverlay {
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.85)';
     ctx.setLineDash([6, 6]);
     ctx.lineWidth = 2;
-    ctx.shadowColor = '#f59e0b';
-    ctx.shadowBlur = 10;
     ctx.stroke();
     ctx.restore();
+  }
+
+  private spawnParticle(
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    life: number,
+    color: string,
+    text?: string,
+    size?: number
+  ) {
+    const p = this.particlePool.find(item => !item.active) || this.particlePool[0];
+    p.active = true;
+    p.x = x;
+    p.y = y;
+    p.vx = vx;
+    p.vy = vy;
+    p.life = life;
+    p.color = color;
+    p.text = text;
+    p.size = size;
   }
 
   private spawnImpactParticles(x: number, y: number, customColor?: string) {
     if (Math.random() < 0.4) {
       const angle = Math.random() * Math.PI * 2;
       const speed = Math.random() * 2 + 1;
-      this.particles.push({
+      this.spawnParticle(
         x,
         y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 1.0,
-        color: customColor || (Math.random() > 0.5 ? '#38bdf8' : '#fbbf24')
-      });
+        Math.cos(angle) * speed,
+        Math.sin(angle) * speed,
+        1.0,
+        customColor || (Math.random() > 0.5 ? '#38bdf8' : '#fbbf24')
+      );
     }
   }
 
   private updateAndDrawParticles() {
     const ctx = this.ctx;
     ctx.save();
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
+    for (let i = 0; i < this.particlePool.length; i++) {
+      const p = this.particlePool[i];
+      if (!p.active) continue;
+
       p.x += p.vx;
       p.y += p.vy;
       p.life -= 0.045;
 
       if (p.life <= 0) {
-        this.particles.splice(i, 1);
+        p.active = false;
         continue;
       }
 
       ctx.save();
       ctx.globalAlpha = Math.max(0, p.life);
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
       ctx.fillStyle = p.color;
 
       if (p.text) {

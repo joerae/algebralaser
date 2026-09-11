@@ -13,10 +13,10 @@ import { CarriedBubbleView } from './ui/carriedBubbleView';
 import { runForgeRoundTripAnimation, runPickupToFingerAnimation, runSplitBalanceAnimation } from './ui/animations/splitBalanceAnimation';
 import { getModeDefinition } from './game/modeRegistry';
 import { classifyHandPose, PointingStabilizer } from './vision/poseClassifier';
-import { computeLaserRay } from './vision/coordinateTransform';
+import { computeLaserRay, ViewportRect } from './vision/coordinateTransform';
 import { getObjectFitViewport } from './vision/mediaViewport';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
-import { LaserRay } from './vision/types';
+import { LaserRay, HandLandmarks } from './vision/types';
 import { SolverMode, DEFAULT_MODE, BlasterType } from './math/types';
 import { StoryController } from './game/storyController';
 import { StoryView } from './ui/storyView';
@@ -69,6 +69,11 @@ class App {
   private layoutDirty: boolean = true;
   private resizeObserver: ResizeObserver | null = null;
   private lastLevelId: string = '';
+  // Low-end & Chromebook optimization: 30Hz vision throttle & cached geometry
+  private cachedCameraViewport: ViewportRect | null = null;
+  private lastInferenceTime: number = 0;
+  private lastVideoCurrentTime: number = -1;
+  private lastHands: HandLandmarks[] | null = null;
 
   constructor() {
     // 1. Initialize DOM references
@@ -374,6 +379,29 @@ class App {
   private markLayoutDirty() {
     this.layoutDirty = true;
     this.needTargetsRefresh = true;
+    this.cachedCameraViewport = null;
+  }
+
+  private computeCameraViewport(): ViewportRect {
+    const cameraFeedEl = document.getElementById('camera-feed-container');
+    const cameraRect = cameraFeedEl ? cameraFeedEl.getBoundingClientRect() : {
+      left: window.innerWidth * 0.35,
+      top: window.innerHeight * 0.6,
+      width: window.innerWidth * 0.3,
+      height: window.innerHeight * 0.35
+    };
+    const cameraElementViewport = {
+      left: cameraRect.left,
+      top: cameraRect.top,
+      width: cameraRect.width,
+      height: cameraRect.height
+    };
+    return getObjectFitViewport(
+      cameraElementViewport,
+      this.videoEl.videoWidth || 640,
+      this.videoEl.videoHeight || 480,
+      getComputedStyle(this.videoEl).objectFit === 'cover' ? 'cover' : 'contain'
+    );
   }
 
   private setupResponsiveObservers(header: HTMLElement, footer: HTMLElement) {
@@ -711,6 +739,9 @@ class App {
     if (this.isCameraRunning) {
       this.camera.stopCamera();
       this.isCameraRunning = false;
+      this.lastHands = null;
+      this.lastVideoCurrentTime = -1;
+      this.lastInferenceTime = 0;
       try {
         localStorage.setItem('algebra_camera_enabled', 'false');
       } catch {}
@@ -765,6 +796,13 @@ class App {
   }
 
   private setCameraUiState(active: boolean) {
+    this.cachedCameraViewport = null;
+    if (!active) {
+      this.lastHands = null;
+      this.lastVideoCurrentTime = -1;
+      this.lastInferenceTime = 0;
+      this.pointingStabilizer.reset();
+    }
     const appEl = document.getElementById('app');
     if (appEl) {
       appEl.dataset.cameraActive = String(active);
@@ -795,34 +833,32 @@ class App {
       this.layoutDirty = false;
       this.updateArrowAndLayout(currentPhase);
       this.needTargetsRefresh = true;
+      this.cachedCameraViewport = null;
     }
 
     // Collect interactive targets from DOM
     interactiveTargets = this.collectTargets();
 
-    // Determine camera viewport bounds (1/3 screen box)
-    const cameraFeedEl = document.getElementById('camera-feed-container');
-    const cameraRect = cameraFeedEl ? cameraFeedEl.getBoundingClientRect() : {
-      left: window.innerWidth * 0.35,
-      top: window.innerHeight * 0.6,
-      width: window.innerWidth * 0.3,
-      height: window.innerHeight * 0.35
-    };
-    const cameraElementViewport = {
-      left: cameraRect.left,
-      top: cameraRect.top,
-      width: cameraRect.width,
-      height: cameraRect.height
-    };
-    const cameraViewport = getObjectFitViewport(
-      cameraElementViewport,
-      this.videoEl.videoWidth,
-      this.videoEl.videoHeight,
-      getComputedStyle(this.videoEl).objectFit === 'cover' ? 'cover' : 'contain'
-    );
+    // Determine camera viewport bounds (cached to eliminate 60 FPS DOM queries & style recalculations)
+    if (!this.cachedCameraViewport) {
+      this.cachedCameraViewport = this.computeCameraViewport();
+    }
+    const cameraViewport = this.cachedCameraViewport;
 
     if (this.isCameraRunning && this.videoEl.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      hands = this.landmarker.detect(this.videoEl, nowSec);
+      // Throttle vision inference to 30 FPS and run only when a new camera frame has been decoded
+      const timeSinceLastInference = nowSec - this.lastInferenceTime;
+      const isNewFrame = this.videoEl.currentTime !== this.lastVideoCurrentTime;
+
+      if (timeSinceLastInference >= 30 && isNewFrame) {
+        this.lastInferenceTime = nowSec;
+        this.lastVideoCurrentTime = this.videoEl.currentTime;
+        hands = this.landmarker.detect(this.videoEl, nowSec);
+        this.lastHands = hands;
+      } else {
+        // Reuse prior detection for silky-smooth 60 FPS laser interpolation
+        hands = this.lastHands;
+      }
 
       if (hands && hands.length > 0) {
         // Choose primary hand (first hand or matching locked hand)

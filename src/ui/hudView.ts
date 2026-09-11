@@ -125,7 +125,9 @@ export class HudView {
     handedness?: string;
   }) {
     if (!this.showDebug) {
-      this.debugEl.style.display = 'none';
+      if (this.debugEl.style.display !== 'none') {
+        this.debugEl.style.display = 'none';
+      }
       return;
     }
     this.debugEl.style.display = 'block';

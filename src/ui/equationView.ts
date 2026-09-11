@@ -49,9 +49,13 @@ export class EquationView {
     this.onBlastSimplifyCallback = callbacks.onBlastSimplify;
     this.onBlastModeDSideCallback = callbacks.onBlastModeDSide;
     this.onSimplifyModeDSideCallback = callbacks.onSimplifyModeDSide;
+    window.addEventListener('resize', () => {
+      this.cachedEqualsX = null;
+    });
   }
 
   public magicItem: MagicItem | null = null;
+  private cachedEqualsX: number | null = null;
 
   public setMagicItem(item: MagicItem | null) {
     this.magicItem = item;
@@ -130,6 +134,7 @@ export class EquationView {
     isDestinationHovered: boolean = false,
     _carriedPos: { x: number; y: number } | null = null
   ) {
+    this.cachedEqualsX = null;
     const {
       mode,
       currentA,
@@ -1182,14 +1187,22 @@ export class EquationView {
     window.setTimeout(onComplete, 620);
   }
 
+  public invalidateEqualsX() {
+    this.cachedEqualsX = null;
+  }
+
   /**
    * Return center X of equals sign for bubble sign flipping
    */
   public getEqualsX(): number {
+    if (this.cachedEqualsX !== null) {
+      return this.cachedEqualsX;
+    }
     const eq = this.container.querySelector('.symbol-equals');
     if (eq) {
       const rect = eq.getBoundingClientRect();
-      return rect.left + rect.width / 2;
+      this.cachedEqualsX = rect.left + rect.width / 2;
+      return this.cachedEqualsX;
     }
     return window.innerWidth / 2;
   }

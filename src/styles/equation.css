@@ -113,7 +113,6 @@
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
-  backdrop-filter: blur(12px);
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.4);
   min-height: 96px;
   min-width: 0;
@@ -530,12 +529,11 @@
 }
 
 .arithmetic-question {
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(15, 23, 42, 0.96);
   border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 18px;
   padding: 10px 16px;
   text-align: center;
-  backdrop-filter: blur(12px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   flex-shrink: 0;
   box-sizing: border-box;

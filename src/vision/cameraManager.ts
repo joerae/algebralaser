@@ -38,9 +38,9 @@ export class CameraManager {
         audio: false,
         video: {
           facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          frameRate: { ideal: 30 }
+          width: { ideal: 480, max: 640 },
+          height: { ideal: 360, max: 480 },
+          frameRate: { ideal: 30, max: 30 }
         }
       };
 

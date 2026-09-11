@@ -51,7 +51,7 @@ export class HandLandmarkerService {
           delegate
         },
         runningMode: 'VIDEO' as const,
-        numHands: 2,
+        numHands: 1,
         // Small or distant hands produce lower landmark confidence on phone cameras.
         // Pose classification below remains the guard against accidental laser activation.
         minHandDetectionConfidence: 0.35,
