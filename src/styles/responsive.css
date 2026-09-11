@@ -1676,3 +1676,36 @@ body {
     text-overflow: ellipsis;
   }
 }
+
+/* Persisted portrait dock preference and final narrow-screen overflow guards. */
+@media (max-width: 768px) and (orientation: portrait) {
+  #app[data-camera-dock="right"] .camera-box {
+    align-self: flex-end;
+  }
+
+  #app[data-camera-dock="left"] .camera-box {
+    align-self: flex-start;
+  }
+
+  .equation-rail,
+  .equation-rail.mode-b-rail,
+  .equation-rail.mode-d-rail {
+    width: calc(100vw - 16px) !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 16px) !important;
+    transform-origin: center center;
+  }
+
+  .blaster-panel.panel-portrait-dock,
+  .inverse-panel.panel-portrait-dock {
+    position: absolute !important;
+    margin: 0 !important;
+  }
+
+  #app[data-portrait-panel="true"] .blaster-panel.panel-portrait-dock .blaster-cards-vertical,
+  #app[data-portrait-panel="true"] .inverse-panel.panel-portrait-dock .inverse-cards-list {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5px !important;
+  }
+}

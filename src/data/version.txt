@@ -1,3 +1,23 @@
+Version 1.12.1
+Date: 2026-09-11
+
+Release Notes:
+- Camera-off layout follow-up:
+  - Position centred choice panels below visible story or equation content instead of overlapping the story when the equation workspace is hidden.
+  - Rename the camera prompt action to "Play without camera" to cover mouse and touchscreen play.
+- Files: src/main.ts, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
+Version 1.12.0
+Date: 2026-09-11
+
+Release Notes:
+- Mobile camera and layout preferences:
+  - Remember successful camera use, avoid retrying after permission is denied, and explain the iOS website permission needed to suppress Safari prompts.
+  - Hide the inactive camera box and centre keyboard-mode choice panels.
+  - Dock the portrait camera on the right by default with a saved setting to swap sides.
+  - Automatically scale unusually wide mobile equation rails to stay on screen.
+- Files: src/main.ts, src/vision/cameraManager.ts, src/ui/hudView.ts, src/styles/hud.css, src/styles/responsive.css, src/styles/TODO.md, src/data/version.txt, public/version.txt.
+
 Version 1.11.1
 Date: 2026-09-11
 

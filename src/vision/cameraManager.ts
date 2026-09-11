@@ -1,3 +1,9 @@
+export interface CameraStartResult {
+  success: boolean;
+  error?: string;
+  errorName?: string;
+}
+
 export class CameraManager {
   private videoElement: HTMLVideoElement | null = null;
   private stream: MediaStream | null = null;
@@ -17,7 +23,7 @@ export class CameraManager {
     return this.isRunning && !!this.stream && this.stream.active;
   }
 
-  public async startCamera(videoElement: HTMLVideoElement): Promise<{ success: boolean; error?: string }> {
+  public async startCamera(videoElement: HTMLVideoElement): Promise<CameraStartResult> {
     this.stopCamera();
     this.videoElement = videoElement;
     this.startupToken++;
@@ -42,6 +48,10 @@ export class CameraManager {
       try {
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (e) {
+        const errorName = e instanceof DOMException ? e.name : '';
+        if (errorName === 'NotAllowedError' || errorName === 'SecurityError') {
+          throw e;
+        }
         console.warn('Ideal camera constraints failed, attempting fallback:', e);
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
@@ -83,9 +93,11 @@ export class CameraManager {
       return { success: true };
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
+      const errorName = err instanceof DOMException ? err.name : undefined;
       return { 
         success: false, 
-        error: `Camera access failed: ${errorMsg}. Mouse & Keyboard mode is available!` 
+        error: `Camera access failed: ${errorMsg}. Mouse & Keyboard mode is available!`,
+        errorName
       };
     }
   }

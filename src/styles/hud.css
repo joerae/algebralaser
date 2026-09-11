@@ -183,6 +183,10 @@
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6), 0 0 35px rgba(56, 189, 248, 0.3);
 }
 
+#app[data-camera-active="false"] .camera-box {
+  display: none;
+}
+
 .camera-box-header {
   padding: 8px 16px;
   background: rgba(7, 11, 25, 0.9);

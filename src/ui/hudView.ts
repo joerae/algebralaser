@@ -17,6 +17,8 @@ export interface HudCallbacks {
   onToggleStoryMode: (enabled: boolean) => void;
   onToggleSkipTutorial?: (enabled: boolean) => void;
   onToggleCameraAutoStart?: (enabled: boolean) => void;
+  onChooseKeyboard?: () => void;
+  onCameraDockChange?: (dock: 'left' | 'right') => void;
 }
 
 export class HudView {
@@ -38,6 +40,7 @@ export class HudView {
   private storyModeEnabled: boolean = true;
   private skipTutorial: boolean = false;
   private cameraAutoStart: boolean = true;
+  private cameraDock: 'left' | 'right' = 'right';
 
   constructor(
     header: HTMLElement,
@@ -60,6 +63,7 @@ export class HudView {
     try {
       this.skipTutorial = localStorage.getItem('algebra_skip_tutorial') === 'true';
       this.cameraAutoStart = localStorage.getItem('algebra_camera_enabled') !== 'false';
+      this.cameraDock = localStorage.getItem('algebra_camera_dock') === 'left' ? 'left' : 'right';
     } catch {}
     this.renderHeader();
     this.renderFooter('Get Y on its own.');
@@ -96,6 +100,12 @@ export class HudView {
       this.bannerEl.style.display = 'none';
     }
     this.updateCameraBtn();
+  }
+
+  public setCameraAutoStart(enabled: boolean) {
+    this.cameraAutoStart = enabled;
+    const checkbox = this.modalEl.querySelector<HTMLInputElement>('#chk-camera-remember');
+    if (checkbox) checkbox.checked = enabled;
   }
 
   public updateInstruction(text: string) {
@@ -135,7 +145,7 @@ export class HudView {
       this.bannerEl.innerHTML = `
         <div class="banner-text">👉 Play with your finger laser! Enable your webcam or continue with mouse/keyboard.</div>
         <button id="banner-btn-enable" class="banner-btn-enable">Enable Camera</button>
-        <button id="banner-btn-dismiss" class="banner-btn-dismiss">Play with Mouse</button>
+        <button id="banner-btn-dismiss" class="banner-btn-dismiss">Play without camera</button>
       `;
 
       this.bannerEl.querySelector('#banner-btn-enable')?.addEventListener('click', () => {
@@ -151,6 +161,7 @@ export class HudView {
         const chk = this.modalEl.querySelector<HTMLInputElement>('#chk-camera-remember');
         if (chk) chk.checked = false;
         this.bannerEl.style.display = 'none';
+        this.callbacks.onChooseKeyboard?.();
       });
     }
   }
@@ -200,7 +211,7 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.11.1</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.12.1</button>
       </div>
     `;
 
@@ -315,10 +326,20 @@ export class HudView {
         <div class="setting-row">
           <div>
             <div class="setting-label">Remember Camera Access</div>
-            <div class="setting-desc">Auto-start camera on launch without showing the prompt banner.<span style="display: block; color: #fbbf24; font-size: 11px; margin-top: 2px;">💡 iOS Safari: Tap <strong>aA</strong> in URL bar → Website Settings → Camera → Allow</span></div>
+            <div class="setting-desc">Auto-start the camera on future visits.<span style="display: block; color: #fbbf24; font-size: 11px; margin-top: 2px;">💡 iOS controls permission prompts. To stop repeat prompts, tap <strong>aA</strong> in Safari → Website Settings → Camera → Allow.</span></div>
           </div>
           <label class="switch">
             <input type="checkbox" id="chk-camera-remember" ${this.cameraAutoStart ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Camera on Right (Mobile)</div>
+            <div class="setting-desc">Dock the camera on the right and question choices on the left in portrait mode.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="chk-camera-right" ${this.cameraDock === 'right' ? 'checked' : ''}>
             <span class="slider"></span>
           </label>
         </div>
@@ -373,6 +394,14 @@ export class HudView {
         localStorage.setItem('algebra_camera_enabled', String(val));
       } catch {}
       this.callbacks.onToggleCameraAutoStart?.(val);
+    });
+
+    this.modalEl.querySelector('#chk-camera-right')?.addEventListener('change', (e) => {
+      this.cameraDock = (e.target as HTMLInputElement).checked ? 'right' : 'left';
+      try {
+        localStorage.setItem('algebra_camera_dock', this.cameraDock);
+      } catch {}
+      this.callbacks.onCameraDockChange?.(this.cameraDock);
     });
 
     this.modalEl.querySelector('#chk-hands-only')?.addEventListener('change', (e) => {
