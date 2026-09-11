@@ -59,7 +59,7 @@ class App {
   private inversePanelEl: HTMLElement | null = null;
   private isCameraRunning: boolean = false;
   private cameraDock: 'left' | 'right' = 'right';
-  private desktopDock: 'left' | 'right' = 'right';
+  private desktopDock: 'left' | 'right' = 'left';
   private isSplitting: boolean = false;
   private isModeBCleanupAnimating: boolean = false;
   private isModeBForgeAnimating: boolean = false;
@@ -116,7 +116,7 @@ class App {
     const savedMode = (localStorage.getItem('algebra_solver_mode') as SolverMode) || DEFAULT_MODE;
     const initialSkipTutorial = localStorage.getItem('algebra_skip_tutorial') === 'true';
     this.cameraDock = localStorage.getItem('algebra_camera_dock') === 'left' ? 'left' : 'right';
-    this.desktopDock = localStorage.getItem('algebra_desktop_dock') === 'left' ? 'left' : 'right';
+    this.desktopDock = localStorage.getItem('algebra_desktop_dock') === 'right' ? 'right' : 'left';
     const initialAppEl = document.getElementById('app');
     if (initialAppEl) {
       initialAppEl.dataset.cameraDock = this.cameraDock;
@@ -745,10 +745,6 @@ class App {
       const modeDef = getModeDefinition(state.mode);
       this.hudView.updateInstruction(modeDef.getInstruction(state));
 
-      const hintBadge = document.getElementById('camera-hint-badge');
-      if (hintBadge) {
-        hintBadge.textContent = modeDef.getBadgeHint(state);
-      }
     }
 
   }

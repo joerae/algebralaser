@@ -1758,6 +1758,41 @@ body {
   }
 }
 
+/* Stable camera anchor: this budget responds to viewport size, never game phase. */
+:root {
+  --workspace-top-height: 300px;
+}
+
+@media (max-height: 820px), (max-width: 1366px) {
+  :root {
+    --workspace-top-height: 195px;
+  }
+}
+
+@media (max-height: 700px) and (orientation: landscape) {
+  :root {
+    --workspace-top-height: 185px;
+  }
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  :root {
+    --workspace-top-height: 155px;
+  }
+
+  #app[data-mode="mode_b"][data-phase="solved"] .equation-area {
+    height: 145px !important;
+    min-height: 145px !important;
+    max-height: 145px !important;
+    flex: 0 0 145px !important;
+  }
+
+  .camera-overlay-controls {
+    top: 5px;
+    right: 5px;
+  }
+}
+
 /* Persisted portrait dock preference and final narrow-screen overflow guards. */
 @media (max-width: 768px) and (orientation: portrait) {
   #app[data-camera-dock="right"] .camera-box {

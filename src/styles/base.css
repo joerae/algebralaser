@@ -78,3 +78,18 @@ html, body {
   max-width: 1440px;
   margin: 0 auto;
 }
+
+/* One responsive pre-camera slot keeps the video anchored across every phase. */
+.workspace-top {
+  width: 100%;
+  height: var(--workspace-top-height, 300px);
+  min-height: var(--workspace-top-height, 300px);
+  max-height: var(--workspace-top-height, 300px);
+  flex: 0 0 var(--workspace-top-height, 300px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--responsive-gap, 10px);
+  position: relative;
+}

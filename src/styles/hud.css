@@ -185,25 +185,14 @@
   display: none;
 }
 
-.camera-box-header {
-  padding: 8px 16px;
-  background: rgba(7, 11, 25, 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.camera-header-left {
+.camera-overlay-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.camera-header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .camera-size-btn {
@@ -243,23 +232,6 @@
 .camera-status-dot.active {
   background: #10b981;
   box-shadow: 0 0 10px #10b981;
-}
-
-.camera-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-main);
-  letter-spacing: 0.3px;
-}
-
-.camera-hint-badge {
-  font-size: 11px;
-  font-weight: 600;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  padding: 2px 8px;
-  border-radius: 9999px;
 }
 
 .camera-feed-container {

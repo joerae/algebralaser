@@ -42,7 +42,7 @@ export class HudView {
   private skipTutorial: boolean = false;
   private cameraAutoStart: boolean = true;
   private cameraDock: 'left' | 'right' = 'right';
-  private desktopDock: 'left' | 'right' = 'right';
+  private desktopDock: 'left' | 'right' = 'left';
 
   constructor(
     header: HTMLElement,
@@ -66,7 +66,7 @@ export class HudView {
       this.skipTutorial = localStorage.getItem('algebra_skip_tutorial') === 'true';
       this.cameraAutoStart = localStorage.getItem('algebra_camera_enabled') !== 'false';
       this.cameraDock = localStorage.getItem('algebra_camera_dock') === 'left' ? 'left' : 'right';
-      this.desktopDock = localStorage.getItem('algebra_desktop_dock') === 'left' ? 'left' : 'right';
+      this.desktopDock = localStorage.getItem('algebra_desktop_dock') === 'right' ? 'right' : 'left';
     } catch {}
     this.renderHeader();
     this.renderFooter('Get Y on its own.');

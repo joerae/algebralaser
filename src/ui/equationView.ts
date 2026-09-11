@@ -188,16 +188,6 @@ export class EquationView {
               </svg>
             </button>
           </div>
-          <div id="open-palm-advance" class="open-palm-advance-badge">
-            <div class="palm-ring-wrap">
-              <span class="palm-emoji">👋</span>
-              <svg class="palm-ring-svg" viewBox="0 0 48 48">
-                <circle class="palm-track" cx="24" cy="24" r="20"></circle>
-                <circle class="palm-fill" cx="24" cy="24" r="20" stroke-dasharray="125.66" stroke-dashoffset="125.66"></circle>
-              </svg>
-            </div>
-            <span class="palm-text">Aim laser at Next Puzzle → or show Open Palm 👋 to continue</span>
-          </div>
         </div>
       `;
 
