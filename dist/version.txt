@@ -1,3 +1,11 @@
+Version 1.12.11
+Date: 2026-09-11
+
+Release Notes:
+- Keep story equation choices large and readable across the desktop-to-portrait breakpoint.
+- Give the wrapped story card extra breathing room on very tall, narrow phones.
+- Files: src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.10
 Date: 2026-09-11
 

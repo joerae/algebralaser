@@ -1875,6 +1875,66 @@ body {
   transition-property: border-color, box-shadow;
 }
 
+/* Keep equation choices continuous across the desktop/portrait-dock handoff.
+   The previous 17px ceiling made a tiny width change halve their visual size. */
+@media (max-width: 768px) and (orientation: portrait) {
+  #app[data-portrait-panel="true"] .story-equation-card .choice-equation-expr {
+    gap: clamp(2px, 0.8vw, 5px);
+    font-size: clamp(16px, 4.2vw, 28px);
+  }
+
+  #app[data-portrait-panel="true"] .story-equation-card .choice-coeff-tile,
+  #app[data-portrait-panel="true"] .story-equation-card .choice-modifier-tile,
+  #app[data-portrait-panel="true"] .story-equation-card .term-tile,
+  #app[data-portrait-panel="true"] .story-equation-card .math-symbol,
+  #app[data-portrait-panel="true"] .story-equation-card .choice-equals,
+  #app[data-portrait-panel="true"] .story-equation-card .choice-rhs {
+    font-size: clamp(16px, 4.2vw, 28px);
+  }
+
+  #app[data-portrait-panel="true"] .story-equation-card .choice-coeff-tile,
+  #app[data-portrait-panel="true"] .story-equation-card .choice-modifier-tile,
+  #app[data-portrait-panel="true"] .story-equation-card .term-tile {
+    padding: 2px clamp(4px, 1.1vw, 7px);
+  }
+
+  #app[data-portrait-panel="true"] .story-equation-card .math-item-token {
+    width: clamp(28px, 6.5vw, 44px);
+    height: clamp(28px, 6.5vw, 44px);
+    min-width: clamp(28px, 6.5vw, 44px);
+    min-height: clamp(28px, 6.5vw, 44px);
+  }
+}
+
+/* Very tall phones have room to let the wrapped story breathe. Increase only
+   the stable pre-camera lane, keeping the camera and choices aligned below it. */
+@media (max-width: 768px) and (orientation: portrait) and (max-aspect-ratio: 1 / 2) {
+  :root {
+    --workspace-top-height: clamp(230px, 18dvh, 270px);
+  }
+
+  #app[data-story-phase="reading"] .story-card,
+  #app[data-story-phase="choosing_equation"] .story-card {
+    padding-block: 10px;
+  }
+
+  #app[data-story-phase="reading"] .story-card-header,
+  #app[data-story-phase="choosing_equation"] .story-card-header {
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+  }
+
+  #app[data-story-phase="reading"] .story-beats-container,
+  #app[data-story-phase="choosing_equation"] .story-beats-container {
+    gap: 4px;
+  }
+
+  #app[data-story-phase="reading"] .story-sentence,
+  #app[data-story-phase="choosing_equation"] .story-sentence {
+    line-height: 1.28;
+  }
+}
+
 /* Persisted portrait dock preference and final narrow-screen overflow guards. */
 @media (max-width: 768px) and (orientation: portrait) {
   #app[data-camera-dock="right"] .camera-box {
