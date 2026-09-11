@@ -154,7 +154,7 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  min-height: 0;
+  min-height: 104px;
 }
 
 .story-sentence {
@@ -170,7 +170,14 @@
 
 .story-sentence.sentence-revealed {
   opacity: 1;
+  visibility: visible;
   transform: translateY(0);
+}
+
+.story-sentence.sentence-pending {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .story-sentence.sentence-highlight {

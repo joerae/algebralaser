@@ -35,9 +35,45 @@ export class GameController {
   private cancellationTimeout: number | null = null;
   public reducedMotion: boolean = false;
 
-  constructor(levels?: LinearEquationDef[], initialMode: SolverMode = DEFAULT_MODE) {
-    this.levels = levels || generateCuratedLevelSet();
+  private skipTutorial: boolean = false;
+
+  constructor(levels?: LinearEquationDef[], initialMode: SolverMode = DEFAULT_MODE, skipTutorial: boolean = false) {
+    this.skipTutorial = skipTutorial;
+    if (levels) {
+      this.levels = levels;
+    } else if (skipTutorial) {
+      this.levels = [generateRandomPuzzle(1)];
+    } else {
+      this.levels = generateCuratedLevelSet();
+    }
     this.state = createInitialState(this.levels[0], initialMode);
+  }
+
+  public isTutorialLevel(): boolean {
+    const currentId = this.levels[this.currentLevelIndex]?.id;
+    return currentId === 'curated-1' || currentId === 'curated-2' || currentId === 'curated-3' || currentId === 'curated-4';
+  }
+
+  public isSkipTutorialEnabled(): boolean {
+    return this.skipTutorial;
+  }
+
+  public skipToGeneratedLevels(): void {
+    if (this.cancellationTimeout) clearTimeout(this.cancellationTimeout);
+    this.skipTutorial = true;
+    this.levels = [generateRandomPuzzle(1)];
+    this.currentLevelIndex = 0;
+    this.state = createInitialState(this.levels[0], this.state.mode);
+    this.notify();
+  }
+
+  public restoreTutorialLevels(): void {
+    if (this.cancellationTimeout) clearTimeout(this.cancellationTimeout);
+    this.skipTutorial = false;
+    this.levels = generateCuratedLevelSet();
+    this.currentLevelIndex = 0;
+    this.state = createInitialState(this.levels[0], this.state.mode);
+    this.notify();
   }
 
   public subscribe(listener: StateListener): () => void {

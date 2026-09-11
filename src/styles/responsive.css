@@ -566,11 +566,11 @@ body {
   :root {
     --responsive-edge: 8px;
     --responsive-gap: 3px;
-    --portrait-panel-space: 116px;
+    --portrait-panel-space: 0px;
   }
 
   #app[data-story-feedback="true"] {
-    --portrait-panel-space: 150px;
+    --portrait-panel-space: 0px;
   }
 
   .hud-header {
@@ -664,15 +664,22 @@ body {
   }
 
   #app[data-mode="mode_b"] .camera-box {
-    width: min(calc(100vw - 16px), 440px);
+    align-self: flex-start;
+    width: clamp(
+      150px,
+      min(58vw, calc((100dvh - 270px) * var(--camera-media-aspect, 0.75))),
+      330px
+    );
+    max-width: calc(100vw - 128px);
     height: auto;
-    max-height: min(292px, calc(100dvh - 330px - var(--portrait-panel-space)));
-    min-height: 145px;
-    margin: 0 auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    margin: 0;
   }
 
   #app[data-portrait-panel="true"] .camera-box {
-    margin-top: var(--portrait-panel-space);
+    margin-top: 0;
   }
 
   .forge-panel.panel-portrait-dock,
@@ -727,6 +734,10 @@ body {
   .story-presentation-panel,
   .story-solving-bar {
     width: min(calc(100vw - 16px), 440px);
+  }
+
+  .story-presentation-panel .story-beats-container {
+    min-height: 96px;
   }
 
   .story-sentence {
@@ -965,14 +976,21 @@ body {
     font-size: 18px;
   }
 
-  /* Camera Box in Mobile Portrait: centered, fits iPhone width cleanly */
+  /* Camera Box in Mobile Portrait: docked on left with portrait aspect ratio */
   .camera-box {
-    width: min(calc(100vw - 16px), 330px);
+    align-self: flex-start;
+    width: clamp(
+      150px,
+      min(58vw, calc((100dvh - 270px) * var(--camera-media-aspect, 0.75))),
+      330px
+    );
+    max-width: calc(100vw - 128px);
     height: auto;
-    aspect-ratio: 4 / 3;
-    max-height: 248px;
-    border-radius: 16px;
-    margin: 2px auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    border-radius: 14px;
+    margin: 0;
   }
 
   .camera-box-header {
@@ -1350,18 +1368,23 @@ body {
   }
 
   #app[data-mode="mode_b"] .camera-box {
-    width: min(calc(100vw - 16px), 440px);
-    max-width: min(calc(100vw - 16px), 440px);
+    align-self: flex-start;
+    width: clamp(
+      150px,
+      min(58vw, calc((100dvh - 270px) * var(--camera-media-aspect, 0.75))),
+      330px
+    );
+    max-width: calc(100vw - 128px);
     height: auto;
-    max-height: min(292px, calc(100dvh - 330px - var(--portrait-panel-space)));
-    min-height: 145px;
-    margin: 0 auto;
-    aspect-ratio: 4 / 3;
-    transition-property: width, height, max-height, border-color, box-shadow;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    margin: 0;
+    transition-property: border-color, box-shadow;
   }
 
   #app[data-portrait-panel="true"] .camera-box {
-    margin-top: var(--portrait-panel-space);
+    margin-top: 0;
   }
 
   .forge-panel.panel-portrait-dock,
@@ -1462,7 +1485,7 @@ body {
     width: min(calc(100vw - 16px), 440px);
   }
 
-  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-box {
+  .camera-box {
     align-self: flex-start;
     width: clamp(
       150px,
@@ -1478,20 +1501,20 @@ body {
     border-radius: 14px;
   }
 
-  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-box-header {
+  .camera-box-header {
     min-height: 31px;
     padding: 3px 6px;
   }
 
-  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-header-right {
+  .camera-header-right {
     display: none;
   }
 
-  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-title {
+  .camera-title {
     font-size: 10px;
   }
 
-  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-feed-container {
+  .camera-feed-container {
     flex: 0 0 auto;
     width: 100%;
     height: auto;

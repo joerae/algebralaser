@@ -15,6 +15,8 @@ export interface HudCallbacks {
   onRestart: () => void;
   onModeChange: (mode: SolverMode) => void;
   onToggleStoryMode: (enabled: boolean) => void;
+  onToggleSkipTutorial?: (enabled: boolean) => void;
+  onToggleCameraAutoStart?: (enabled: boolean) => void;
 }
 
 export class HudView {
@@ -34,6 +36,8 @@ export class HudView {
   private dwellMs: number = 450;
   private isModalOpen: boolean = false;
   private storyModeEnabled: boolean = true;
+  private skipTutorial: boolean = false;
+  private cameraAutoStart: boolean = false;
 
   constructor(
     header: HTMLElement,
@@ -53,6 +57,10 @@ export class HudView {
     this.callbacks = callbacks;
     this.currentMode = initialMode;
     this.storyModeEnabled = initialStoryMode;
+    try {
+      this.skipTutorial = localStorage.getItem('algebra_skip_tutorial') === 'true';
+      this.cameraAutoStart = localStorage.getItem('algebra_camera_enabled') === 'true';
+    } catch {}
     this.renderHeader();
     this.renderFooter('Get Y on its own.');
 
@@ -137,6 +145,9 @@ export class HudView {
       });
 
       this.bannerEl.querySelector('#banner-btn-dismiss')?.addEventListener('click', () => {
+        try {
+          localStorage.setItem('algebra_camera_enabled', 'false');
+        } catch {}
         this.bannerEl.style.display = 'none';
       });
     }
@@ -289,6 +300,26 @@ export class HudView {
             <span class="slider"></span>
           </label>
         </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Skip Tutorial Problems</div>
+            <div class="setting-desc">Skip the 4 introductory pure levels (+, −, ×, ÷) and jump straight into multi-family equations</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="chk-skip-tutorial" ${this.skipTutorial ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Remember Camera Access</div>
+            <div class="setting-desc">Auto-enable camera on launch if previously granted.<br><span style="color: #fbbf24; font-size: 0.84em; display: inline-block; margin-top: 3px;">💡 On iOS Safari: Tap <strong>aA</strong> in address bar → Website Settings → Camera → Allow to never see the permission prompt again.</span></div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="chk-camera-remember" ${this.cameraAutoStart ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
         <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
           <div style="display: flex; justify-content: space-between; width: 100%;">
             <div class="setting-label">Answer Dwell Hold Duration</div>
@@ -322,6 +353,24 @@ export class HudView {
       const val = (e.target as HTMLInputElement).checked;
       this.setStoryMode(val);
       this.callbacks.onToggleStoryMode(val);
+    });
+
+    this.modalEl.querySelector('#chk-skip-tutorial')?.addEventListener('change', (e) => {
+      const val = (e.target as HTMLInputElement).checked;
+      this.skipTutorial = val;
+      try {
+        localStorage.setItem('algebra_skip_tutorial', String(val));
+      } catch {}
+      this.callbacks.onToggleSkipTutorial?.(val);
+    });
+
+    this.modalEl.querySelector('#chk-camera-remember')?.addEventListener('change', (e) => {
+      const val = (e.target as HTMLInputElement).checked;
+      this.cameraAutoStart = val;
+      try {
+        localStorage.setItem('algebra_camera_enabled', String(val));
+      } catch {}
+      this.callbacks.onToggleCameraAutoStart?.(val);
     });
 
     this.modalEl.querySelector('#chk-hands-only')?.addEventListener('change', (e) => {

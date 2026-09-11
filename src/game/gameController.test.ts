@@ -52,4 +52,25 @@ describe('GameController', () => {
     expect(gc.getTotalLevels()).toBe(6);
     expect(gc.getCurrentLevel().solution).toBeGreaterThan(0);
   });
+
+  it('bypasses curated tutorial levels when skipTutorial is enabled', () => {
+    const gc = new GameController(undefined, 'mode_a', true);
+    expect(gc.isTutorialLevel()).toBe(false);
+    expect(gc.getCurrentLevelNumber()).toBe(1);
+    expect(gc.getCurrentLevel().id).not.toBe('curated-1');
+  });
+
+  it('allows skipping to generated levels mid-game and restoring', () => {
+    const gc = new GameController();
+    expect(gc.isTutorialLevel()).toBe(true);
+    expect(gc.getCurrentLevel().id).toBe('curated-1');
+
+    gc.skipToGeneratedLevels();
+    expect(gc.isTutorialLevel()).toBe(false);
+    expect(gc.getCurrentLevelNumber()).toBe(1);
+
+    gc.restoreTutorialLevels();
+    expect(gc.isTutorialLevel()).toBe(true);
+    expect(gc.getCurrentLevel().id).toBe('curated-1');
+  });
 });

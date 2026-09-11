@@ -106,7 +106,8 @@ class App {
       : localStorage.getItem('algebra_story_mode') !== 'false';
 
     const savedMode = (localStorage.getItem('algebra_solver_mode') as SolverMode) || DEFAULT_MODE;
-    this.game = new GameController(undefined, savedMode);
+    const initialSkipTutorial = localStorage.getItem('algebra_skip_tutorial') === 'true';
+    this.game = new GameController(undefined, savedMode, initialSkipTutorial);
     this.interaction = new InteractionController(this.game);
     this.storyController = new StoryController(this.game.getCurrentLevel(), initialStoryMode);
     this.storyController.reducedMotion = this.game.reducedMotion;
@@ -299,6 +300,26 @@ class App {
       },
       onToggleStoryMode: (enabled) => {
         this.handleToggleStoryMode(enabled);
+      },
+      onToggleSkipTutorial: (enabled) => {
+        if (enabled) {
+          if (this.game.isTutorialLevel()) {
+            this.game.skipToGeneratedLevels();
+            this.storyController.initLevel(this.game.getCurrentLevel());
+            this.needTargetsRefresh = true;
+          }
+        } else {
+          if (this.game.getCurrentLevelNumber() === 1 && !this.game.isTutorialLevel()) {
+            this.game.restoreTutorialLevels();
+            this.storyController.initLevel(this.game.getCurrentLevel());
+            this.needTargetsRefresh = true;
+          }
+        }
+      },
+      onToggleCameraAutoStart: (enabled) => {
+        if (enabled && !this.isCameraRunning) {
+          this.startCamera(false).catch(() => {});
+        }
       }
     }, savedMode, initialStoryMode);
 
@@ -317,8 +338,15 @@ class App {
     // 5. Setup Mouse, Touch and Keyboard
     this.setupInputListeners();
 
-    // 6. Show Camera Banner
-    this.hudView.showCameraBanner();
+    // 6. Camera Auto-Start / Camera Banner
+    const autoStartCamera = localStorage.getItem('algebra_camera_enabled') === 'true';
+    if (autoStartCamera) {
+      this.startCamera(true).catch(() => {
+        this.hudView.showCameraBanner();
+      });
+    } else {
+      this.hudView.showCameraBanner();
+    }
 
     // 7. Start Animation & Vision Loop
     requestAnimationFrame((t) => this.loop(t));
@@ -660,6 +688,9 @@ class App {
     if (this.isCameraRunning) {
       this.camera.stopCamera();
       this.isCameraRunning = false;
+      try {
+        localStorage.setItem('algebra_camera_enabled', 'false');
+      } catch {}
       this.hudView.setCameraState(false);
       this.videoEl.classList.remove('active');
       document.getElementById('camera-box')?.classList.remove('active');
@@ -672,25 +703,34 @@ class App {
     await this.startCamera();
   }
 
-  private async startCamera() {
+  private async startCamera(silentFail: boolean = false) {
     this.hudView.updateInstruction('Requesting camera access...');
     const startRes = await this.camera.startCamera(this.videoEl);
     if (!startRes.success) {
-      alert(startRes.error || 'Unable to access camera.');
+      if (!silentFail) {
+        alert(startRes.error || 'Unable to access camera.');
+      }
       this.hudView.updateInstruction('Camera unavailable. Playing with mouse & keyboard.');
+      this.hudView.showCameraBanner();
       return;
     }
 
     this.hudView.updateInstruction('Loading hand tracking model...');
     const landmarkerRes = await this.landmarker.initialize();
     if (!landmarkerRes.success) {
-      alert(landmarkerRes.error || 'Unable to load hand landmarker.');
+      if (!silentFail) {
+        alert(landmarkerRes.error || 'Unable to load hand landmarker.');
+      }
       this.camera.stopCamera();
       this.hudView.updateInstruction('Hand tracking model failed to load. Playing with mouse.');
+      this.hudView.showCameraBanner();
       return;
     }
 
     this.isCameraRunning = true;
+    try {
+      localStorage.setItem('algebra_camera_enabled', 'true');
+    } catch {}
     this.syncCameraMediaAspect();
     this.hudView.setCameraState(true);
     this.videoEl.classList.add('active');
@@ -1370,7 +1410,7 @@ class App {
     eqTargets.forEach(t => {
       const rect = t.element.getBoundingClientRect();
       const isModeBAction = t.id === 'mode-b-rhs-target' || t.id === 'mode-b-cleanup-target';
-      const pad = isModeBAction ? 32 : 24;
+      const pad = t.id === 'mode-b-cleanup-target' ? 16 : (isModeBAction ? 32 : 24);
       const priority = isModeBAction ? 2 : 1;
       targets.push({
         id: t.id,

@@ -10,8 +10,12 @@ export class ModeBForgeHandler implements ModeInteractionHandler {
   public onVisionFrame(ctx: ModeVisionContext): boolean {
     const { ray, pose, hit, now, gameState, interState, game, callbacks } = ctx;
 
+    const cleanupTargetId = 'mode-b-cleanup-target';
+    const isOnCleanupTarget = Boolean(hit && hit.targetId === cleanupTargetId);
+
     if (this.lastObservedPhase !== 'awaiting_cleanup' && gameState.phase === 'awaiting_cleanup') {
-      this.cleanupMustExitTarget = true;
+      // Point-away protection: ONLY if the laser is ALREADY pointing at the -7 + 7 box itself!
+      this.cleanupMustExitTarget = Boolean(ray?.active && pose?.isPointing && isOnCleanupTarget);
     }
     if (gameState.phase === 'ready') {
       this.cleanupMustExitTarget = false;

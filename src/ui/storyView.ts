@@ -54,8 +54,6 @@ export class StoryView {
 
     // 1. Reading & Choosing Equation: show rich story card & concise question
     if (phase === 'reading' || phase === 'choosing_equation') {
-      const visibleBeats = beats.slice(0, revealedSentenceCount);
-
       this.container.innerHTML = `
         <div class="story-presentation-panel">
           <div class="story-card">
@@ -64,12 +62,13 @@ export class StoryView {
               <span class="story-card-title">${this.capitalise(item.singular)} Purchase</span>
             </div>
             <div class="story-beats-container">
-              ${visibleBeats.map((b: StoryBeat, idx: number) => {
+              ${beats.map((b: StoryBeat, idx: number) => {
+                const isRevealed = idx < revealedSentenceCount;
                 const isHighlighted = highlightedBeat === b.highlightTarget;
                 const isQuestion = b.type === 'question';
                 const html = this.injectItemIcon(b.text, item);
                 return `
-                  <p class="story-sentence sentence-revealed ${isHighlighted ? 'sentence-highlight' : ''} ${isQuestion ? 'story-question-beat' : ''}" data-index="${idx}">
+                  <p class="story-sentence ${isRevealed ? 'sentence-revealed' : 'sentence-pending'} ${isHighlighted ? 'sentence-highlight' : ''} ${isQuestion ? 'story-question-beat' : ''}" data-index="${idx}">
                     ${html}
                   </p>
                 `;
