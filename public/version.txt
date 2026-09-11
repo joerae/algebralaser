@@ -1,3 +1,11 @@
+Version 1.12.7
+Date: 2026-09-11
+
+Release Notes:
+- Finish the Mode B animation performance pass: compositor-based pickup, forge round trip, and live bubble tracking.
+- Replace continuously repainted border/filter effects with transform and opacity animation.
+- Files: src/ui/animations/splitBalanceAnimation.ts, src/ui/carriedBubbleView.ts, src/styles/modes/mode-b.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.6
 Date: 2026-09-11
 

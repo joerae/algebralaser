@@ -187,8 +187,18 @@ export class CarriedBubbleView {
     if (this.bubbleEl.style.display !== 'flex') {
       this.bubbleEl.style.display = 'flex';
     }
-    this.bubbleEl.style.left = `${targetX}px`;
-    this.bubbleEl.style.top = `${targetY}px`;
+    const useModeBCompositorMotion = gameState.mode === 'mode_b'
+      && (gameState.phase === 'forging' || gameState.phase === 'applying');
+    this.bubbleEl.classList.toggle('mode-b-composited', useModeBCompositorMotion);
+    if (useModeBCompositorMotion) {
+      this.bubbleEl.style.left = '0px';
+      this.bubbleEl.style.top = '0px';
+      this.bubbleEl.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) translate(-50%, -50%)`;
+    } else {
+      this.bubbleEl.style.removeProperty('transform');
+      this.bubbleEl.style.left = `${targetX}px`;
+      this.bubbleEl.style.top = `${targetY}px`;
+    }
     this.bubbleEl.classList.toggle('snapped', isSnapped);
     this.bubbleEl.classList.toggle('double-charge', gameState.phase === 'applying');
 

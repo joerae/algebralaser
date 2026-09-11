@@ -126,12 +126,10 @@
 
   0%,
   100% {
-    border-color: rgba(56, 189, 248, 0.45);
     opacity: 0.88;
   }
 
   50% {
-    border-color: rgba(56, 189, 248, 0.95);
     opacity: 1;
   }
 }
@@ -346,32 +344,6 @@
   contain: layout style;
 }
 
-.split-clone.powerup-anchor {
-  animation: modeBPowerupCharge 0.72s ease-in-out infinite alternate;
-}
-
-.split-clone.queued-charge {
-  transform: translate3d(-50%, -50%, 0) scale(0.84);
-  animation: modeBQueuedCharge 0.72s ease-in-out infinite alternate;
-}
-
-.split-clone.waiting-charge {
-  opacity: 0.82;
-  animation-delay: 0.16s;
-}
-
-@keyframes modeBQueuedCharge {
-  from {
-    transform: translate3d(-50%, -50%, 0) scale(0.82);
-    opacity: 0.85;
-  }
-
-  to {
-    transform: translate3d(-50%, -50%, 0) scale(0.92);
-    opacity: 1;
-  }
-}
-
 .split-clone.moving-to-hold {
   animation: none;
   transition: none;
@@ -392,29 +364,9 @@
   }
 }
 
-@keyframes modeBPowerupCharge {
-  from {
-    transform: translate3d(-50%, -50%, 0) scale(0.96);
-    opacity: 0.9;
-  }
-
-  to {
-    transform: translate3d(-50%, -50%, 0) scale(1.06);
-    opacity: 1;
-  }
-}
-
 .forge-traveller.forge-outbound,
 .forge-traveller.forge-returning {
-  transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1), top 0.42s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease;
-}
-
-.forge-traveller.forge-outbound {
-  transform: translate3d(-50%, -50%, 0) scale(1.1);
-}
-
-.forge-traveller.forge-returning {
-  transform: translate3d(-50%, -50%, 0) scale(0.96);
+  transition: none;
 }
 
 .forge-traveller.forge-flipping .bubble-term {
@@ -438,8 +390,18 @@
 }
 
 .pickup-traveller.sucking-up {
-  transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: none;
   opacity: 0.95;
+}
+
+/* The live Mode B bubble follows the finger on its own compositor layer. */
+.carried-bubble.mode-b-composited {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.carried-bubble.mode-b-composited.snapped {
+  animation: none;
 }
 
 .bubble-twin {
@@ -492,12 +454,10 @@
 
   0%,
   100% {
-    border-color: rgba(251, 191, 36, 0.4);
     opacity: 0.88;
   }
 
   50% {
-    border-color: rgba(251, 191, 36, 0.95);
     opacity: 1;
   }
 }
@@ -509,7 +469,7 @@
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
   animation: pulseApplyingRail 1.8s infinite ease-in-out;
   transition: transform 0.2s ease, border-color 0.2s ease;
-  will-change: transform, border-color;
+  will-change: transform, opacity;
   isolation: isolate;
 }
 
@@ -585,7 +545,7 @@
   border-radius: 16px;
   font-size: 48px;
   font-weight: 700;
-  transition: transform 0.16s ease, opacity 0.2s ease, filter 0.2s ease;
+  transition: transform 0.16s ease, opacity 0.2s ease;
 }
 
 .mode-b-cleanup-preview {
@@ -600,7 +560,7 @@
   background: rgba(251, 191, 36, 0.16);
   box-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
   animation: modeBCleanupPulse 1.4s ease-in-out infinite;
-  will-change: opacity, border-color;
+  will-change: opacity;
   isolation: isolate;
   contain: layout style;
 }
@@ -633,7 +593,7 @@
   justify-content: center;
   font-size: 48px;
   box-sizing: border-box;
-  will-change: opacity, border-color;
+  will-change: opacity;
   isolation: isolate;
   contain: layout style;
 }
@@ -655,12 +615,10 @@
   0%,
   100% {
     opacity: 0.88;
-    border-color: rgba(56, 189, 248, 0.55);
   }
 
   50% {
     opacity: 1;
-    border-color: rgba(56, 189, 248, 0.95);
   }
 }
 
@@ -668,12 +626,10 @@
   0%,
   100% {
     opacity: 0.88;
-    border-color: rgba(251, 191, 36, 0.55);
   }
 
   50% {
     opacity: 1;
-    border-color: rgba(251, 191, 36, 0.95);
   }
 }
 
@@ -701,19 +657,16 @@
   0% {
     opacity: 1;
     transform: scale(1);
-    filter: blur(0);
   }
 
   28% {
     opacity: 1;
     transform: scale(1.14);
-    filter: brightness(2);
   }
 
   100% {
     opacity: 0;
     transform: scale(0.42);
-    filter: blur(9px);
   }
 }
 
@@ -746,12 +699,12 @@
 @keyframes smashImpactFlash {
   0% {
     transform: scale(1.15);
-    filter: brightness(2.2) drop-shadow(0 0 20px #f43f5e);
+    opacity: 1;
   }
 
   50% {
     transform: scale(1.05);
-    filter: brightness(1.5) drop-shadow(0 0 10px #f43f5e);
+    opacity: 0.8;
   }
 
   100% {

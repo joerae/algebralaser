@@ -1,6 +1,35 @@
 import { ForgedOperation } from '../../math/types';
 import { soundManager } from '../../audio/soundEffects';
 
+type AnimationPoint = { x: number; y: number };
+
+const transformAt = (point: AnimationPoint, scale: number) =>
+  `translate3d(${point.x}px, ${point.y}px, 0) translate(-50%, -50%) scale(${scale})`;
+
+/** Animate fixed-position travellers without touching layout-triggering left/top. */
+function animateTransform(
+  element: HTMLElement,
+  from: AnimationPoint,
+  to: AnimationPoint,
+  milliseconds: number,
+  fromScale: number,
+  toScale: number,
+  easing: string
+): Animation {
+  const fromTransform = transformAt(from, fromScale);
+  const toTransform = transformAt(to, toScale);
+  element.style.transform = fromTransform;
+  const animation = element.animate(
+    [{ transform: fromTransform }, { transform: toTransform }],
+    { duration: milliseconds, easing, fill: 'forwards' }
+  );
+  animation.onfinish = () => {
+    element.style.transform = toTransform;
+    animation.cancel();
+  };
+  return animation;
+}
+
 export interface SplitAnimationTargets {
   left: {
     hover: { x: number; y: number };
@@ -50,34 +79,10 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
 
   // Run the original sequence at 1.25x speed (20% shorter durations).
   const duration = (milliseconds: number) => Math.round(milliseconds * 0.8);
-  const transformAt = (point: { x: number; y: number }, scale: number) =>
-    `translate3d(${point.x}px, ${point.y}px, 0) translate(-50%, -50%) scale(${scale})`;
   const sourcePoints = [
     { x: source.x - 46, y: source.y },
     { x: source.x + 46, y: source.y }
   ];
-
-  const animateTransform = (
-    element: HTMLElement,
-    from: { x: number; y: number },
-    to: { x: number; y: number },
-    milliseconds: number,
-    fromScale: number,
-    toScale: number,
-    easing: string
-  ) => {
-    const fromTransform = transformAt(from, fromScale);
-    const toTransform = transformAt(to, toScale);
-    element.style.transform = fromTransform;
-    const animation = element.animate(
-      [{ transform: fromTransform }, { transform: toTransform }],
-      { duration: milliseconds, easing, fill: 'forwards' }
-    );
-    animation.onfinish = () => {
-      element.style.transform = toTransform;
-      animation.cancel();
-    };
-  };
 
   [splitLeftEl, splitRightEl].forEach((el, index) => {
     el.className = `carried-bubble split-clone ${opClass}`;
@@ -104,8 +109,6 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
   // symmetric holding formation beneath their respective equation sides.
   splitLeftEl.style.display = 'flex';
   splitRightEl.style.display = 'flex';
-  splitLeftEl.classList.add('queued-charge');
-  splitRightEl.classList.add('queued-charge', 'waiting-charge');
 
   const launchAt = (
     projectile: HTMLElement,
@@ -115,7 +118,7 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
     impactSound: () => void,
     done: () => void
   ) => {
-    projectile.classList.remove('queued-charge', 'waiting-charge', 'holding-charge');
+    projectile.classList.remove('holding-charge');
     projectile.classList.add('split-projectile');
     projectile.style.opacity = '1';
 
@@ -158,7 +161,6 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
 
   window.requestAnimationFrame(() => {
     [splitLeftEl, splitRightEl].forEach(el => {
-      el.classList.remove('queued-charge', 'waiting-charge');
       el.classList.add('moving-to-hold');
     });
     animateTransform(
@@ -224,15 +226,15 @@ export function runForgeRoundTripAnimation(params: ForgeRoundTripParams): void {
   bubbleEl.className = `carried-bubble split-clone forge-traveller ${originalClass}`;
   bubbleEl.style.display = 'flex';
   bubbleEl.style.opacity = '1';
-  bubbleEl.style.left = `${from.x}px`;
-  bubbleEl.style.top = `${from.y}px`;
+  bubbleEl.style.left = '0px';
+  bubbleEl.style.top = '0px';
+  bubbleEl.style.transform = transformAt(from, 1);
   if (term) term.textContent = originalSymbol;
   if (twinEl) twinEl.style.display = 'none';
 
   window.requestAnimationFrame(() => {
     bubbleEl.classList.add('forge-outbound');
-    bubbleEl.style.left = `${to.x}px`;
-    bubbleEl.style.top = `${to.y}px`;
+    animateTransform(bubbleEl, from, to, 420, 1, 1.1, 'cubic-bezier(0.16, 1, 0.3, 1)');
   });
 
   window.setTimeout(() => {
@@ -245,8 +247,9 @@ export function runForgeRoundTripAnimation(params: ForgeRoundTripParams): void {
         twinEl.className = `carried-bubble split-clone forge-traveller forge-twin ${forgedClass}`;
         twinEl.style.display = 'flex';
         twinEl.style.opacity = '1';
-        twinEl.style.left = `${to.x}px`;
-        twinEl.style.top = `${to.y}px`;
+        twinEl.style.left = '0px';
+        twinEl.style.top = '0px';
+        twinEl.style.transform = transformAt(to, 1.1);
         const twinTerm = twinEl.querySelector<HTMLElement>('.bubble-term');
         if (twinTerm) twinTerm.textContent = forgedSymbol;
       }
@@ -256,12 +259,12 @@ export function runForgeRoundTripAnimation(params: ForgeRoundTripParams): void {
       bubbleEl.classList.remove('forge-flipping', 'forge-outbound');
       bubbleEl.classList.add('forge-returning');
       const returnPosition = getReturnPosition?.() || from;
-      bubbleEl.style.left = `${returnPosition.x - 44}px`;
-      bubbleEl.style.top = `${returnPosition.y}px`;
+      const leftReturn = { x: returnPosition.x - 44, y: returnPosition.y };
+      animateTransform(bubbleEl, to, leftReturn, 420, 1.1, 0.96, 'cubic-bezier(0.16, 1, 0.3, 1)');
       if (twinEl) {
         twinEl.classList.add('forge-returning');
-        twinEl.style.left = `${returnPosition.x + 44}px`;
-        twinEl.style.top = `${returnPosition.y}px`;
+        const rightReturn = { x: returnPosition.x + 44, y: returnPosition.y };
+        animateTransform(twinEl, to, rightReturn, 420, 1.1, 0.96, 'cubic-bezier(0.16, 1, 0.3, 1)');
       }
 
       window.setTimeout(() => {
@@ -294,16 +297,14 @@ export function runPickupToFingerAnimation(params: PickupToFingerParams): void {
   bubbleEl.className = `carried-bubble split-clone pickup-traveller ${operationClass}`;
   bubbleEl.style.display = 'flex';
   bubbleEl.style.opacity = '1';
-  bubbleEl.style.left = `${source.x}px`;
-  bubbleEl.style.top = `${source.y}px`;
-  bubbleEl.style.transform = 'translate(-50%, -50%) scale(0.74)';
+  bubbleEl.style.left = '0px';
+  bubbleEl.style.top = '0px';
+  bubbleEl.style.transform = transformAt(source, 0.74);
   if (term) term.textContent = symbol;
 
   window.requestAnimationFrame(() => {
     bubbleEl.classList.add('sucking-up');
-    bubbleEl.style.left = `${finger.x}px`;
-    bubbleEl.style.top = `${finger.y}px`;
-    bubbleEl.style.transform = 'translate(-50%, -50%) scale(1)';
+    animateTransform(bubbleEl, source, finger, 400, 0.74, 1, 'cubic-bezier(0.16, 1, 0.3, 1)');
   });
 
   window.setTimeout(() => {
