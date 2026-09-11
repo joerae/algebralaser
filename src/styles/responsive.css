@@ -1413,3 +1413,207 @@ body {
     max-width: 100%;
   }
 }
+
+/* Solved state owns enough vertical room for its answer and controls. */
+#app[data-mode="mode_b"][data-phase="solved"] .equation-area {
+  height: clamp(205px, 32dvh, 300px);
+  min-height: clamp(205px, 32dvh, 300px);
+  max-height: clamp(205px, 32dvh, 300px);
+  flex-basis: clamp(205px, 32dvh, 300px);
+  justify-content: flex-start;
+}
+
+#app[data-mode="mode_b"][data-phase="solved"] .solved-panel {
+  gap: clamp(4px, 0.7dvh, 8px);
+}
+
+#app[data-mode="mode_b"][data-phase="solved"] .equation-history-container {
+  height: clamp(28px, 5dvh, 52px);
+  min-height: clamp(28px, 5dvh, 52px);
+  max-height: clamp(28px, 5dvh, 52px);
+  flex-basis: clamp(28px, 5dvh, 52px);
+  margin-bottom: 1px;
+}
+
+#app[data-mode="mode_b"][data-phase="solved"] .equation-rail {
+  min-height: clamp(58px, 8dvh, 76px) !important;
+  padding: 4px clamp(10px, 2vw, 24px) !important;
+}
+
+#app[data-mode="mode_b"][data-phase="solved"] .solved-actions,
+#app[data-mode="mode_b"][data-phase="solved"] .open-palm-advance-badge {
+  margin-top: 0;
+}
+
+/* Portrait Mode B: camera pixels on the left, all choices safely on the right. */
+@media (max-width: 768px) and (orientation: portrait) {
+  #app[data-portrait-panel="true"] {
+    --portrait-panel-space: 0px;
+  }
+
+  #app[data-story-phase="choosing_equation"] .story-presentation-panel {
+    width: min(calc(100vw - 16px), 440px);
+  }
+
+  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-box {
+    align-self: flex-start;
+    width: clamp(
+      150px,
+      min(58vw, calc((100dvh - 270px) * var(--camera-media-aspect, 0.75))),
+      330px
+    );
+    max-width: calc(100vw - 128px);
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    margin: 0;
+    border-radius: 14px;
+  }
+
+  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-box-header {
+    min-height: 31px;
+    padding: 3px 6px;
+  }
+
+  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-header-right {
+    display: none;
+  }
+
+  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-title {
+    font-size: 10px;
+  }
+
+  #app[data-mode="mode_b"][data-portrait-panel="true"] .camera-feed-container {
+    flex: 0 0 auto;
+    width: 100%;
+    height: auto;
+    aspect-ratio: var(--camera-media-aspect, 0.75);
+  }
+
+  #app[data-portrait-panel="true"] .forge-panel.panel-portrait-dock,
+  #app[data-portrait-panel="true"] .answers-column.panel-portrait-dock,
+  #app[data-portrait-panel="true"] .story-choices-column.panel-portrait-dock {
+    gap: 5px !important;
+    margin: 0 !important;
+    overflow: visible;
+  }
+
+  #app[data-portrait-panel="true"] .forge-panel.panel-portrait-dock .forge-title,
+  #app[data-portrait-panel="true"] .answers-column.panel-portrait-dock .question-text,
+  #app[data-portrait-panel="true"] .story-choices-column.panel-portrait-dock .question-text {
+    font-size: clamp(10px, 3.1vw, 13px);
+    line-height: 1.1;
+  }
+
+  #app[data-portrait-panel="true"] .forge-panel.panel-portrait-dock .forge-cards-vertical {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+
+  #app[data-portrait-panel="true"] .answers-column.panel-portrait-dock .answer-cards-list,
+  #app[data-portrait-panel="true"] .story-choices-column.panel-portrait-dock .story-equation-cards-vertical {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+
+  #app[data-portrait-panel="true"] .forge-panel.panel-portrait-dock .forge-card,
+  #app[data-portrait-panel="true"] .answers-column.panel-portrait-dock .answer-card,
+  #app[data-portrait-panel="true"] .story-choices-column.panel-portrait-dock .story-equation-card {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 3px 4px;
+    border-radius: 10px;
+  }
+
+  #app[data-portrait-panel="true"] .forge-panel.panel-portrait-dock .forge-symbol {
+    font-size: clamp(22px, 7vw, 30px);
+  }
+
+  #app[data-portrait-panel="true"] .story-equation-card .choice-equation-display {
+    gap: 2px;
+  }
+
+  #app[data-portrait-panel="true"] .story-equation-card .choice-coeff-tile,
+  #app[data-portrait-panel="true"] .story-equation-card .term-tile,
+  #app[data-portrait-panel="true"] .story-equation-card .math-symbol {
+    font-size: clamp(12px, 4vw, 17px);
+  }
+
+  #app[data-portrait-panel="true"] .story-equation-card .math-item-token {
+    width: clamp(22px, 7vw, 28px);
+    height: clamp(22px, 7vw, 28px);
+    min-width: clamp(22px, 7vw, 28px);
+    min-height: clamp(22px, 7vw, 28px);
+  }
+
+  #app[data-mode="mode_b"] .carried-bubble {
+    width: 82px;
+    min-width: 82px;
+    max-width: 82px;
+    height: 76px;
+    padding: 5px 7px;
+    border-width: 2px;
+    box-sizing: border-box;
+  }
+
+  #app[data-mode="mode_b"] .carried-bubble .bubble-term {
+    font-size: 27px;
+  }
+
+  #app[data-mode="mode_b"] .carried-bubble .bubble-caption {
+    max-width: 68px;
+    margin-top: 2px;
+    font-size: 7px;
+    line-height: 1.1;
+    text-align: center;
+    white-space: normal;
+  }
+
+  #app[data-mode="mode_b"] .carried-bubble.double-charge,
+  #app[data-mode="mode_b"] .carried-bubble.double-charge .bubble-twin {
+    width: 62px;
+    min-width: 62px;
+    height: 62px;
+  }
+
+  #app[data-mode="mode_b"] .carried-bubble.double-charge .bubble-term,
+  #app[data-mode="mode_b"] .carried-bubble.double-charge .bubble-twin-term {
+    font-size: 23px;
+  }
+
+  #app[data-mode="mode_b"][data-phase="solved"] .equation-area {
+    height: clamp(168px, 27dvh, 220px);
+    min-height: clamp(168px, 27dvh, 220px);
+    max-height: clamp(168px, 27dvh, 220px);
+    flex-basis: clamp(168px, 27dvh, 220px);
+  }
+
+  #app[data-mode="mode_b"][data-phase="solved"] .equation-history-container {
+    display: none;
+  }
+
+  #app[data-mode="mode_b"][data-phase="solved"] .solved-line-wrap {
+    font-size: clamp(25px, 8vw, 34px);
+  }
+
+  #app[data-mode="mode_b"][data-phase="solved"] .solved-check {
+    font-size: clamp(24px, 7vw, 32px);
+  }
+
+  #app[data-mode="mode_b"][data-phase="solved"] .open-palm-advance-badge {
+    max-width: calc(100vw - 16px);
+    padding: 3px 8px;
+  }
+
+  #app[data-mode="mode_b"][data-phase="solved"] .palm-text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}

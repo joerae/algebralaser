@@ -14,6 +14,7 @@ import { runForgeRoundTripAnimation, runPickupToFingerAnimation, runSplitBalance
 import { getModeDefinition } from './game/modeRegistry';
 import { classifyHandPose } from './vision/poseClassifier';
 import { computeLaserRay } from './vision/coordinateTransform';
+import { getObjectFitViewport } from './vision/mediaViewport';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
 import { LaserRay } from './vision/types';
 import { SolverMode, DEFAULT_MODE, BlasterType } from './math/types';
@@ -95,6 +96,7 @@ class App {
     const modalEl = document.getElementById('settings-modal') as HTMLElement;
     const debugEl = document.getElementById('debug-overlay') as HTMLElement;
     const bannerEl = document.getElementById('camera-banner') as HTMLElement;
+    this.videoEl.addEventListener('resize', () => this.syncCameraMediaAspect());
 
     // 2. Core Controllers & Services
     const urlParams = new URLSearchParams(window.location.search);
@@ -342,6 +344,13 @@ class App {
     ].forEach(element => {
       if (element) this.resizeObserver?.observe(element);
     });
+  }
+
+  private syncCameraMediaAspect() {
+    if (!this.videoEl.videoWidth || !this.videoEl.videoHeight) return;
+    const aspect = this.videoEl.videoWidth / this.videoEl.videoHeight;
+    document.getElementById('app')?.style.setProperty('--camera-media-aspect', String(aspect));
+    this.markLayoutDirty();
   }
 
   private handleToggleStoryMode(enabled: boolean) {
@@ -682,6 +691,7 @@ class App {
     }
 
     this.isCameraRunning = true;
+    this.syncCameraMediaAspect();
     this.hudView.setCameraState(true);
     this.videoEl.classList.add('active');
     document.getElementById('camera-box')?.classList.add('active');
@@ -720,12 +730,18 @@ class App {
       width: window.innerWidth * 0.3,
       height: window.innerHeight * 0.35
     };
-    const cameraViewport = {
+    const cameraElementViewport = {
       left: cameraRect.left,
       top: cameraRect.top,
       width: cameraRect.width,
       height: cameraRect.height
     };
+    const cameraViewport = getObjectFitViewport(
+      cameraElementViewport,
+      this.videoEl.videoWidth,
+      this.videoEl.videoHeight,
+      getComputedStyle(this.videoEl).objectFit === 'cover' ? 'cover' : 'contain'
+    );
 
     if (this.isCameraRunning && this.videoEl.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       hands = this.landmarker.detect(this.videoEl, nowSec);
@@ -864,15 +880,27 @@ class App {
     panel: HTMLElement,
     cameraRect: DOMRect,
     stageLeft: number,
-    stageTop: number
+    stageTop: number,
+    stageWidth: number
   ) {
-    panel.style.setProperty('width', `${cameraRect.width}px`, 'important');
-    const panelRect = panel.getBoundingClientRect();
-    const equationIsVisible = this.equationAreaEl && getComputedStyle(this.equationAreaEl).display !== 'none';
-    const anchor = equationIsVisible ? this.equationAreaEl : this.storyAreaEl;
-    const anchorBottom = anchor?.getBoundingClientRect().bottom ?? cameraRect.top;
-    panel.style.setProperty('left', `${cameraRect.left - stageLeft + (cameraRect.width - panelRect.width) / 2}px`, 'important');
-    panel.style.setProperty('top', `${anchorBottom - stageTop + 3}px`, 'important');
+    const gap = 6;
+    const edge = 8;
+    const left = cameraRect.right - stageLeft + gap;
+    const width = Math.max(104, stageWidth - left - edge);
+
+    panel.style.setProperty('left', `${left}px`, 'important');
+    panel.style.setProperty('top', `${cameraRect.top - stageTop}px`, 'important');
+    panel.style.setProperty('width', `${width}px`, 'important');
+    panel.style.setProperty('height', `${cameraRect.height}px`, 'important');
+
+    const cardsContainer = panel.querySelector<HTMLElement>(
+      '.forge-cards-vertical, .answer-cards-list, .story-equation-cards-vertical'
+    );
+    if (cardsContainer) {
+      const cardsHeight = Math.max(0, cameraRect.height - cardsContainer.offsetTop);
+      cardsContainer.style.setProperty('height', `${cardsHeight}px`, 'important');
+      cardsContainer.style.setProperty('flex', '0 0 auto');
+    }
   }
 
   private updateArrowAndLayout(phase: string) {
@@ -906,6 +934,7 @@ class App {
     const stageRect = document.querySelector<HTMLElement>('.stage-container')?.getBoundingClientRect();
     const stageLeft = stageRect?.left ?? 0;
     const stageTop = stageRect?.top ?? 0;
+    const stageWidth = stageRect?.width ?? window.innerWidth;
     const footerEl = document.getElementById('hud-footer');
     const footerHeight = footerEl ? footerEl.offsetHeight : 55;
     const maxBottom = window.innerHeight - footerHeight - 10;
@@ -929,7 +958,7 @@ class App {
           cardsContainer.style.flex = '';
         }
         const cameraRect = this.cameraBoxEl.getBoundingClientRect();
-        this.positionPortraitPanel(this.forgePanelEl, cameraRect, stageLeft, stageTop);
+        this.positionPortraitPanel(this.forgePanelEl, cameraRect, stageLeft, stageTop, stageWidth);
       } else {
         this.forgePanelEl.classList.remove('panel-portrait-dock');
         const cameraRect = this.cameraBoxEl.getBoundingClientRect();
@@ -1125,7 +1154,7 @@ class App {
           cardsContainer.style.height = '';
           cardsContainer.style.flex = '';
         }
-        this.positionPortraitPanel(this.storyChoicesColumnEl, cameraRect, stageLeft, stageTop);
+        this.positionPortraitPanel(this.storyChoicesColumnEl, cameraRect, stageLeft, stageTop, stageWidth);
       } else {
         this.storyChoicesColumnEl.classList.remove('panel-portrait-dock');
         const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 250 : 280;
@@ -1190,7 +1219,7 @@ class App {
         cardsContainer.style.height = '';
         cardsContainer.style.flex = '';
       }
-      this.positionPortraitPanel(this.answersColumnEl, cameraRect, stageLeft, stageTop);
+      this.positionPortraitPanel(this.answersColumnEl, cameraRect, stageLeft, stageTop, stageWidth);
     } else {
       this.answersColumnEl.classList.remove('panel-portrait-dock');
       const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 220 : 260;
