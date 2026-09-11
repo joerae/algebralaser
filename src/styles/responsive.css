@@ -665,15 +665,16 @@ body {
 
   #app[data-mode="mode_b"] .camera-box {
     align-self: flex-start;
+    flex: 0 0 auto !important;
     width: clamp(
-      150px,
-      min(58vw, calc((100dvh - 270px) * var(--camera-media-aspect, 0.75))),
-      330px
+      140px,
+      min(48vw, calc((100dvh - 300px) * var(--camera-media-aspect, 0.75))),
+      280px
     );
-    max-width: calc(100vw - 128px);
-    height: auto;
-    min-height: 0;
-    max-height: none;
+    max-width: calc(100vw - 130px);
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     aspect-ratio: auto;
     margin: 0;
   }
@@ -979,15 +980,16 @@ body {
   /* Camera Box in Mobile Portrait: docked on left with portrait aspect ratio */
   .camera-box {
     align-self: flex-start;
+    flex: 0 0 auto !important;
     width: clamp(
-      150px,
-      min(58vw, calc((100dvh - 270px) * var(--camera-media-aspect, 0.75))),
-      330px
+      140px,
+      min(48vw, calc((100dvh - 300px) * var(--camera-media-aspect, 0.75))),
+      280px
     );
-    max-width: calc(100vw - 128px);
-    height: auto;
-    min-height: 0;
-    max-height: none;
+    max-width: calc(100vw - 130px);
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     aspect-ratio: auto;
     border-radius: 14px;
     margin: 0;
@@ -1369,15 +1371,16 @@ body {
 
   #app[data-mode="mode_b"] .camera-box {
     align-self: flex-start;
+    flex: 0 0 auto !important;
     width: clamp(
-      150px,
-      min(58vw, calc((100dvh - 270px) * var(--camera-media-aspect, 0.75))),
-      330px
+      140px,
+      min(48vw, calc((100dvh - 300px) * var(--camera-media-aspect, 0.75))),
+      280px
     );
-    max-width: calc(100vw - 128px);
-    height: auto;
-    min-height: 0;
-    max-height: none;
+    max-width: calc(100vw - 130px);
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     aspect-ratio: auto;
     margin: 0;
     transition-property: border-color, box-shadow;
@@ -1487,15 +1490,16 @@ body {
 
   .camera-box {
     align-self: flex-start;
+    flex: 0 0 auto !important;
     width: clamp(
-      150px,
-      min(58vw, calc((100dvh - 270px) * var(--camera-media-aspect, 0.75))),
-      330px
+      140px,
+      min(48vw, calc((100dvh - 300px) * var(--camera-media-aspect, 0.75))),
+      280px
     );
-    max-width: calc(100vw - 128px);
-    height: auto;
-    min-height: 0;
-    max-height: none;
+    max-width: calc(100vw - 130px);
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     aspect-ratio: auto;
     margin: 0;
     border-radius: 14px;
@@ -1519,6 +1523,31 @@ body {
     width: 100%;
     height: auto;
     aspect-ratio: var(--camera-media-aspect, 0.75);
+    overflow: hidden;
+  }
+
+  .camera-feed-container #webcam-video {
+    object-fit: cover;
+  }
+
+  .camera-placeholder {
+    padding: 10px 6px;
+    gap: 3px;
+  }
+
+  .placeholder-icon {
+    font-size: 24px;
+    margin-bottom: 2px;
+  }
+
+  .placeholder-title {
+    font-size: 12px;
+  }
+
+  .placeholder-subtitle {
+    font-size: 9px;
+    max-width: 180px;
+    line-height: 1.25;
   }
 
   #app[data-portrait-panel="true"] .forge-panel.panel-portrait-dock,

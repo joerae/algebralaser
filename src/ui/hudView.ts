@@ -37,7 +37,7 @@ export class HudView {
   private isModalOpen: boolean = false;
   private storyModeEnabled: boolean = true;
   private skipTutorial: boolean = false;
-  private cameraAutoStart: boolean = false;
+  private cameraAutoStart: boolean = true;
 
   constructor(
     header: HTMLElement,
@@ -59,7 +59,7 @@ export class HudView {
     this.storyModeEnabled = initialStoryMode;
     try {
       this.skipTutorial = localStorage.getItem('algebra_skip_tutorial') === 'true';
-      this.cameraAutoStart = localStorage.getItem('algebra_camera_enabled') === 'true';
+      this.cameraAutoStart = localStorage.getItem('algebra_camera_enabled') !== 'false';
     } catch {}
     this.renderHeader();
     this.renderFooter('Get Y on its own.');
@@ -89,7 +89,6 @@ export class HudView {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
   }
-
 
   public setCameraState(active: boolean) {
     this.isCameraActive = active;
@@ -148,6 +147,9 @@ export class HudView {
         try {
           localStorage.setItem('algebra_camera_enabled', 'false');
         } catch {}
+        this.cameraAutoStart = false;
+        const chk = this.modalEl.querySelector<HTMLInputElement>('#chk-camera-remember');
+        if (chk) chk.checked = false;
         this.bannerEl.style.display = 'none';
       });
     }
@@ -198,7 +200,7 @@ export class HudView {
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.11.0</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.11.1</button>
       </div>
     `;
 
@@ -253,7 +255,7 @@ export class HudView {
         <div class="setting-row">
           <div>
             <div class="setting-label">Sound Effects</div>
-            <div class="setting-desc">Laser audio feedback and celebration sounds</div>
+            <div class="setting-desc">Laser audio and celebration sounds</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="chk-sound" ${!this.isMuted ? 'checked' : ''}>
@@ -263,7 +265,7 @@ export class HudView {
         <div class="setting-row">
           <div>
             <div class="setting-label">Story Mode</div>
-            <div class="setting-desc">Concrete magic shop situations, item variables & equation choice task</div>
+            <div class="setting-desc">Magic shop items, word problems & equation matching</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="chk-story-mode" ${this.storyModeEnabled ? 'checked' : ''}>
@@ -273,7 +275,7 @@ export class HudView {
         <div class="setting-row">
           <div>
             <div class="setting-label">Hands-Only View</div>
-            <div class="setting-desc">Hides webcam background video, shows only glowing skeleton</div>
+            <div class="setting-desc">Hide webcam video, show glowing hand skeleton only</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="chk-hands-only" ${this.handsOnly ? 'checked' : ''}>
@@ -283,7 +285,7 @@ export class HudView {
         <div class="setting-row">
           <div>
             <div class="setting-label">Reduced Motion</div>
-            <div class="setting-desc">Instant mathematical transitions without flying particles</div>
+            <div class="setting-desc">Instant math transitions without flying particles</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="chk-reduced-motion" ${this.reducedMotion ? 'checked' : ''}>
@@ -293,7 +295,7 @@ export class HudView {
         <div class="setting-row">
           <div>
             <div class="setting-label">Debug Inspector</div>
-            <div class="setting-desc">Shows real-time ray casting hitboxes and inference FPS</div>
+            <div class="setting-desc">Show real-time ray hitboxes and FPS overlay</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="chk-debug" ${this.showDebug ? 'checked' : ''}>
@@ -303,7 +305,7 @@ export class HudView {
         <div class="setting-row">
           <div>
             <div class="setting-label">Skip Tutorial Problems</div>
-            <div class="setting-desc">Skip the 4 introductory pure levels (+, −, ×, ÷) and jump straight into multi-family equations</div>
+            <div class="setting-desc">Skip the 4 pure intro levels (+, −, ×, ÷) and jump to multi-family equations</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="chk-skip-tutorial" ${this.skipTutorial ? 'checked' : ''}>
@@ -313,7 +315,7 @@ export class HudView {
         <div class="setting-row">
           <div>
             <div class="setting-label">Remember Camera Access</div>
-            <div class="setting-desc">Auto-enable camera on launch if previously granted.<br><span style="color: #fbbf24; font-size: 0.84em; display: inline-block; margin-top: 3px;">💡 On iOS Safari: Tap <strong>aA</strong> in address bar → Website Settings → Camera → Allow to never see the permission prompt again.</span></div>
+            <div class="setting-desc">Auto-start camera on launch without showing the prompt banner.<span style="display: block; color: #fbbf24; font-size: 11px; margin-top: 2px;">💡 iOS Safari: Tap <strong>aA</strong> in URL bar → Website Settings → Camera → Allow</span></div>
           </div>
           <label class="switch">
             <input type="checkbox" id="chk-camera-remember" ${this.cameraAutoStart ? 'checked' : ''}>

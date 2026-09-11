@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyHandPose } from './poseClassifier';
+import { classifyHandPose, PointingStabilizer } from './poseClassifier';
 import { LandmarkPoint } from './types';
 import { 
   intersectRayWithHorizontalLine, 
@@ -124,6 +124,31 @@ describe('Pose Classifier & Ray Caster', () => {
     expect(poseOpen.isOpenPalm).toBe(true);
     expect(poseOpen.isPointing).toBe(false);
     expect(poseOpen.isIndexCurled).toBe(false);
+  });
+
+  it('accepts child-friendly pointing when one folded finger tracks too straight', () => {
+    const hand = createSyntheticHand({ indexDir: { x: 0, y: -1 } });
+    hand[18] = { x: 0.58, y: 0.62, z: 0 };
+    hand[19] = { x: 0.58, y: 0.56, z: 0 };
+    hand[20] = { x: 0.58, y: 0.50, z: 0 };
+
+    expect(classifyHandPose(hand).isPointing).toBe(true);
+  });
+
+  it('bridges brief noisy pointing frames but stops for an intentional open palm', () => {
+    const stabilizer = new PointingStabilizer(220);
+    const pointing = classifyHandPose(createSyntheticHand({ indexDir: { x: 0, y: -1 } }));
+    const noisy = { ...pointing, isPointing: false };
+    const openPalm = classifyHandPose(createSyntheticHand({
+      indexDir: { x: 0, y: -1 },
+      allFingersExtended: true
+    }));
+
+    expect(stabilizer.update(pointing, 1000)).toBe(true);
+    expect(stabilizer.update(noisy, 1150)).toBe(true);
+    expect(stabilizer.update(noisy, 1250)).toBe(false);
+    expect(stabilizer.update(pointing, 1300)).toBe(true);
+    expect(stabilizer.update(openPalm, 1310)).toBe(false);
   });
 
   it('correctly intersects horizontal equation rail', () => {

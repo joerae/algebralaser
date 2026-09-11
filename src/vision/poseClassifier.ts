@@ -80,30 +80,31 @@ export function classifyHandPose(landmarks: LandmarkPoint[], confidenceScore: nu
   const pinkyStraightness = pinkySegments3d > 0 ? pinkyChord3d / pinkySegments3d : 0;
 
   // Classifications:
-  // 1. Open palm: all four fingers reasonably straight
-  const isOpenPalm = indexStraightness > 0.80 && 
-                     middleStraightness > 0.76 && 
-                     ringStraightness > 0.76 && 
-                     pinkyStraightness > 0.72;
+  const otherStraightness = [middleStraightness, ringStraightness, pinkyStraightness];
+  const otherAverage = otherStraightness.reduce((sum, value) => sum + value, 0) / otherStraightness.length;
 
-  // 2. Foreshortened: straight in 3D but projected 2D chord is very short
-  //    (relaxed from 0.40 → 0.28 to allow pointing slightly toward camera)
-  const isForeshortened = indexStraightness > 0.85 && index2dRatio < 0.28;
+  // 1. Open palm: tolerate one noisy fingertip while keeping this distinct from pointing.
+  const extendedOtherCount = otherStraightness.filter(value => value > 0.72).length;
+  const isOpenPalm = indexStraightness > 0.76
+    && extendedOtherCount >= 2
+    && otherAverage > 0.74;
+
+  // 2. Foreshortened: straight in 3D but projected 2D chord is too short to aim reliably.
+  const isForeshortened = indexStraightness > 0.82 && index2dRatio < 0.20;
 
   // 3. Other fingers curled
   // Middle, ring, pinky should be folded (relaxed thresholds for child-friendly detection)
-  const otherFingersCurled = (middleStraightness < 0.78) && 
-                             (ringStraightness < 0.78) && 
-                             (pinkyStraightness < 0.80);
+  const curledOtherCount = otherStraightness.filter(value => value < 0.84).length;
+  const otherFingersCurled = curledOtherCount >= 2 && otherAverage < 0.79;
 
-  // 4. Index straight (pointing)
-  // Relaxed from 0.86/0.65 → 0.80/0.55 for more liberal detection
-  const isIndexStraight = indexStraightness >= 0.80 && (indexChord3d / palmScale3d) >= 0.55;
+  // 4. Index straight (pointing). Ratios remain hand-size independent, while these
+  // thresholds allow the extra landmark jitter seen with smaller hands.
+  const isIndexStraight = indexStraightness >= 0.74 && (indexChord3d / palmScale3d) >= 0.44;
 
   // Also accept "loose" pointing when index is straight in 3D but moderately foreshortened
   const isPointingStrict = isIndexStraight && otherFingersCurled && !isOpenPalm && !isForeshortened;
   const isPointingLoose = !isPointingStrict && !isOpenPalm && otherFingersCurled
-    && indexStraightness >= 0.82 && index2dRatio >= 0.18 && index2dRatio < 0.55;
+    && indexStraightness >= 0.72 && index2dRatio >= 0.14 && index2dRatio < 0.55;
   const isPointing = isPointingStrict || isPointingLoose;
 
   // 5. Index curled
@@ -132,4 +133,29 @@ export function classifyHandPose(landmarks: LandmarkPoint[], confidenceScore: nu
     curlRatio,
     reason: isForeshortened ? 'Turn your finger sideways a little.' : undefined
   };
+}
+
+/** Bridges brief noisy pose-classification frames without delaying an intentional stop gesture. */
+export class PointingStabilizer {
+  private lastPointingTime = Number.NEGATIVE_INFINITY;
+
+  constructor(private readonly graceMs = 220) {}
+
+  public update(pose: ClassifiedPose, now: number): boolean {
+    if (pose.isPointing) {
+      this.lastPointingTime = now;
+      return true;
+    }
+
+    if (pose.isOpenPalm || pose.isIndexCurled) {
+      this.reset();
+      return false;
+    }
+
+    return now - this.lastPointingTime <= this.graceMs;
+  }
+
+  public reset() {
+    this.lastPointingTime = Number.NEGATIVE_INFINITY;
+  }
 }

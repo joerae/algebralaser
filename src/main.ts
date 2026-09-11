@@ -12,7 +12,7 @@ import { InversePanelView } from './ui/inversePanelView';
 import { CarriedBubbleView } from './ui/carriedBubbleView';
 import { runForgeRoundTripAnimation, runPickupToFingerAnimation, runSplitBalanceAnimation } from './ui/animations/splitBalanceAnimation';
 import { getModeDefinition } from './game/modeRegistry';
-import { classifyHandPose } from './vision/poseClassifier';
+import { classifyHandPose, PointingStabilizer } from './vision/poseClassifier';
 import { computeLaserRay } from './vision/coordinateTransform';
 import { getObjectFitViewport } from './vision/mediaViewport';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
@@ -42,6 +42,7 @@ class App {
   private carriedBubbleView: CarriedBubbleView;
   private hudView: HudView;
   private raySmoother: RaySmoother;
+  private pointingStabilizer = new PointingStabilizer();
 
   private videoEl: HTMLVideoElement;
   private storyAreaEl: HTMLElement | null = null;
@@ -186,8 +187,14 @@ class App {
       this.needTargetsRefresh = true;
     };
 
-    window.addEventListener('resize', () => this.markLayoutDirty());
-    window.visualViewport?.addEventListener('resize', () => this.markLayoutDirty());
+    window.addEventListener('resize', () => {
+      this.syncCameraMediaAspect();
+      this.markLayoutDirty();
+    });
+    window.visualViewport?.addEventListener('resize', () => {
+      this.syncCameraMediaAspect();
+      this.markLayoutDirty();
+    });
 
     // 3. UI Views
     if (this.storyAreaEl) {
@@ -339,7 +346,7 @@ class App {
     this.setupInputListeners();
 
     // 6. Camera Auto-Start / Camera Banner
-    const autoStartCamera = localStorage.getItem('algebra_camera_enabled') === 'true';
+    const autoStartCamera = localStorage.getItem('algebra_camera_enabled') !== 'false';
     if (autoStartCamera) {
       this.startCamera(true).catch(() => {
         this.hudView.showCameraBanner();
@@ -376,7 +383,11 @@ class App {
 
   private syncCameraMediaAspect() {
     if (!this.videoEl.videoWidth || !this.videoEl.videoHeight) return;
-    const aspect = this.videoEl.videoWidth / this.videoEl.videoHeight;
+    const isPortrait = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+    let aspect = this.videoEl.videoWidth / this.videoEl.videoHeight;
+    if (isPortrait && aspect > 1) {
+      aspect = this.videoEl.videoHeight / this.videoEl.videoWidth;
+    }
     document.getElementById('app')?.style.setProperty('--camera-media-aspect', String(aspect));
     this.markLayoutDirty();
   }
@@ -790,6 +801,9 @@ class App {
         // Choose primary hand (first hand or matching locked hand)
         const primaryHand = hands[0];
         classifiedPose = classifyHandPose(primaryHand.landmarks, primaryHand.score);
+        if (this.pointingStabilizer.update(classifiedPose, now)) {
+          classifiedPose.isPointing = true;
+        }
 
         const rawRay = computeLaserRay(
           primaryHand.landmarks[8], // index tip
@@ -820,6 +834,9 @@ class App {
           isOpenPalm: classifiedPose.isOpenPalm,
           handedness: primaryHand.handedness
         });
+      }
+      if (!hands || hands.length === 0) {
+        this.pointingStabilizer.reset();
       }
     }
 

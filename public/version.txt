@@ -1,3 +1,14 @@
+Version 1.11.1
+Date: 2026-09-11
+
+Release Notes:
+- Responsive Mode B follow-up:
+  - Moved portrait choices into a vertical rail to the right of a narrower, aspect-correct camera feed, preventing an upward-pointing finger from immediately triggering the next action.
+  - Mapped hand landmarks and laser origins to the video pixels actually visible inside object-fit letterboxing.
+  - Made solved confirmation layouts and carried operation bubbles scale cleanly on short and mobile screens.
+  - Improved small-hand pointing reliability with more tolerant hand detection, child-friendly finger-pose thresholds, and a short dropout grace period that still stops immediately for open-palm or curled-index gestures.
+- Files: src/main.ts, src/styles/responsive.css, src/ui/hudView.ts, src/vision/handLandmarkerService.ts, src/vision/poseClassifier.ts, src/vision/poseClassifier.test.ts, src/vision/mediaViewport.ts, src/vision/mediaViewport.test.ts, src/data/version.txt, public/version.txt.
+
 Version 1.11.0
 Date: 2026-09-11
 

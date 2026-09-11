@@ -52,9 +52,11 @@ export class HandLandmarkerService {
         },
         runningMode: 'VIDEO' as const,
         numHands: 2,
-        minHandDetectionConfidence: 0.5,
-        minHandPresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5
+        // Small or distant hands produce lower landmark confidence on phone cameras.
+        // Pose classification below remains the guard against accidental laser activation.
+        minHandDetectionConfidence: 0.35,
+        minHandPresenceConfidence: 0.35,
+        minTrackingConfidence: 0.4
       });
 
       try {
