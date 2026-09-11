@@ -91,10 +91,10 @@ export const MODE_DEFINITIONS: ModeDefinition[] = [
       if (phase === 'ready') {
         if (stage === 'undo_constant') {
           const sign = currentB < 0 ? '−' : '+';
-          return `Point laser at ${sign}${Math.abs(currentB)} or click to pick it up.`;
+          return `Pick up ${sign}${Math.abs(currentB)}.`;
         }
         if (stage === 'undo_coefficient') {
-          return `Point laser at ${currentA} in ${currentA}x or click to pick it up.`;
+          return `Pick up ${currentA}.`;
         }
       }
       if (phase === 'forging') {

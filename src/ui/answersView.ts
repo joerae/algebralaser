@@ -62,7 +62,6 @@ export class AnswersView {
     this.container.innerHTML = `
       <div class="arithmetic-question">
         <div class="question-text">${questionText}</div>
-        <div class="question-subtext">Aim laser ray & hold to select, or click/tap</div>
       </div>
       <div class="answer-cards-list">
         ${cardsHtml}
