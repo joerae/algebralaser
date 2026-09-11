@@ -1157,7 +1157,7 @@ class App {
         this.positionPortraitPanel(this.storyChoicesColumnEl, cameraRect, stageLeft, stageTop, stageWidth);
       } else {
         this.storyChoicesColumnEl.classList.remove('panel-portrait-dock');
-        const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 250 : 280;
+        const columnWidth = window.innerWidth >= 1600 ? 310 : (window.innerWidth <= 1366 || window.innerHeight <= 820 ? 250 : 280);
 
         let left = cameraRect.right - stageLeft + 16;
         if (stageRect && left + columnWidth > stageRect.width - 12) {

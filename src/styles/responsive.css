@@ -86,14 +86,16 @@
     font-size: 26px;
   }
 
-  /* Camera Box: dynamically sized to fit Chromebook 768px height with zero overflow */
+  /* Camera Box: dynamically fills available vertical space down to the footer */
   .camera-box {
-    height: clamp(180px, min(42vh, calc(100vh - 270px)), 310px);
-    max-height: 310px;
+    flex: 1 1 0;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    max-width: min(calc(100vw - 520px), 850px);
     aspect-ratio: 4 / 3;
     width: auto;
-    margin-top: 2px;
-    margin-bottom: 2px;
+    margin: 0;
   }
 
   .camera-size-btn {
@@ -399,50 +401,50 @@ body {
 
 /* Fluid story family: full purchase, condensing, and short solving prompt. */
 .story-presentation-panel {
-  width: min(620px, calc(100vw - (2 * var(--responsive-edge))));
+  width: min(780px, calc(100vw - (2 * var(--responsive-edge))));
   max-width: 100%;
   gap: var(--responsive-gap);
 }
 
 .story-card {
-  padding: clamp(5px, 0.9dvh, 9px) clamp(10px, 1.5vw, 16px);
-  border-radius: clamp(9px, 1vw, 12px);
+  padding: clamp(6px, 1.1dvh, 12px) clamp(12px, 1.8vw, 22px);
+  border-radius: clamp(9px, 1vw, 14px);
 }
 
 .story-card-header {
-  gap: clamp(4px, 0.6vw, 7px);
-  margin-bottom: clamp(2px, 0.5dvh, 5px);
-  padding-bottom: clamp(2px, 0.4dvh, 4px);
+  gap: clamp(5px, 0.7vw, 8px);
+  margin-bottom: clamp(3px, 0.6dvh, 6px);
+  padding-bottom: clamp(2px, 0.5dvh, 5px);
 }
 
 .story-card-icon {
-  font-size: clamp(0.85rem, 1.8dvh, 1.05rem);
+  font-size: clamp(0.95rem, 2.0dvh, 1.25rem);
 }
 
 .story-card-title {
-  font-size: clamp(0.72rem, 1.55dvh, 0.85rem);
+  font-size: clamp(0.78rem, 1.65dvh, 1.05rem);
 }
 
 .story-beats-container {
-  gap: clamp(1px, 0.35dvh, 3px);
+  gap: clamp(2px, 0.45dvh, 5px);
 }
 
 .story-sentence {
-  font-size: clamp(0.8rem, 1.7dvh, 0.95rem);
-  line-height: 1.24;
+  font-size: clamp(0.88rem, 2.0dvh, 1.18rem);
+  line-height: 1.32;
 }
 
 .story-sentence.story-question-beat {
-  font-size: clamp(0.84rem, 1.8dvh, 0.98rem);
-  margin-top: 1px;
-  padding-top: 1px;
+  font-size: clamp(0.92rem, 2.15dvh, 1.24rem);
+  margin-top: 2px;
+  padding-top: 2px;
 }
 
 .story-inline-icon .story-text-icon.math-item-token {
-  width: clamp(23px, 3.5dvh, 32px) !important;
-  height: clamp(23px, 3.5dvh, 32px) !important;
-  min-width: clamp(23px, 3.5dvh, 32px) !important;
-  min-height: clamp(23px, 3.5dvh, 32px) !important;
+  width: clamp(24px, 3.8dvh, 36px) !important;
+  height: clamp(24px, 3.8dvh, 36px) !important;
+  min-width: clamp(24px, 3.8dvh, 36px) !important;
+  min-height: clamp(24px, 3.8dvh, 36px) !important;
 }
 
 .story-solving-bar {
@@ -522,16 +524,18 @@ body {
 }
 
 #app[data-mode="mode_b"] .camera-box {
-  flex: 0 1 auto;
-  height: clamp(180px, 48dvh, 560px);
-  max-height: calc(100dvh - 245px);
-  max-width: min(76vw, 760px);
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  max-width: min(calc(100vw - 580px), 1100px);
   margin: 0;
   border-radius: clamp(14px, 1.5vw, 24px);
 }
 
 #app[data-story-phase="choosing_equation"] .story-presentation-panel {
-  width: min(620px, var(--camera-inline-size, 620px));
+  width: var(--camera-inline-size, 100%);
+  max-width: 100%;
 }
 
 /* Equal camera-height lanes for every side-mounted target set. */
@@ -771,8 +775,11 @@ body {
   }
 
   #app[data-mode="mode_b"] .camera-box {
-    height: clamp(145px, 45dvh, 300px);
-    max-height: calc(100dvh - 205px);
+    flex: 1 1 0;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    max-width: min(calc(100vw - 480px), 750px);
   }
 
   .story-card {
