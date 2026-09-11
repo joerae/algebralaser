@@ -1,3 +1,11 @@
+Version 1.12.14
+Date: 2026-09-11
+
+Release Notes:
+- Expand compact story cards upward into unused space on tall landscape-camera layouts without moving the camera.
+- Use the reclaimed height for larger story text and more comfortable spacing.
+- Files: src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.13
 Date: 2026-09-11
 

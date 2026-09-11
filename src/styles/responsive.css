@@ -1821,6 +1821,62 @@ body {
   max-width: min(520px, calc(100vw - max(32px, 8vw)));
 }
 
+/* On tall landscape-camera layouts, use the otherwise empty top-slot height
+   inside the story card. The slot itself is unchanged, so the camera stays put. */
+@media (min-height: 840px) {
+  #app:not(.layout-portrait)[data-story-phase="reading"] .workspace-top .story-area,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .workspace-top .story-area,
+  #app:not(.layout-portrait)[data-story-phase="reading"] .story-presentation-panel,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-presentation-panel,
+  #app:not(.layout-portrait)[data-story-phase="reading"] .story-card,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-card {
+    height: 100%;
+  }
+
+  #app:not(.layout-portrait)[data-story-phase="reading"] .story-card,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: 9px;
+  }
+
+  #app:not(.layout-portrait)[data-story-phase="reading"] .story-card-header,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-card-header {
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+  }
+
+  #app:not(.layout-portrait)[data-story-phase="reading"] .story-card-title,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-card-title {
+    font-size: clamp(0.9rem, 1.9dvh, 1.05rem);
+  }
+
+  #app:not(.layout-portrait)[data-story-phase="reading"] .story-beats-container,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-beats-container {
+    gap: 3px;
+  }
+
+  #app:not(.layout-portrait)[data-story-phase="reading"] .story-sentence,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-sentence {
+    font-size: clamp(0.95rem, 2dvh, 1.15rem);
+    line-height: 1.2;
+  }
+
+  #app:not(.layout-portrait)[data-story-phase="reading"] .story-sentence.story-question-beat,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-sentence.story-question-beat {
+    font-size: clamp(1rem, 2.1dvh, 1.2rem);
+  }
+
+  #app:not(.layout-portrait)[data-story-phase="reading"] .story-inline-icon .story-text-icon.math-item-token,
+  #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-inline-icon .story-text-icon.math-item-token {
+    width: clamp(28px, 3.4dvh, 34px) !important;
+    height: clamp(28px, 3.4dvh, 34px) !important;
+    min-width: clamp(28px, 3.4dvh, 34px) !important;
+    min-height: clamp(28px, 3.4dvh, 34px) !important;
+  }
+}
+
 #app[data-story-phase="reading"] .story-card,
 #app[data-story-phase="choosing_equation"] .story-card {
   padding: 6px 14px;
