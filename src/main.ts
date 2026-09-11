@@ -1388,7 +1388,7 @@ class App {
         const left = this.computeDesktopPanelLeft(columnWidth, cameraRect, stageLeft, stageRect);
 
         const cardsContainer = this.storyChoicesColumnEl.querySelector<HTMLElement>('.story-equation-cards-vertical');
-        const headerExtra = cardsContainer?.offsetTop ?? 48;
+        const headerExtra = cardsContainer?.offsetTop ?? 0;
         const top = Math.max(4, cameraRect.top - stageTop - headerExtra);
         const safeCardsHeight = cameraRect.height;
         const totalHeight = safeCardsHeight + headerExtra;

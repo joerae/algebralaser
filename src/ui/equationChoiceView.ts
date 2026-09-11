@@ -46,9 +46,6 @@ export class EquationChoiceView {
 
       return `
         <button id="${cand.id}" class="story-equation-card ${isSelected ? 'selected' : ''}" data-choice-id="${cand.id}" aria-label="Equation choice ${keyNum}">
-          <div class="choice-header">
-            <span class="choice-key-badge">${keyNum}</span>
-          </div>
           <div class="choice-equation-expr">
             <div class="choice-lhs">
               ${productHtml}
@@ -73,10 +70,6 @@ export class EquationChoiceView {
     ` : '';
 
     this.container.innerHTML = `
-      <div class="choices-prompt arithmetic-question">
-        <div class="question-text">Which equation matches?</div>
-        <div class="question-subtext">Aim laser ray & hold, or press 1–3</div>
-      </div>
       ${feedbackHtml}
       <div class="story-equation-cards-vertical">
         ${cardsHtml}

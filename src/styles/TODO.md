@@ -1,5 +1,8 @@
 TODO
 
+[  ] The camera view on the screen is moving around between the different phases, i.e. it starts higher up in some stories, and goes lower down during the resolution / next story phase. I don't want it to move around, it is disconcerting! Find the vertical distance it needs to be from the top, and keep it there for all modes. Note that this distance SHOULD change in the standard responsive way as we resize, but it shouldn't change between phases
+
+
 [x] For desktop mode, I'd like all selections to appear docked to the right of the camera. And just like mobile mode, I'd like to be able to toggle it over to the left in settings. This allows me to play with one hand.
   - **Notes on implementation:**
     - Added `desktopDock: 'left' | 'right'` state (defaulting to `'right'`) persisted in `localStorage` under `algebra_desktop_dock`.
