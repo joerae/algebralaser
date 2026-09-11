@@ -450,6 +450,56 @@ class App {
     this.markLayoutDirty();
   }
 
+  private syncModeBCameraFrame(isMobilePortrait: boolean) {
+    const appEl = document.getElementById('app');
+    const workspaceEl = document.querySelector<HTMLElement>('.workspace-center');
+    const workspaceTopEl = document.querySelector<HTMLElement>('.workspace-top');
+    if (!appEl || !this.cameraBoxEl || !workspaceEl || !workspaceTopEl) return;
+
+    if (this.game.getState().mode !== 'mode_b' || isMobilePortrait) {
+      appEl.style.removeProperty('--mode-b-camera-width');
+      appEl.style.removeProperty('--mode-b-camera-aspect');
+      appEl.style.removeProperty('--mode-b-camera-offset');
+      return;
+    }
+
+    const workspaceRect = workspaceEl.getBoundingClientRect();
+    const workspaceTopRect = workspaceTopEl.getBoundingClientRect();
+    const workspaceStyle = getComputedStyle(workspaceEl);
+    const rowGap = Number.parseFloat(workspaceStyle.rowGap || workspaceStyle.gap) || 0;
+    const availableHeight = Math.max(150, workspaceRect.bottom - workspaceTopRect.bottom - rowGap);
+
+    // Keep a permanent lane for Mode B's side cards. This makes the camera stay
+    // in the same place as phases change while allowing the camera + rail group
+    // to use the full stage width instead of reserving an empty rail on both sides.
+    const isCompactViewport = window.innerWidth <= 1366 || window.innerHeight <= 820;
+    const panelWidth = window.innerWidth >= 1600 ? 310 : (isCompactViewport ? 250 : 280);
+    const panelGap = 16;
+    const horizontalBudget = Math.max(220, workspaceRect.width - panelWidth - panelGap - 24);
+
+    const mediaAspect = this.videoEl.videoWidth && this.videoEl.videoHeight
+      ? this.videoEl.videoWidth / this.videoEl.videoHeight
+      : 4 / 3;
+    const isCompactCamera = this.cameraBoxEl.classList.contains('size-compact');
+    const maxWidth = isCompactCamera ? 560 : 1100;
+    const maxHeight = isCompactCamera ? Math.min(400, availableHeight) : availableHeight;
+    const cameraWidth = Math.max(200, Math.floor(Math.min(horizontalBudget, maxHeight * mediaAspect, maxWidth)));
+    const cameraOffset = (panelWidth + panelGap) / 2 * (this.desktopDock === 'right' ? -1 : 1);
+
+    const widthValue = `${cameraWidth}px`;
+    const aspectValue = String(mediaAspect);
+    const offsetValue = `${cameraOffset}px`;
+    if (appEl.style.getPropertyValue('--mode-b-camera-width') !== widthValue) {
+      appEl.style.setProperty('--mode-b-camera-width', widthValue);
+    }
+    if (appEl.style.getPropertyValue('--mode-b-camera-aspect') !== aspectValue) {
+      appEl.style.setProperty('--mode-b-camera-aspect', aspectValue);
+    }
+    if (appEl.style.getPropertyValue('--mode-b-camera-offset') !== offsetValue) {
+      appEl.style.setProperty('--mode-b-camera-offset', offsetValue);
+    }
+  }
+
   private handleToggleStoryMode(enabled: boolean) {
     try {
       localStorage.setItem('algebra_story_mode', enabled ? 'true' : 'false');
@@ -1146,6 +1196,7 @@ class App {
         requestAnimationFrame(() => this.markLayoutDirty());
       }
     }
+    this.syncModeBCameraFrame(isMobilePortrait);
     this.fitEquationRail();
     const stageRect = document.querySelector<HTMLElement>('.stage-container')?.getBoundingClientRect();
     const stageLeft = stageRect?.left ?? 0;

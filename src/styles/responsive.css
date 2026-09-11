@@ -1758,15 +1758,10 @@ body {
   }
 }
 
-/* Stable camera anchor, sized to the equation itself rather than equation + story bar. */
+/* Stable, compact pre-camera lane. Full story copy is deliberately styled to
+   fit this same lane so it cannot overflow upward or move the camera by phase. */
 :root {
-  --workspace-top-height: 240px;
-}
-
-@media (max-height: 820px), (max-width: 1366px) {
-  :root {
-    --workspace-top-height: 145px;
-  }
+  --workspace-top-height: clamp(145px, 18dvh, 165px);
 }
 
 @media (max-height: 700px) and (orientation: landscape) {
@@ -1807,6 +1802,77 @@ body {
   min-height: 0 !important;
   max-height: none !important;
   flex: 1 1 0 !important;
+}
+
+/* The full story stays readable without becoming a page-wide banner. Its
+   bounded metrics guarantee the title and four beats fit the lane above. */
+#app[data-story-phase="reading"] .story-presentation-panel,
+#app[data-story-phase="choosing_equation"] .story-presentation-panel {
+  width: min(680px, calc(100vw - max(32px, 8vw)));
+}
+
+#app[data-story-phase="reading"] .story-card,
+#app[data-story-phase="choosing_equation"] .story-card {
+  padding: 6px 14px;
+}
+
+#app[data-story-phase="reading"] .story-card-header,
+#app[data-story-phase="choosing_equation"] .story-card-header {
+  gap: 5px;
+  margin-bottom: 2px;
+  padding-bottom: 3px;
+}
+
+#app[data-story-phase="reading"] .story-card-icon,
+#app[data-story-phase="choosing_equation"] .story-card-icon {
+  font-size: 0.95rem;
+}
+
+#app[data-story-phase="reading"] .story-card-title,
+#app[data-story-phase="choosing_equation"] .story-card-title {
+  font-size: 0.8rem;
+}
+
+#app[data-story-phase="reading"] .story-beats-container,
+#app[data-story-phase="choosing_equation"] .story-beats-container {
+  min-height: 0;
+  gap: 2px;
+}
+
+#app[data-story-phase="reading"] .story-sentence,
+#app[data-story-phase="choosing_equation"] .story-sentence {
+  font-size: clamp(0.82rem, 1.7dvh, 1rem);
+  line-height: 1.2;
+}
+
+#app[data-story-phase="reading"] .story-sentence.story-question-beat,
+#app[data-story-phase="choosing_equation"] .story-sentence.story-question-beat {
+  margin-top: 0;
+  padding-top: 1px;
+  font-size: clamp(0.86rem, 1.8dvh, 1.04rem);
+}
+
+#app[data-story-phase="reading"] .story-inline-icon .story-text-icon.math-item-token,
+#app[data-story-phase="choosing_equation"] .story-inline-icon .story-text-icon.math-item-token {
+  width: clamp(24px, 3dvh, 30px) !important;
+  height: clamp(24px, 3dvh, 30px) !important;
+  min-width: clamp(24px, 3dvh, 30px) !important;
+  min-height: clamp(24px, 3dvh, 30px) !important;
+}
+
+/* JS resolves the limiting axis from the measured stage. Width and aspect then
+   own the outer frame, so the feed never sits inside a stretched black tower. */
+#app[data-mode="mode_b"]:not(.layout-portrait) .camera-box {
+  align-self: center;
+  flex: 0 0 auto !important;
+  width: var(--mode-b-camera-width, min(calc(100vw - 580px), 1100px));
+  height: auto !important;
+  min-height: 0 !important;
+  max-width: none;
+  max-height: none !important;
+  aspect-ratio: var(--mode-b-camera-aspect, 4 / 3);
+  transform: translateX(var(--mode-b-camera-offset, 0px));
+  transition-property: border-color, box-shadow;
 }
 
 /* Persisted portrait dock preference and final narrow-screen overflow guards. */

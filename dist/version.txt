@@ -1,3 +1,19 @@
+Version 1.12.10
+Date: 2026-09-11
+
+Release Notes:
+- Keep the complete story card visible and give it a compact readable width at every viewport shape.
+- Size and position the Mode B camera from its real vertical and side-rail budgets, eliminating stretched frames and black letterboxing.
+- Files: src/main.ts, src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
+Version 1.12.9
+Date: 2026-09-11
+
+Release Notes:
+- Keep the full story header visible in tall, narrow laptop and tablet windows by using compact story typography.
+- Preserve the camera's 4:3 shape in that layout instead of allowing flex growth to create an excessively tall camera.
+- Files: src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.8
 Date: 2026-09-11
 
