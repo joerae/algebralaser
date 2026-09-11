@@ -1875,6 +1875,15 @@ body {
   transition-property: border-color, box-shadow;
 }
 
+/* Desktop Mode B shares one horizontal geometry: the forge heading occupies
+   the side-card lane while the equation begins at the camera's left edge.
+   Portrait already gives both pieces their own collision-free arrangement. */
+#app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .equation-rail.mode-b-rail {
+  width: var(--mode-b-camera-width, min(calc(100vw - 580px), 1100px));
+  max-width: none;
+  transform: translateX(var(--mode-b-camera-offset, 0px));
+}
+
 /* Keep equation choices continuous across the desktop/portrait-dock handoff.
    The previous 17px ceiling made a tiny width change halve their visual size. */
 @media (max-width: 768px) and (orientation: portrait) {

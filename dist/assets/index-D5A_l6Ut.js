@@ -425,7 +425,15 @@
       <div class="answer-cards-list">
         ${o}
       </div>
-    `,this.container.querySelectorAll(".answer-card").forEach(l=>{const c=Number(l.getAttribute("data-choice")),d=l.querySelector(".dwell-fill");this.cardElements.set(l.id,{cardEl:l,fillCircle:d}),l.addEventListener("click",()=>{this.onSelectCallback(c)})})}updateDwell(t,s){for(const[i,{cardEl:n,fillCircle:r}]of this.cardElements){const a=t===i;if(n.classList.toggle("hovered",a),r){const o=a?Math.max(0,Math.min(1,s)):0,l=this.circumference*(1-o);r.style.strokeDashoffset=`${l}`}}}getInteractiveElements(){const t=[];for(const[s,{cardEl:i}]of this.cardElements)t.push({id:s,type:"answer",element:i});return t}}const Jd=`Version 1.12.11
+    `,this.container.querySelectorAll(".answer-card").forEach(l=>{const c=Number(l.getAttribute("data-choice")),d=l.querySelector(".dwell-fill");this.cardElements.set(l.id,{cardEl:l,fillCircle:d}),l.addEventListener("click",()=>{this.onSelectCallback(c)})})}updateDwell(t,s){for(const[i,{cardEl:n,fillCircle:r}]of this.cardElements){const a=t===i;if(n.classList.toggle("hovered",a),r){const o=a?Math.max(0,Math.min(1,s)):0,l=this.circumference*(1-o);r.style.strokeDashoffset=`${l}`}}}getInteractiveElements(){const t=[];for(const[s,{cardEl:i}]of this.cardElements)t.push({id:s,type:"answer",element:i});return t}}const Jd=`Version 1.12.12
+Date: 2026-09-11
+
+Release Notes:
+- Align wider Mode B equation panels with the camera so they begin beside, rather than beneath, the forge heading.
+- Keep the existing collision-free portrait arrangement unchanged.
+- Files: src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
+Version 1.12.11
 Date: 2026-09-11
 
 Release Notes:
@@ -844,7 +852,7 @@ Release Notes:\r
         <button id="btn-hint" class="icon-btn">💡 Hint</button>
         <button id="btn-undo" class="icon-btn">↩ Undo</button>
         <button id="btn-restart" class="icon-btn">🔄 Restart</button>
-        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.12.11</button>
+        <button id="btn-version" class="version-badge" title="Click to view Version Notes">v1.12.12</button>
       </div>
     `,this.footerEl.querySelector("#btn-hint")?.addEventListener("click",()=>this.callbacks.onHint()),this.footerEl.querySelector("#btn-undo")?.addEventListener("click",()=>this.callbacks.onUndo()),this.footerEl.querySelector("#btn-restart")?.addEventListener("click",()=>this.callbacks.onRestart()),this.footerEl.querySelector("#btn-version")?.addEventListener("click",()=>this.showVersionModal())}showVersionModal(){this.modalEl.style.display="flex",this.modalEl.innerHTML=`
       <div class="modal-content" style="max-width: 580px;">

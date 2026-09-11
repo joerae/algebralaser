@@ -1,3 +1,11 @@
+Version 1.12.12
+Date: 2026-09-11
+
+Release Notes:
+- Align wider Mode B equation panels with the camera so they begin beside, rather than beneath, the forge heading.
+- Keep the existing collision-free portrait arrangement unchanged.
+- Files: src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.11
 Date: 2026-09-11
 
