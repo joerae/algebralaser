@@ -19,6 +19,7 @@ export interface HudCallbacks {
   onToggleCameraAutoStart?: (enabled: boolean) => void;
   onChooseKeyboard?: () => void;
   onCameraDockChange?: (dock: 'left' | 'right') => void;
+  onDesktopDockChange?: (dock: 'left' | 'right') => void;
 }
 
 export class HudView {
@@ -41,6 +42,7 @@ export class HudView {
   private skipTutorial: boolean = false;
   private cameraAutoStart: boolean = true;
   private cameraDock: 'left' | 'right' = 'right';
+  private desktopDock: 'left' | 'right' = 'right';
 
   constructor(
     header: HTMLElement,
@@ -64,6 +66,7 @@ export class HudView {
       this.skipTutorial = localStorage.getItem('algebra_skip_tutorial') === 'true';
       this.cameraAutoStart = localStorage.getItem('algebra_camera_enabled') !== 'false';
       this.cameraDock = localStorage.getItem('algebra_camera_dock') === 'left' ? 'left' : 'right';
+      this.desktopDock = localStorage.getItem('algebra_desktop_dock') === 'left' ? 'left' : 'right';
     } catch {}
     this.renderHeader();
     this.renderFooter('Get Y on its own.');
@@ -85,6 +88,20 @@ export class HudView {
     if (chk) {
       chk.checked = enabled;
     }
+  }
+
+  public setSkipTutorial(enabled: boolean) {
+    this.skipTutorial = enabled;
+    const chk = this.modalEl.querySelector<HTMLInputElement>('#chk-skip-tutorial');
+    if (chk) {
+      chk.checked = enabled;
+    }
+  }
+
+  public setDesktopDock(dock: 'left' | 'right') {
+    this.desktopDock = dock;
+    const checkbox = this.modalEl.querySelector<HTMLInputElement>('#chk-desktop-dock-right');
+    if (checkbox) checkbox.checked = dock === 'right';
   }
 
   public setMode(mode: SolverMode) {
@@ -337,6 +354,16 @@ export class HudView {
         </div>
         <div class="setting-row">
           <div>
+            <div class="setting-label">Selections on Right (Desktop)</div>
+            <div class="setting-desc">Dock all selections to the right of the camera. Toggle off to dock to the left for one-handed play.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="chk-desktop-dock-right" ${this.desktopDock === 'right' ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
             <div class="setting-label">Camera on Right (Mobile)</div>
             <div class="setting-desc">Dock the camera on the right and question choices on the left in portrait mode.</div>
           </div>
@@ -404,6 +431,14 @@ export class HudView {
         localStorage.setItem('algebra_camera_dock', this.cameraDock);
       } catch {}
       this.callbacks.onCameraDockChange?.(this.cameraDock);
+    });
+
+    this.modalEl.querySelector('#chk-desktop-dock-right')?.addEventListener('change', (e) => {
+      this.desktopDock = (e.target as HTMLInputElement).checked ? 'right' : 'left';
+      try {
+        localStorage.setItem('algebra_desktop_dock', this.desktopDock);
+      } catch {}
+      this.callbacks.onDesktopDockChange?.(this.desktopDock);
     });
 
     this.modalEl.querySelector('#chk-hands-only')?.addEventListener('change', (e) => {

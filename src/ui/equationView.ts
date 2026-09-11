@@ -169,7 +169,7 @@ export class EquationView {
       this.container.innerHTML = `
         <div class="solved-panel">
           ${historyHtml}
-          <div class="equation-rail" style="padding: 6px 36px; min-height: 76px;">
+          <div class="equation-rail solved-rail">
             <div class="solved-line-wrap">
               ${this.renderVarSpan()}
               <span class="math-symbol symbol-equals">=</span>

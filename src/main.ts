@@ -59,6 +59,7 @@ class App {
   private inversePanelEl: HTMLElement | null = null;
   private isCameraRunning: boolean = false;
   private cameraDock: 'left' | 'right' = 'right';
+  private desktopDock: 'left' | 'right' = 'right';
   private isSplitting: boolean = false;
   private isModeBCleanupAnimating: boolean = false;
   private isModeBForgeAnimating: boolean = false;
@@ -115,6 +116,12 @@ class App {
     const savedMode = (localStorage.getItem('algebra_solver_mode') as SolverMode) || DEFAULT_MODE;
     const initialSkipTutorial = localStorage.getItem('algebra_skip_tutorial') === 'true';
     this.cameraDock = localStorage.getItem('algebra_camera_dock') === 'left' ? 'left' : 'right';
+    this.desktopDock = localStorage.getItem('algebra_desktop_dock') === 'left' ? 'left' : 'right';
+    const initialAppEl = document.getElementById('app');
+    if (initialAppEl) {
+      initialAppEl.dataset.cameraDock = this.cameraDock;
+      initialAppEl.dataset.desktopDock = this.desktopDock;
+    }
     this.game = new GameController(undefined, savedMode, initialSkipTutorial);
     this.interaction = new InteractionController(this.game);
     this.storyController = new StoryController(this.game.getCurrentLevel(), initialStoryMode);
@@ -133,6 +140,10 @@ class App {
         return;
       }
       this.equationView.triggerCollapse(correctVal, done);
+    };
+
+    this.game.onTutorialCompleted = () => {
+      this.hudView.setSkipTutorial(true);
     };
 
     // Wire index curl / hold drop to popping animation in Mode A
@@ -342,6 +353,12 @@ class App {
         this.cameraDock = dock;
         const appEl = document.getElementById('app');
         if (appEl) appEl.dataset.cameraDock = dock;
+        this.markLayoutDirty();
+      },
+      onDesktopDockChange: (dock) => {
+        this.desktopDock = dock;
+        const appEl = document.getElementById('app');
+        if (appEl) appEl.dataset.desktopDock = dock;
         this.markLayoutDirty();
       }
     }, savedMode, initialStoryMode);
@@ -808,6 +825,7 @@ class App {
     if (appEl) {
       appEl.dataset.cameraActive = String(active);
       appEl.dataset.cameraDock = this.cameraDock;
+      appEl.dataset.desktopDock = this.desktopDock;
     }
     this.hudView.setCameraState(active);
     this.videoEl.classList.toggle('active', active);
@@ -1060,6 +1078,25 @@ class App {
     }
   }
 
+  private computeDesktopPanelLeft(
+    columnWidth: number,
+    cameraRect: DOMRect,
+    stageLeft: number,
+    stageRect?: DOMRect
+  ): number {
+    if (this.desktopDock === 'right') {
+      let left = cameraRect.right - stageLeft + 16;
+      if (stageRect && left + columnWidth > stageRect.width - 12) {
+        left = Math.max(10, stageRect.width - columnWidth - 12);
+      }
+      return left;
+    } else {
+      let left = cameraRect.left - stageLeft - columnWidth - 14;
+      if (left < 10) left = 10;
+      return left;
+    }
+  }
+
   private fitEquationRail() {
     const rail = this.equationAreaEl?.querySelector<HTMLElement>('.equation-rail');
     if (!rail) return;
@@ -1095,6 +1132,7 @@ class App {
       appEl.dataset.storyPhase = storyState.enabled ? storyState.phase : 'disabled';
       appEl.dataset.storyFeedback = String(Boolean(storyState.lastFeedback));
       appEl.dataset.portraitPanel = portraitPanelValue;
+      appEl.dataset.desktopDock = this.desktopDock;
       appEl.classList.toggle('layout-portrait', isMobilePortrait);
       if (this.cameraBoxEl && this.isCameraRunning) {
         appEl.style.setProperty('--camera-inline-size', `${this.cameraBoxEl.getBoundingClientRect().width}px`);
@@ -1141,8 +1179,7 @@ class App {
         this.forgePanelEl.classList.remove('panel-portrait-dock');
         const cameraRect = this.cameraBoxEl.getBoundingClientRect();
         const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 145 : 165;
-        let left = cameraRect.left - stageLeft - columnWidth - 14;
-        if (left < 10) left = 10;
+        const left = this.computeDesktopPanelLeft(columnWidth, cameraRect, stageLeft, stageRect);
 
         const cardsContainer = this.forgePanelEl.querySelector<HTMLElement>('.forge-cards-vertical');
         const headerHeight = cardsContainer?.offsetTop ?? 46;
@@ -1205,8 +1242,7 @@ class App {
         this.blasterPanelEl.classList.remove('panel-portrait-dock');
         const cameraRect = this.cameraBoxEl.getBoundingClientRect();
         const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 145 : 165;
-        let left = cameraRect.left - columnWidth - 14;
-        if (left < 10) left = 10;
+        const left = this.computeDesktopPanelLeft(columnWidth, cameraRect, stageLeft, stageRect);
 
         const headerEl = this.blasterPanelEl.querySelector<HTMLElement>('.blaster-header');
         const headerHeight = headerEl ? headerEl.offsetHeight + 6 : 46;
@@ -1265,8 +1301,7 @@ class App {
         this.inversePanelEl.classList.remove('panel-portrait-dock');
         const cameraRect = this.cameraBoxEl.getBoundingClientRect();
         const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 150 : 175;
-        let left = cameraRect.left - columnWidth - 14;
-        if (left < 10) left = 10;
+        const left = this.computeDesktopPanelLeft(columnWidth, cameraRect, stageLeft, stageRect);
 
         const headerEl = this.inversePanelEl.querySelector<HTMLElement>('.inverse-header');
         const headerHeight = headerEl ? headerEl.offsetHeight + 6 : 46;
@@ -1306,14 +1341,15 @@ class App {
         const sourceRect = activeCard.getBoundingClientRect();
         const targetRect = targetSideEl.getBoundingClientRect();
 
-        const startX = sourceRect.right + 6;
+        const isSourceOnRight = sourceRect.left >= targetRect.right;
+        const startX = isSourceOnRight ? sourceRect.left - 6 : sourceRect.right + 6;
         const startY = sourceRect.top + sourceRect.height / 2;
-        const endX = targetRect.left - 10;
+        const endX = isSourceOnRight ? targetRect.right + 10 : targetRect.left - 10;
         const endY = targetRect.top + targetRect.height / 2;
 
         const cp1X = startX + (endX - startX) * 0.45;
         const cp1Y = startY + (endY - startY) * 0.45;
-        const cp2X = endX + 40;
+        const cp2X = isSourceOnRight ? endX - 40 : endX + 40;
         const cp2Y = endY;
 
         const d = `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
@@ -1349,11 +1385,7 @@ class App {
       } else {
         this.storyChoicesColumnEl.classList.remove('panel-portrait-dock');
         const columnWidth = window.innerWidth >= 1600 ? 310 : (window.innerWidth <= 1366 || window.innerHeight <= 820 ? 250 : 280);
-
-        let left = cameraRect.right - stageLeft + 16;
-        if (stageRect && left + columnWidth > stageRect.width - 12) {
-          left = Math.max(10, stageRect.width - columnWidth - 12);
-        }
+        const left = this.computeDesktopPanelLeft(columnWidth, cameraRect, stageLeft, stageRect);
 
         const cardsContainer = this.storyChoicesColumnEl.querySelector<HTMLElement>('.story-equation-cards-vertical');
         const headerExtra = cardsContainer?.offsetTop ?? 48;
@@ -1417,11 +1449,7 @@ class App {
     } else {
       this.answersColumnEl.classList.remove('panel-portrait-dock');
       const columnWidth = window.innerWidth <= 1366 || window.innerHeight <= 820 ? 220 : 260;
-
-      let left = cameraRect.right - stageLeft + 16;
-      if (stageRect && left + columnWidth > stageRect.width - 12) {
-        left = Math.max(10, stageRect.width - columnWidth - 12);
-      }
+      const left = this.computeDesktopPanelLeft(columnWidth, cameraRect, stageLeft, stageRect);
 
       const cardsContainer = this.answersColumnEl.querySelector<HTMLElement>('.answer-cards-list');
       const questionHeight = cardsContainer?.offsetTop ?? 48;
@@ -1459,12 +1487,15 @@ class App {
         this.arrowPathEl.setAttribute('d', d);
         this.arrowSvgEl.style.display = 'block';
       } else {
-        const startX = termRect.right + 6;
+        const isQuestionOnRight = qRect.left >= termRect.right;
+        const startX = isQuestionOnRight ? termRect.right + 6 : termRect.left - 6;
         const startY = termRect.top + termRect.height / 2;
-        const endX = qRect.left - 10;
+        const endX = isQuestionOnRight ? qRect.left - 10 : qRect.right + 10;
         const endY = qRect.top + 28;
 
-        const cornerX = Math.max(startX + 24, Math.min(cameraRect.right + 10, endX - 10));
+        const cornerX = isQuestionOnRight
+          ? Math.max(startX + 24, Math.min(cameraRect.right + 10, endX - 10))
+          : Math.min(startX - 24, Math.max(cameraRect.left - 10, endX + 10));
         const d = `M ${startX} ${startY} C ${cornerX} ${startY}, ${cornerX} ${endY}, ${endX} ${endY}`;
         this.arrowPathEl.setAttribute('d', d);
         this.arrowSvgEl.style.display = 'block';

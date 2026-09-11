@@ -107,4 +107,15 @@ describe('buildConcreteStory', () => {
 
     expect(items.map(i => i.id)).toEqual(['wand', 'broomstick', 'cauldron', 'chocolate']);
   });
+
+  it('finishes story beats with the call to action "Which equation matches?"', () => {
+    const levels = generateCuratedLevelSet();
+    for (const lvl of levels) {
+      const item = getMagicItemForPuzzle(lvl.id);
+      const story = buildConcreteStory(lvl, item);
+      const lastBeat = story.beats[story.beats.length - 1];
+      expect(lastBeat.type).toBe('question');
+      expect(lastBeat.text).toBe('Which equation matches?');
+    }
+  });
 });

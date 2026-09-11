@@ -76,6 +76,18 @@ export class GameController {
     this.notify();
   }
 
+  public onBeforeCorrectAdvance?: (correctVal: number, done: () => void) => void;
+  public onTutorialCompleted?: () => void;
+
+  public markTutorialCompleted(): void {
+    if (this.skipTutorial) return;
+    this.skipTutorial = true;
+    try {
+      localStorage.setItem('algebra_skip_tutorial', 'true');
+    } catch {}
+    this.onTutorialCompleted?.();
+  }
+
   public subscribe(listener: StateListener): () => void {
     this.listeners.add(listener);
     listener(this.state, { 
@@ -86,6 +98,12 @@ export class GameController {
   }
 
   private notify() {
+    if (!this.skipTutorial) {
+      const currentId = this.levels[this.currentLevelIndex]?.id;
+      if (currentId === 'curated-4' && (this.state.stage === 'solved' || this.state.phase === 'solved')) {
+        this.markTutorialCompleted();
+      }
+    }
     this.listeners.forEach(fn => fn(this.state, {
       currentLevel: this.currentLevelIndex + 1,
       totalLevels: this.levels.length
@@ -314,8 +332,6 @@ export class GameController {
     return true;
   }
 
-  public onBeforeCorrectAdvance?: (correctVal: number, done: () => void) => void;
-
   public answer(choice: number): boolean {
     const canAnswerModeB = this.state.mode === 'mode_b'
       && this.state.phase === 'awaiting_cleanup'
@@ -361,6 +377,9 @@ export class GameController {
   }
 
   public nextLevel(): void {
+    if (this.levels[this.currentLevelIndex]?.id === 'curated-4') {
+      this.markTutorialCompleted();
+    }
     if (this.currentLevelIndex < this.levels.length - 1) {
       this.currentLevelIndex++;
     } else {

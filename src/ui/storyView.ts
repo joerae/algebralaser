@@ -54,8 +54,33 @@ export class StoryView {
 
     // 1. Reading & Choosing Equation: show rich story card & concise question
     if (phase === 'reading' || phase === 'choosing_equation') {
+      const panel = this.container.querySelector<HTMLElement>('.story-presentation-panel:not(.condensing-active)');
+      const beatsContainer = panel?.querySelector<HTMLElement>('.story-beats-container');
+      const isSameStory = panel && panel.dataset.storyItemId === item.id && beatsContainer && beatsContainer.children.length === beats.length;
+
+      if (isSameStory) {
+        // Update existing sentence classes in-place without destroying DOM or retriggering card animation
+        const sentenceEls = beatsContainer.querySelectorAll<HTMLElement>('.story-sentence');
+        sentenceEls.forEach((el, idx) => {
+          const isRevealed = idx < revealedSentenceCount;
+          const isHighlighted = highlightedBeat === beats[idx]?.highlightTarget;
+          const isQuestion = beats[idx]?.type === 'question';
+          el.className = `story-sentence ${isRevealed ? 'sentence-revealed' : 'sentence-pending'} ${isHighlighted ? 'sentence-highlight' : ''} ${isQuestion ? 'story-question-beat' : ''}`;
+        });
+
+        // Update popover if state changed
+        const popoverEl = this.container.querySelector('#story-popover-backdrop');
+        if (isPopoverOpen && !popoverEl) {
+          this.container.insertAdjacentHTML('beforeend', popoverHtml);
+          this.wirePopoverListeners();
+        } else if (!isPopoverOpen && popoverEl) {
+          popoverEl.remove();
+        }
+        return;
+      }
+
       this.container.innerHTML = `
-        <div class="story-presentation-panel">
+        <div class="story-presentation-panel" data-story-item-id="${item.id}">
           <div class="story-card">
             <div class="story-card-header">
               <span class="story-card-icon">${item.emojiFallback}</span>

@@ -73,4 +73,26 @@ describe('GameController', () => {
     expect(gc.isTutorialLevel()).toBe(true);
     expect(gc.getCurrentLevel().id).toBe('curated-1');
   });
+
+  it('automatically toggles tutorial off and fires callback when finishing the 4th level', () => {
+    let completedFired = false;
+    const gc = new GameController();
+    gc.onTutorialCompleted = () => {
+      completedFired = true;
+    };
+
+    expect(gc.isSkipTutorialEnabled()).toBe(false);
+
+    // Advance to level 4
+    gc.nextLevel(); // lvl 2
+    gc.nextLevel(); // lvl 3
+    gc.nextLevel(); // lvl 4 (curated-4)
+    expect(gc.isSkipTutorialEnabled()).toBe(false);
+    expect(completedFired).toBe(false);
+
+    // Finishing/advancing beyond level 4
+    gc.nextLevel();
+    expect(gc.isSkipTutorialEnabled()).toBe(true);
+    expect(completedFired).toBe(true);
+  });
 });

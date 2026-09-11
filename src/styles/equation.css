@@ -365,6 +365,12 @@
   isolation: isolate;
 }
 
+.solved-panel .equation-rail.solved-rail {
+  padding: 6px 36px;
+  min-height: 76px;
+  width: auto;
+}
+
 .solved-line-wrap {
   display: flex;
   align-items: center;

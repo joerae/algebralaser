@@ -278,19 +278,75 @@
     font-size: 22px;
   }
 
+  /* Solved state maintains consistent equation-area height so camera window is never squeezed */
+  #app[data-phase="solved"] .equation-area,
+  #app[data-mode="mode_b"][data-phase="solved"] .equation-area {
+    height: 145px !important;
+    min-height: 145px !important;
+    max-height: 145px !important;
+    flex: 0 0 145px !important;
+    flex-basis: 145px !important;
+  }
+
+  #app[data-phase="solved"] .equation-history-container {
+    display: none !important;
+  }
+
+  #app[data-phase="solved"] .solved-panel,
+  .solved-panel {
+    gap: 3px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #app[data-phase="solved"] .equation-rail.solved-rail,
+  .solved-panel .equation-rail.solved-rail {
+    min-height: 42px !important;
+    padding: 2px 14px !important;
+    gap: 6px !important;
+  }
+
   .solved-line-wrap {
-    font-size: 36px;
-    gap: 8px;
+    font-size: 32px !important;
+    gap: 8px !important;
+  }
+
+  .solved-check {
+    font-size: 28px !important;
+    margin-left: 4px !important;
+  }
+
+  #app[data-phase="solved"] .solved-actions {
+    margin-top: 2px !important;
+    gap: 8px !important;
   }
 
   .action-btn-primary {
-    padding: 8px 20px;
-    font-size: 15px;
+    padding: 6px 18px !important;
+    font-size: 14px !important;
+    min-height: 34px !important;
+    border-radius: 10px !important;
+  }
+
+  .action-btn-dwell .btn-dwell-svg {
+    width: 26px !important;
+    height: 26px !important;
   }
 
   .open-palm-advance-badge {
-    padding: 3px 10px;
-    font-size: 11px;
+    margin-top: 1px !important;
+    padding: 2px 10px !important;
+    font-size: 11px !important;
+    gap: 6px !important;
+  }
+
+  .palm-ring-wrap {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .palm-emoji {
+    font-size: 13px !important;
   }
 }
 
@@ -807,6 +863,29 @@ body {
   .story-solving-bar {
     padding-top: 4px;
     padding-bottom: 4px;
+  }
+
+  #app[data-phase="solved"] .equation-area,
+  #app[data-mode="mode_b"][data-phase="solved"] .equation-area {
+    height: clamp(76px, 18dvh, 112px) !important;
+    min-height: clamp(76px, 18dvh, 112px) !important;
+    max-height: clamp(76px, 18dvh, 112px) !important;
+    flex: 0 0 clamp(76px, 18dvh, 112px) !important;
+    flex-basis: clamp(76px, 18dvh, 112px) !important;
+  }
+
+  #app[data-phase="solved"] .equation-rail.solved-rail,
+  .solved-panel .equation-rail.solved-rail {
+    min-height: 36px !important;
+    padding: 2px 10px !important;
+  }
+
+  #app[data-phase="solved"] .solved-line-wrap {
+    font-size: clamp(22px, 3.5dvh, 28px) !important;
+  }
+
+  #app[data-phase="solved"] .solved-check {
+    font-size: clamp(20px, 3.2dvh, 24px) !important;
   }
 }
 
@@ -1447,13 +1526,15 @@ body {
   }
 }
 
-/* Solved state owns enough vertical room for its answer and controls. */
-#app[data-mode="mode_b"][data-phase="solved"] .equation-area {
-  height: clamp(205px, 32dvh, 300px);
-  min-height: clamp(205px, 32dvh, 300px);
-  max-height: clamp(205px, 32dvh, 300px);
-  flex-basis: clamp(205px, 32dvh, 300px);
-  justify-content: flex-start;
+/* Solved state owns enough vertical room for its answer and controls on spacious desktop screens. */
+@media (min-height: 821px) and (min-width: 1367px) {
+  #app[data-mode="mode_b"][data-phase="solved"] .equation-area {
+    height: clamp(205px, 32dvh, 300px);
+    min-height: clamp(205px, 32dvh, 300px);
+    max-height: clamp(205px, 32dvh, 300px);
+    flex-basis: clamp(205px, 32dvh, 300px);
+    justify-content: flex-start;
+  }
 }
 
 #app[data-mode="mode_b"][data-phase="solved"] .solved-panel {

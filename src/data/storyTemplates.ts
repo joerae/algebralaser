@@ -46,7 +46,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
           { type: 'objects', text: `I bought a ${item.singular}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `There was a ${reason} fee of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did the ${item.singular}{{ITEM_ICON}} cost?` }
+          { type: 'question', text: 'Which equation matches?' }
         ]
       };
 
@@ -59,7 +59,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
           { type: 'objects', text: `I bought a ${item.singular}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `I got a discount of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did the ${item.singular}{{ITEM_ICON}} cost?` }
+          { type: 'question', text: 'Which equation matches?' }
         ]
       };
 
@@ -71,7 +71,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
         beats: [
           { type: 'objects', text: `I bought ${a} ${item.plural}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did each ${item.singular}{{ITEM_ICON}} cost?` }
+          { type: 'question', text: 'Which equation matches?' }
         ]
       };
 
@@ -85,7 +85,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
           { type: 'objects', text: `I bought ${a} ${item.plural}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `There was a ${reason} fee of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did each ${item.singular}{{ITEM_ICON}} cost?` }
+          { type: 'question', text: 'Which equation matches?' }
         ]
       };
 
@@ -98,7 +98,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
           { type: 'objects', text: `I bought ${a} ${item.plural}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `I got a discount of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much did each ${item.singular}{{ITEM_ICON}} cost?` }
+          { type: 'question', text: 'Which equation matches?' }
         ]
       };
 
@@ -111,7 +111,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
         beats: [
           { type: 'objects', text: `I bought 1/${d} of a ${item.singular}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much does a whole ${item.singular}{{ITEM_ICON}} cost?` }
+          { type: 'question', text: 'Which equation matches?' }
         ]
       };
     }
@@ -127,7 +127,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
           { type: 'objects', text: `I bought 1/${d} of a ${item.singular}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `There was a ${reason} fee of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much does a whole ${item.singular}{{ITEM_ICON}} cost?` }
+          { type: 'question', text: 'Which equation matches?' }
         ]
       };
     }
@@ -142,7 +142,7 @@ export function buildStoryBeats(equation: LinearEquationDef, item: MagicItem): {
           { type: 'objects', text: `I bought 1/${d} of a ${item.singular}{{ITEM_ICON}}.`, highlightTarget: 'objects' },
           { type: 'modifier', text: `I got a discount of ${absB} gold.`, highlightTarget: 'modifier' },
           { type: 'total', text: `I paid ${c} gold.`, highlightTarget: 'total' },
-          { type: 'question', text: `How much does a whole ${item.singular}{{ITEM_ICON}} cost?` }
+          { type: 'question', text: 'Which equation matches?' }
         ]
       };
     }
