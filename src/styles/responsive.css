@@ -1821,9 +1821,10 @@ body {
   max-width: min(520px, calc(100vw - max(32px, 8vw)));
 }
 
-/* On tall landscape-camera layouts, use the otherwise empty top-slot height
-   inside the story card. The slot itself is unchanged, so the camera stays put. */
-@media (min-height: 840px) {
+/* On landscape-camera layouts, use the otherwise empty top-slot height inside
+   the story card. Fluid spacing keeps the larger treatment continuous through
+   Chromebook heights instead of switching at a device-height breakpoint. The
+   slot itself is unchanged, so the camera stays put. */
   #app:not(.layout-portrait)[data-story-phase="reading"] .workspace-top .story-area,
   #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .workspace-top .story-area,
   #app:not(.layout-portrait)[data-story-phase="reading"] .story-presentation-panel,
@@ -1838,13 +1839,13 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-block: 9px;
+    padding-block: clamp(7px, 1dvh, 9px);
   }
 
   #app:not(.layout-portrait)[data-story-phase="reading"] .story-card-header,
   #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-card-header {
-    margin-bottom: 4px;
-    padding-bottom: 4px;
+    margin-bottom: clamp(2px, 0.45dvh, 4px);
+    padding-bottom: clamp(2px, 0.45dvh, 4px);
   }
 
   #app:not(.layout-portrait)[data-story-phase="reading"] .story-card-title,
@@ -1854,7 +1855,7 @@ body {
 
   #app:not(.layout-portrait)[data-story-phase="reading"] .story-beats-container,
   #app:not(.layout-portrait)[data-story-phase="choosing_equation"] .story-beats-container {
-    gap: 3px;
+    gap: clamp(2px, 0.4dvh, 3px);
   }
 
   #app:not(.layout-portrait)[data-story-phase="reading"] .story-sentence,
@@ -1875,8 +1876,6 @@ body {
     min-width: clamp(28px, 3.4dvh, 34px) !important;
     min-height: clamp(28px, 3.4dvh, 34px) !important;
   }
-}
-
 #app[data-story-phase="reading"] .story-card,
 #app[data-story-phase="choosing_equation"] .story-card {
   padding: 6px 14px;
@@ -1947,6 +1946,12 @@ body {
 #app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .equation-rail.mode-b-rail {
   width: var(--mode-b-camera-width, min(calc(100vw - 580px), 1100px));
   max-width: none;
+  transform: translateX(var(--mode-b-camera-offset, 0px));
+}
+
+/* The solving prompt and equation share the same visual centre when the
+   desktop camera/equation group shifts around the side-card lane. */
+#app[data-mode="mode_b"][data-camera-active="true"]:not(.layout-portrait) .story-solving-bar {
   transform: translateX(var(--mode-b-camera-offset, 0px));
 }
 

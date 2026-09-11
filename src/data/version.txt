@@ -1,3 +1,11 @@
+Version 1.12.15
+Date: 2026-09-11
+
+Release Notes:
+- Use the expanded, larger story card continuously through Chromebook-height landscape layouts.
+- Align the solving question bar with the horizontally shifted Mode B equation.
+- Files: src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.14
 Date: 2026-09-11
 
