@@ -1526,13 +1526,13 @@ body {
   }
 }
 
-/* Solved state owns enough vertical room for its answer and controls on spacious desktop screens. */
+/* Solved state fits the same pre-camera budget as every other phase. */
 @media (min-height: 821px) and (min-width: 1367px) {
   #app[data-mode="mode_b"][data-phase="solved"] .equation-area {
-    height: clamp(205px, 32dvh, 300px);
-    min-height: clamp(205px, 32dvh, 300px);
-    max-height: clamp(205px, 32dvh, 300px);
-    flex-basis: clamp(205px, 32dvh, 300px);
+    height: 240px;
+    min-height: 240px;
+    max-height: 240px;
+    flex-basis: 240px;
     justify-content: flex-start;
   }
 }
@@ -1758,26 +1758,26 @@ body {
   }
 }
 
-/* Stable camera anchor: this budget responds to viewport size, never game phase. */
+/* Stable camera anchor, sized to the equation itself rather than equation + story bar. */
 :root {
-  --workspace-top-height: 300px;
+  --workspace-top-height: 240px;
 }
 
 @media (max-height: 820px), (max-width: 1366px) {
   :root {
-    --workspace-top-height: 195px;
+    --workspace-top-height: 145px;
   }
 }
 
 @media (max-height: 700px) and (orientation: landscape) {
   :root {
-    --workspace-top-height: 185px;
+    --workspace-top-height: 145px;
   }
 }
 
 @media (max-width: 768px) and (orientation: portrait) {
   :root {
-    --workspace-top-height: 155px;
+    --workspace-top-height: 145px;
   }
 
   #app[data-mode="mode_b"][data-phase="solved"] .equation-area {
@@ -1791,6 +1791,22 @@ body {
     top: 5px;
     right: 5px;
   }
+}
+
+/* In story-solving phases, the compact story prompt shares the equation budget.
+   History flexes into the remaining room instead of pushing the camera downward. */
+#app[data-story-phase="solving"] .workspace-top .equation-area {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  flex: 1 1 0 !important;
+}
+
+#app[data-story-phase="solving"] .workspace-top .equation-history-container {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  flex: 1 1 0 !important;
 }
 
 /* Persisted portrait dock preference and final narrow-screen overflow guards. */

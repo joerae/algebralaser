@@ -1499,6 +1499,9 @@ class App {
     } else if (this.arrowSvgEl) {
       this.arrowSvgEl.style.display = 'none';
     }
+
+    // Reveal only after the correct dock coordinates and dimensions are in place.
+    this.answersColumnEl.style.visibility = 'visible';
   }
 
   private popBubbleAndDrop() {

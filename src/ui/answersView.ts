@@ -24,9 +24,13 @@ export class AnswersView {
     if (!arithmetic) {
       this.container.innerHTML = '';
       this.container.style.display = 'none';
+      this.container.style.visibility = 'hidden';
       return;
     }
 
+    // Positioning is completed by App.updateArrowAndLayout on the next layout pass.
+    // Keep the freshly populated panel measurable without painting it at stale/default coordinates.
+    this.container.style.visibility = 'hidden';
     this.container.style.display = 'flex';
     const shopBadge = activeItem ? `<span class="answers-shop-badge" title="${activeItem.singular}">${activeItem.emojiFallback}</span> ` : '';
     let opSymbol = '−';

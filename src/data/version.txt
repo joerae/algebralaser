@@ -1,3 +1,18 @@
+Version 1.12.5
+Date: 2026-09-11
+
+Release Notes:
+- Reclaim unused space above the play area while keeping the camera anchored across phases.
+- Let the compact story prompt share the equation's vertical budget, increasing camera height by about 50–60px on compact screens.
+- Files: src/styles/responsive.css, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
+Version 1.12.4
+Date: 2026-09-11
+
+Release Notes:
+- Prevent answer cards flashing at their default position before moving to their saved dock side.
+- Files: src/ui/answersView.ts, src/main.ts, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.3
 Date: 2026-09-11
 
