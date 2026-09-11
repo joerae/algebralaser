@@ -4,7 +4,10 @@
   height: 100%;
   object-fit: contain;
   background-color: #070b19;
-  transform: scaleX(-1);
+  /* Match the landmark projection's overscan: the frame shows the central
+     portion while edge-of-frame hands can extend into nearby controls. */
+  transform: scaleX(-1) scale(var(--camera-overscan-scale, 1.12));
+  transform-origin: center center;
   display: none;
   transition: opacity 0.3s ease;
 }

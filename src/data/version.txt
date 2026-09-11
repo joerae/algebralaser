@@ -1,3 +1,11 @@
+Version 1.13.0
+Date: 2026-09-12
+
+Release Notes:
+- Add camera overscan so tracked hands can extend beyond the visible video frame toward nearby choices.
+- Keep the video, hand skeleton, and finger laser aligned across contain and cover layouts.
+- Files: src/main.ts, src/styles/hud.css, src/vision/mediaViewport.ts, src/vision/mediaViewport.test.ts, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.12.16
 Date: 2026-09-11
 

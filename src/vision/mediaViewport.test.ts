@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getObjectFitViewport } from './mediaViewport';
+import { CAMERA_OVERSCAN_SCALE, getObjectFitViewport } from './mediaViewport';
 
 describe('getObjectFitViewport', () => {
   it('centres a portrait camera feed inside a wide element', () => {
@@ -30,5 +30,20 @@ describe('getObjectFitViewport', () => {
     expect(viewport.top).toBe(20);
     expect(viewport.width).toBeCloseTo(426.6667);
     expect(viewport.height).toBe(320);
+  });
+
+  it('expands the tracked plane around the visible camera centre for overscan', () => {
+    const viewport = getObjectFitViewport(
+      { left: 100, top: 50, width: 400, height: 300 },
+      640,
+      480,
+      'contain',
+      CAMERA_OVERSCAN_SCALE
+    );
+
+    expect(viewport.left).toBeCloseTo(76);
+    expect(viewport.top).toBeCloseTo(32);
+    expect(viewport.width).toBeCloseTo(448);
+    expect(viewport.height).toBeCloseTo(336);
   });
 });

@@ -14,7 +14,7 @@ import { runForgeRoundTripAnimation, runPickupToFingerAnimation, runSplitBalance
 import { getModeDefinition } from './game/modeRegistry';
 import { classifyHandPose, PointingStabilizer } from './vision/poseClassifier';
 import { computeLaserRay, ViewportRect } from './vision/coordinateTransform';
-import { getObjectFitViewport } from './vision/mediaViewport';
+import { CAMERA_OVERSCAN_SCALE, getObjectFitViewport } from './vision/mediaViewport';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
 import { LaserRay, HandLandmarks } from './vision/types';
 import { SolverMode, DEFAULT_MODE, BlasterType } from './math/types';
@@ -104,6 +104,7 @@ class App {
     const modalEl = document.getElementById('settings-modal') as HTMLElement;
     const debugEl = document.getElementById('debug-overlay') as HTMLElement;
     const bannerEl = document.getElementById('camera-banner') as HTMLElement;
+    this.videoEl.style.setProperty('--camera-overscan-scale', String(CAMERA_OVERSCAN_SCALE));
     this.videoEl.addEventListener('resize', () => this.syncCameraMediaAspect());
 
     // 2. Core Controllers & Services
@@ -418,7 +419,8 @@ class App {
       cameraElementViewport,
       this.videoEl.videoWidth || 640,
       this.videoEl.videoHeight || 480,
-      getComputedStyle(this.videoEl).objectFit === 'cover' ? 'cover' : 'contain'
+      getComputedStyle(this.videoEl).objectFit === 'cover' ? 'cover' : 'contain',
+      CAMERA_OVERSCAN_SCALE
     );
   }
 
