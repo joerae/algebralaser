@@ -43,11 +43,19 @@ export function formatUnsimplifiedEquationLine(
   a: number,
   _stage: SolverStage,
   _c: number,
-  pending: PendingArithmetic
+  pending: PendingArithmetic,
+  d?: number
 ): string {
-  const left = (pending.operator === '÷' || pending.operator === '×')
-    ? 'Y'
-    : (a === 1 ? 'Y' : `${a} x Y`);
+  let left = '';
+  if (pending.operator === '÷' || pending.operator === '×') {
+    left = 'Y';
+  } else if (d && d > 1) {
+    left = `Y ÷ ${d}`;
+  } else if (a === 1) {
+    left = 'Y';
+  } else {
+    left = `${a} x Y`;
+  }
   const opDisplay = pending.operator === '-' ? '−' : pending.operator;
   return `${left} = ${pending.operand1} ${opDisplay} ${pending.operand2}`;
 }
@@ -274,8 +282,11 @@ export function applyToBothSides(
     const isNeg = state.currentB < 0;
     const origSign = isNeg ? '−' : '+';
     const forgeSign = forgedOperator === '+' ? '+' : '−';
+    const isDivision = Boolean(state.problem.d && state.problem.d > 1);
 
-    leftBefore = state.currentA === 1 ? 'Y' : `${state.currentA} x Y`;
+    leftBefore = isDivision
+      ? `Y ÷ ${state.problem.d}`
+      : (state.currentA === 1 ? 'Y' : `${state.currentA} x Y`);
     leftAdded = `${origSign} ${forgedOperand} ${forgeSign} ${forgedOperand}`;
     rightAdded = `${forgeSign} ${forgedOperand}`;
     cancellingLhs = `${origSign} ${forgedOperand} ${forgeSign} ${forgedOperand}`;
@@ -334,12 +345,13 @@ export function applyToBothSides(
     rhsSolved: false
   };
 
+  const isDivision = Boolean(state.problem.d && state.problem.d > 1);
   const currentLine = formatEquationLine(
     state.currentA,
     state.currentB,
     state.currentC,
     false,
-    (state.stage === 'undo_coefficient' ? state.problem.d : undefined)
+    isDivision ? state.problem.d : undefined
   );
   const updatedHistory = state.equationHistory.includes(currentLine)
     ? [...state.equationHistory]
@@ -362,11 +374,13 @@ export function applyToBothSides(
 function completeModeBStep(state: EquationState): EquationState {
   if (!state.pendingArithmetic) return state;
 
+  const isDivision = Boolean(state.problem.d && state.problem.d > 1);
   const completedLine = formatUnsimplifiedEquationLine(
     state.currentA,
     state.stage,
     state.currentC,
-    state.pendingArithmetic
+    state.pendingArithmetic,
+    isDivision ? state.problem.d : undefined
   );
   const equationHistory = state.equationHistory.includes(completedLine)
     ? [...state.equationHistory]
@@ -374,7 +388,6 @@ function completeModeBStep(state: EquationState): EquationState {
   const currentA = state.stage === 'undo_coefficient' ? 1 : state.currentA;
   const currentB = state.stage === 'undo_constant' ? 0 : state.currentB;
   const currentC = state.pendingArithmetic.correctAnswer;
-  const isDivision = Boolean(state.problem.d && state.problem.d > 1);
   const stage: SolverStage = currentB !== 0
     ? 'undo_constant'
     : ((currentA > 1 || (state.stage !== 'undo_coefficient' && isDivision)) ? 'undo_coefficient' : 'solved');
@@ -559,8 +572,14 @@ export function blastLhs(
       };
     }
 
-    if (activeBlaster !== '÷') {
-      const msg = `Wrong blaster! Use the ÷ blaster to divide both sides by ${state.currentA}.`;
+    const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+    const expectedBlaster: BlasterType = isDivision ? '×' : '÷';
+    const operandVal = isDivision ? state.problem.d! : state.currentA;
+
+    if (activeBlaster !== expectedBlaster) {
+      const msg = isDivision
+        ? `Wrong blaster! Use the × blaster to multiply both sides by ${operandVal}.`
+        : `Wrong blaster! Use the ÷ blaster to divide both sides by ${operandVal}.`;
       return {
         state: { ...state, errorMessage: msg },
         success: false,
@@ -569,9 +588,9 @@ export function blastLhs(
       };
     }
 
-    // Correct blaster: pop coefficient, dividing makes LHS lighter
+    // Correct blaster: pop coefficient/denominator
     const history = [...state.history, saveSnapshot(state)];
-    const scaleTilt: ScaleTilt = 'lhs_light';
+    const scaleTilt: ScaleTilt = isDivision ? 'lhs_heavy' : 'lhs_light';
 
     return {
       state: {
@@ -584,8 +603,8 @@ export function blastLhs(
           equipped: activeBlaster,
           scaleTilt,
           carriedOperand: {
-            operator: '÷',
-            value: state.currentA
+            operator: isDivision ? '×' : '÷',
+            value: operandVal
           },
           rhsUnsimplified: null
         }
@@ -897,16 +916,24 @@ export function blastModeDSide(
     let rhsUnsimplified = state.modeDState.rhsUnsimplified;
 
     if (side === 'lhs') {
+      const isDivision = Boolean(state.problem.d && state.problem.d > 1);
       if (selectedInverse.operator === '÷') {
         lhsUnsimplified = `(${state.currentA}/${selectedInverse.operand})Y`;
+      } else if (selectedInverse.operator === '×') {
+        const denom = isDivision ? state.problem.d! : 1;
+        lhsUnsimplified = `(Y/${denom}) * ${selectedInverse.operand}`;
       } else {
-        const leftVar = state.currentA > 1 ? `${state.currentA}Y` : 'Y';
+        const leftVar = isDivision
+          ? `Y ÷ ${state.problem.d}`
+          : (state.currentA > 1 ? `${state.currentA}Y` : 'Y');
         const origB = state.currentB < 0 ? `− ${Math.abs(state.currentB)}` : `+ ${state.currentB}`;
         lhsUnsimplified = `${leftVar} ${origB} ${selectedInverse.operator} ${selectedInverse.operand}`;
       }
     } else {
       if (selectedInverse.operator === '÷') {
         rhsUnsimplified = `${state.currentC}/${selectedInverse.operand}`;
+      } else if (selectedInverse.operator === '×') {
+        rhsUnsimplified = `${state.currentC} × ${selectedInverse.operand}`;
       } else {
         rhsUnsimplified = `${state.currentC} ${selectedInverse.operator} ${selectedInverse.operand}`;
       }
@@ -946,16 +973,24 @@ export function blastModeDSide(
     let rhsUnsimplified = state.modeDState.rhsUnsimplified;
 
     if (side === 'lhs') {
+      const isDivision = Boolean(state.problem.d && state.problem.d > 1);
       if (selectedInverse.operator === '÷') {
         lhsUnsimplified = `(${state.currentA}/${selectedInverse.operand})Y`;
+      } else if (selectedInverse.operator === '×') {
+        const denom = isDivision ? state.problem.d! : 1;
+        lhsUnsimplified = `(Y/${denom}) * ${selectedInverse.operand}`;
       } else {
-        const leftVar = state.currentA > 1 ? `${state.currentA}Y` : 'Y';
+        const leftVar = isDivision
+          ? `Y ÷ ${state.problem.d}`
+          : (state.currentA > 1 ? `${state.currentA}Y` : 'Y');
         const origB = state.currentB < 0 ? `− ${Math.abs(state.currentB)}` : `+ ${state.currentB}`;
         lhsUnsimplified = `${leftVar} ${origB} ${selectedInverse.operator} ${selectedInverse.operand}`;
       }
     } else {
       if (selectedInverse.operator === '÷') {
         rhsUnsimplified = `${state.currentC}/${selectedInverse.operand}`;
+      } else if (selectedInverse.operator === '×') {
+        rhsUnsimplified = `${state.currentC} × ${selectedInverse.operand}`;
       } else {
         rhsUnsimplified = `${state.currentC} ${selectedInverse.operator} ${selectedInverse.operand}`;
       }
@@ -1091,7 +1126,10 @@ export function commitDrop(
     
     // Caption & cancellation
     const caption = isNegative ? `Add ${absB} to both sides.` : `Subtract ${absB} from both sides.`;
-    const leftSymbol = state.currentA === 1 ? 'Y' : `${state.currentA} x Y`;
+    const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+    const leftSymbol = isDivision
+      ? `Y ÷ ${state.problem.d}`
+      : (state.currentA === 1 ? 'Y' : `${state.currentA} x Y`);
     const origSign = isNegative ? '−' : '+';
     const balanceSign = isNegative ? '+' : '−';
 
@@ -1124,6 +1162,36 @@ export function commitDrop(
   }
 
   if (term === 'coefficient') {
+    const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+    if (isDivision) {
+      const d = state.problem.d!;
+      const caption = `Multiply both sides by ${d}.`;
+      const cancellation: CancellationDisplay = {
+        leftExpr: `(Y ÷ ${d}) × ${d}`,
+        rightExpr: `${state.currentC} × ${d}`,
+        cancellingPart: `÷ ${d} × ${d}`,
+        caption
+      };
+      const pendingArithmetic: PendingArithmetic = createPendingArithmetic(
+        state.currentC,
+        d,
+        '×',
+        rng
+      );
+      return {
+        state: {
+          ...state,
+          history,
+          phase: 'question',
+          carriedTerm: null,
+          cancellation,
+          pendingArithmetic,
+          errorMessage: null
+        },
+        success: true
+      };
+    }
+
     const a = state.currentA;
     const caption = `Divide both sides by ${a}.`;
 
@@ -1225,9 +1293,12 @@ export function submitAnswer(
       }
     }
 
-    const nextStage = newB !== 0
-      ? 'undo_constant'
-      : (newA > 1 ? 'undo_coefficient' : 'solved');
+    const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+    const nextStage = bothSimplified
+      ? (newB !== 0
+          ? 'undo_constant'
+          : ((newA > 1 || (state.stage !== 'undo_coefficient' && isDivision)) ? 'undo_coefficient' : 'solved'))
+      : state.stage;
 
     const nextPhase: GamePhase = bothSimplified
       ? (nextStage === 'solved' ? 'solved' : 'ready')
@@ -1235,7 +1306,13 @@ export function submitAnswer(
 
     const updatedEquationHistory = [...state.equationHistory];
     if (bothSimplified) {
-      const line = formatEquationLine(newA, newB, newC, true);
+      const line = formatEquationLine(
+        newA,
+        newB,
+        newC,
+        true,
+        (nextStage !== 'solved' && isDivision) ? state.problem.d : undefined
+      );
       if (!updatedEquationHistory.includes(line)) {
         updatedEquationHistory.push(line);
       }
@@ -1277,6 +1354,7 @@ export function submitAnswer(
     };
   }
 
+  const isDivision = Boolean(state.problem.d && state.problem.d > 1);
   // Record completed line before simplifying state
   let completedLine: string;
   if ((state.mode === 'mode_b' || state.mode === 'mode_c') && state.pendingArithmetic) {
@@ -1284,7 +1362,8 @@ export function submitAnswer(
       state.currentA,
       state.stage,
       state.currentC,
-      state.pendingArithmetic
+      state.pendingArithmetic,
+      isDivision ? state.problem.d : undefined
     );
   } else {
     completedLine = formatEquationLine(
@@ -1292,7 +1371,7 @@ export function submitAnswer(
       state.currentB,
       state.currentC,
       false,
-      (state.stage === 'undo_coefficient' ? state.problem.d : undefined)
+      isDivision ? state.problem.d : undefined
     );
   }
   const updatedEquationHistory = state.equationHistory.includes(completedLine)
@@ -1310,8 +1389,6 @@ export function submitAnswer(
   } else if (state.stage === 'undo_coefficient') {
     newA = 1;
   }
-
-  const isDivision = Boolean(state.problem.d && state.problem.d > 1);
   const nextStage = newB !== 0
     ? 'undo_constant'
     : ((newA > 1 || (state.stage !== 'undo_coefficient' && isDivision)) ? 'undo_coefficient' : 'solved');

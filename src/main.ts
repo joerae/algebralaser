@@ -15,6 +15,7 @@ import { getModeDefinition } from './game/modeRegistry';
 import { classifyHandPose, PointingStabilizer } from './vision/poseClassifier';
 import { computeLaserRay, ViewportRect } from './vision/coordinateTransform';
 import { CAMERA_OVERSCAN_SCALE, getObjectFitViewport } from './vision/mediaViewport';
+import { estimateIndexTipNearEdge } from './vision/indexTipEstimator';
 import { RaySmoother, castRayAgainstTargets, InteractiveTarget } from './vision/rayCaster';
 import { LaserRay, HandLandmarks } from './vision/types';
 import { SolverMode, DEFAULT_MODE, BlasterType } from './math/types';
@@ -954,7 +955,16 @@ class App {
 
       if (hands && hands.length > 0) {
         // Choose primary hand (first hand or matching locked hand)
-        const primaryHand = hands[0];
+        const detectedHand = hands[0];
+        const tipEstimate = estimateIndexTipNearEdge(detectedHand.landmarks);
+        const primaryHand = tipEstimate.extrapolated
+          ? { ...detectedHand, landmarks: tipEstimate.landmarks }
+          : detectedHand;
+        if (tipEstimate.extrapolated) {
+          // Render the reconstructed final finger segment as well as aiming
+          // with it, so the laser emitter and skeleton stay together.
+          hands = [primaryHand, ...hands.slice(1)];
+        }
         classifiedPose = classifyHandPose(primaryHand.landmarks, primaryHand.score);
         if (this.pointingStabilizer.update(classifiedPose, now)) {
           classifiedPose.isPointing = true;

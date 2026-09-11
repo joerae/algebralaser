@@ -1,3 +1,11 @@
+Version 1.14.0
+Date: 2026-09-12
+
+Release Notes:
+- Keep the laser pointing when an extended index fingertip passes beyond a camera edge.
+- Reconstruct only the missing tip from the visible finger joints, with straightness and outward-edge guards.
+- Files: src/main.ts, src/vision/indexTipEstimator.ts, src/vision/indexTipEstimator.test.ts, src/ui/hudView.ts, src/data/version.txt, public/version.txt.
+
 Version 1.13.0
 Date: 2026-09-12
 

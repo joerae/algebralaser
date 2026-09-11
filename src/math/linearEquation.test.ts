@@ -13,7 +13,15 @@ import {
   cancelLhsInverse,
   revealModeBBalanceSide,
   finishModeBBalance,
-  activateModeBRhsCalculation
+  activateModeBRhsCalculation,
+  equipBlaster,
+  blastLhs,
+  blastRhs,
+  blastSimplify,
+  identifyModeDTarget,
+  selectModeDInverse,
+  blastModeDSide,
+  activateModeDSimplify
 } from './linearEquation';
 import { 
   BENCHMARK_PUZZLE, 
@@ -391,5 +399,378 @@ describe('Linear Equation Mathematics & State Machine', () => {
     expect(state.phase).toBe('solved');
     expect(state.currentC).toBe(28);
     expect(state.equationHistory).toEqual(['Y ÷ 4 = 7', 'Y = 7 × 4']);
+  });
+
+  it('solves two-step division equation Y ÷ 4 + 3 = 11 in Mode B without losing ÷4', () => {
+    const puzzle = {
+      id: 'test-div-plus-b',
+      a: 1,
+      b: 3,
+      c: 11,
+      d: 4,
+      family: 'x_div_d_plus_b' as const,
+      solution: 32
+    };
+    let state = createInitialState(puzzle, 'mode_b');
+    expect(state.phase).toBe('ready');
+    expect(state.stage).toBe('undo_constant');
+
+    // Pick up constant +3
+    const pick1 = pickUpTerm(state, 'constant');
+    expect(pick1.success).toBe(true);
+    state = pick1.state;
+    expect(state.phase).toBe('forging');
+
+    // Forge opposite: +3 requires −
+    const forgeMinus = forgeOpposite(state, '−');
+    expect(forgeMinus.correct).toBe(true);
+    state = forgeMinus.state;
+    expect(state.phase).toBe('applying');
+
+    // Apply to both sides
+    const applied1 = applyToBothSides(state);
+    expect(applied1.success).toBe(true);
+    state = applied1.state;
+    expect(state.phase).toBe('balancing');
+    expect(state.balancedDisplay?.leftBefore).toBe('Y ÷ 4');
+    expect(state.balancedDisplay?.fullBalancedLine).toBe('Y ÷ 4 + 3 − 3 = 11 − 3');
+    expect(state.equationHistory).toEqual(['Y ÷ 4 + 3 = 11']);
+
+    // Reveal Mode B sides
+    state = revealModeBBalanceSide(state, 'lhs');
+    state = revealModeBBalanceSide(state, 'rhs');
+    state = finishModeBBalance(state);
+    expect(state.phase).toBe('awaiting_cleanup');
+
+    // Cancel LHS cancelling pair (+3 -3)
+    state = cancelLhsInverse(state);
+    expect(state.phase).toBe('awaiting_cleanup');
+    expect(state.balancedDisplay?.lhsCleaned).toBe(true);
+
+    // Activate RHS and answer 11 - 3 = 8
+    state = activateModeBRhsCalculation(state);
+    const ans1 = submitAnswer(state, 8);
+    expect(ans1.correct).toBe(true);
+    state = ans1.state;
+    expect(state.currentB).toBe(0);
+    expect(state.currentC).toBe(8);
+    expect(state.stage).toBe('undo_coefficient');
+    expect(state.phase).toBe('ready');
+    expect(state.equationHistory).toEqual(['Y ÷ 4 + 3 = 11', 'Y ÷ 4 = 11 − 3']);
+
+    // Step 2: Pick up ÷4
+    const pick2 = pickUpTerm(state, 'coefficient');
+    expect(pick2.success).toBe(true);
+    state = pick2.state;
+    expect(state.phase).toBe('forging');
+
+    // Forge ×
+    const forgeTimes = forgeOpposite(state, '×');
+    expect(forgeTimes.correct).toBe(true);
+    state = forgeTimes.state;
+
+    // Apply to both sides
+    const applied2 = applyToBothSides(state);
+    expect(applied2.success).toBe(true);
+    state = applied2.state;
+    expect(state.phase).toBe('balancing');
+    expect(state.balancedDisplay?.leftBefore).toBe('Y ÷ 4');
+    expect(state.balancedDisplay?.fullBalancedLine).toBe('Y ÷ 4 × 4 = 8 × 4');
+    expect(state.equationHistory).toEqual(['Y ÷ 4 + 3 = 11', 'Y ÷ 4 = 11 − 3', 'Y ÷ 4 = 8']);
+
+    // Reveal sides and finish balance
+    state = revealModeBBalanceSide(state, 'lhs');
+    state = revealModeBBalanceSide(state, 'rhs');
+    state = finishModeBBalance(state);
+
+    // Activate RHS and answer 32
+    state = activateModeBRhsCalculation(state);
+    const ans2 = submitAnswer(state, 32);
+    expect(ans2.correct).toBe(true);
+    state = ans2.state;
+
+    // Clean up LHS
+    state = cancelLhsInverse(state);
+    expect(state.stage).toBe('solved');
+    expect(state.phase).toBe('solved');
+    expect(state.currentC).toBe(32);
+    expect(state.equationHistory).toEqual([
+      'Y ÷ 4 + 3 = 11',
+      'Y ÷ 4 = 11 − 3',
+      'Y ÷ 4 = 8',
+      'Y = 8 × 4'
+    ]);
+  });
+
+  it('solves two-step division equation Y ÷ 3 − 2 = 5 with negative constant in Mode B', () => {
+    const puzzle = {
+      id: 'test-div-minus-b',
+      a: 1,
+      b: -2,
+      c: 5,
+      d: 3,
+      family: 'x_div_d_minus_b' as const,
+      solution: 21
+    };
+    let state = createInitialState(puzzle, 'mode_b');
+    expect(state.phase).toBe('ready');
+    expect(state.stage).toBe('undo_constant');
+
+    // Pick up constant -2
+    const pick1 = pickUpTerm(state, 'constant');
+    expect(pick1.success).toBe(true);
+    state = pick1.state;
+
+    // Forge +
+    const forgePlus = forgeOpposite(state, '+');
+    expect(forgePlus.correct).toBe(true);
+    state = forgePlus.state;
+
+    // Apply to both sides
+    const applied1 = applyToBothSides(state);
+    expect(applied1.success).toBe(true);
+    state = applied1.state;
+    expect(state.balancedDisplay?.leftBefore).toBe('Y ÷ 3');
+    expect(state.balancedDisplay?.fullBalancedLine).toBe('Y ÷ 3 − 2 + 2 = 5 + 2');
+    expect(state.equationHistory).toEqual(['Y ÷ 3 − 2 = 5']);
+
+    // Reveal & finish balance
+    state = revealModeBBalanceSide(state, 'lhs');
+    state = revealModeBBalanceSide(state, 'rhs');
+    state = finishModeBBalance(state);
+
+    // Cancel LHS
+    state = cancelLhsInverse(state);
+
+    // Answer 5 + 2 = 7
+    state = activateModeBRhsCalculation(state);
+    const ans1 = submitAnswer(state, 7);
+    expect(ans1.correct).toBe(true);
+    state = ans1.state;
+    expect(state.currentB).toBe(0);
+    expect(state.currentC).toBe(7);
+    expect(state.stage).toBe('undo_coefficient');
+    expect(state.equationHistory).toEqual(['Y ÷ 3 − 2 = 5', 'Y ÷ 3 = 5 + 2']);
+
+    // Undo division ÷ 3
+    const pick2 = pickUpTerm(state, 'coefficient');
+    state = pick2.state;
+    const forgeTimes = forgeOpposite(state, '×');
+    state = forgeTimes.state;
+    const applied2 = applyToBothSides(state);
+    state = applied2.state;
+    expect(state.balancedDisplay?.leftBefore).toBe('Y ÷ 3');
+
+    state = revealModeBBalanceSide(state, 'lhs');
+    state = revealModeBBalanceSide(state, 'rhs');
+    state = finishModeBBalance(state);
+
+    state = activateModeBRhsCalculation(state);
+    const ans2 = submitAnswer(state, 21);
+    state = ans2.state;
+    state = cancelLhsInverse(state);
+
+    expect(state.stage).toBe('solved');
+    expect(state.currentC).toBe(21);
+    expect(state.equationHistory).toEqual([
+      'Y ÷ 3 − 2 = 5',
+      'Y ÷ 3 = 5 + 2',
+      'Y ÷ 3 = 7',
+      'Y = 7 × 3'
+    ]);
+  });
+
+  it('solves two-step division equation Y ÷ 4 + 3 = 11 in Mode A', () => {
+    const puzzle = {
+      id: 'test-div-mode-a',
+      a: 1,
+      b: 3,
+      c: 11,
+      d: 4,
+      family: 'x_div_d_plus_b' as const,
+      solution: 32
+    };
+    let state = createInitialState(puzzle, 'mode_a');
+    expect(state.stage).toBe('undo_constant');
+
+    // Pick up constant +3
+    const pick1 = pickUpTerm(state, 'constant');
+    state = pick1.state;
+    expect(state.phase).toBe('carrying');
+
+    // Drop
+    const drop1 = commitDrop(state);
+    expect(drop1.success).toBe(true);
+    state = drop1.state;
+    expect(state.phase).toBe('question');
+    expect(state.cancellation?.leftExpr).toContain('Y ÷ 4');
+
+    // Answer 8
+    const ans1 = submitAnswer(state, 8);
+    expect(ans1.correct).toBe(true);
+    state = ans1.state;
+    expect(state.stage).toBe('undo_coefficient');
+    expect(state.currentB).toBe(0);
+    expect(state.currentC).toBe(8);
+
+    // Pick up coefficient/denominator
+    const pick2 = pickUpTerm(state, 'coefficient');
+    state = pick2.state;
+    expect(state.phase).toBe('carrying');
+
+    // Drop
+    const drop2 = commitDrop(state);
+    expect(drop2.success).toBe(true);
+    state = drop2.state;
+    expect(state.phase).toBe('question');
+    expect(state.cancellation?.leftExpr).toBe('(Y ÷ 4) × 4');
+
+    // Answer 32
+    const ans2 = submitAnswer(state, 32);
+    expect(ans2.correct).toBe(true);
+    state = ans2.state;
+    expect(state.stage).toBe('solved');
+    expect(state.currentC).toBe(32);
+  });
+
+  it('solves two-step division equation Y ÷ 4 + 3 = 11 in Mode C', () => {
+    const puzzle = {
+      id: 'test-div-mode-c',
+      a: 1,
+      b: 3,
+      c: 11,
+      d: 4,
+      family: 'x_div_d_plus_b' as const,
+      solution: 32
+    };
+    let state = createInitialState(puzzle, 'mode_c');
+    expect(state.stage).toBe('undo_constant');
+
+    // 1. Equip − blaster and blast constant 3 on LHS
+    state = equipBlaster(state, '−');
+    const blast1 = blastLhs(state);
+    expect(blast1.success).toBe(true);
+    state = blast1.state;
+    expect(state.phase).toBe('blasting_rhs');
+
+    // Blast RHS
+    const rhs1 = blastRhs(state);
+    expect(rhs1.success).toBe(true);
+    state = rhs1.state;
+
+    // Equip calc and blast simplify
+    state = equipBlaster(state, 'calc');
+    const simp1 = blastSimplify(state);
+    expect(simp1.success).toBe(true);
+    state = simp1.state;
+
+    // Answer 8
+    const ans1 = submitAnswer(state, 8);
+    expect(ans1.correct).toBe(true);
+    state = ans1.state;
+    expect(state.stage).toBe('undo_coefficient');
+    expect(state.currentB).toBe(0);
+    expect(state.currentC).toBe(8);
+
+    // 2. Division stage: trying ÷ blaster should fail
+    state = equipBlaster(state, '÷');
+    const wrongBlaster = blastLhs(state);
+    expect(wrongBlaster.success).toBe(false);
+    expect(wrongBlaster.notYet).toBe(true);
+
+    // Equip × blaster to multiply both sides by 4
+    state = equipBlaster(state, '×');
+    const blast2 = blastLhs(state);
+    expect(blast2.success).toBe(true);
+    state = blast2.state;
+
+    // Blast RHS
+    const rhs2 = blastRhs(state);
+    expect(rhs2.success).toBe(true);
+    state = rhs2.state;
+
+    // Simplify with calc
+    state = equipBlaster(state, 'calc');
+    const simp2 = blastSimplify(state);
+    expect(simp2.success).toBe(true);
+    state = simp2.state;
+
+    // Answer 32
+    const ans2 = submitAnswer(state, 32);
+    expect(ans2.correct).toBe(true);
+    state = ans2.state;
+    expect(state.stage).toBe('solved');
+    expect(state.currentC).toBe(32);
+  });
+
+  it('solves two-step division equation Y ÷ 4 + 3 = 11 in Mode D', () => {
+    const puzzle = {
+      id: 'test-div-mode-d',
+      a: 1,
+      b: 3,
+      c: 11,
+      d: 4,
+      family: 'x_div_d_plus_b' as const,
+      solution: 32
+    };
+    let state = createInitialState(puzzle, 'mode_d');
+    expect(state.stage).toBe('undo_constant');
+
+    // 1. Target constant
+    const t1 = identifyModeDTarget(state, 'constant');
+    expect(t1.success).toBe(true);
+    state = t1.state;
+
+    // Select correct inverse (−3)
+    const invMinus = state.modeDState!.inverseChoices.find(c => c.isCorrect)!;
+    const sel1 = selectModeDInverse(state, invMinus.id);
+    expect(sel1.success).toBe(true);
+    state = sel1.state;
+
+    // Blast LHS then RHS
+    state = blastModeDSide(state, 'lhs').state;
+    state = blastModeDSide(state, 'rhs').state;
+    expect(state.phase).toBe('awaiting_simplify');
+
+    // Simplify LHS (cancels to 0)
+    state = activateModeDSimplify(state, 'lhs').state;
+    state = submitAnswer(state, 0).state;
+
+    // Simplify RHS (11 - 3 = 8)
+    state = activateModeDSimplify(state, 'rhs').state;
+    state = submitAnswer(state, 8).state;
+
+    // After step 1, must advance to undo_coefficient, NOT solved!
+    expect(state.stage).toBe('undo_coefficient');
+    expect(state.phase).toBe('ready');
+    expect(state.currentB).toBe(0);
+    expect(state.currentC).toBe(8);
+
+    // 2. Target coefficient/denominator
+    const t2 = identifyModeDTarget(state, 'coefficient');
+    expect(t2.success).toBe(true);
+    state = t2.state;
+
+    // Select correct inverse (×4)
+    const invTimes = state.modeDState!.inverseChoices.find(c => c.isCorrect)!;
+    expect(invTimes.operator).toBe('×');
+    expect(invTimes.operand).toBe(4);
+    state = selectModeDInverse(state, invTimes.id).state;
+
+    // Blast LHS then RHS
+    state = blastModeDSide(state, 'lhs').state;
+    state = blastModeDSide(state, 'rhs').state;
+
+    // Simplify LHS (cancels to 1)
+    state = activateModeDSimplify(state, 'lhs').state;
+    state = submitAnswer(state, 1).state;
+
+    // Simplify RHS (8 * 4 = 32)
+    state = activateModeDSimplify(state, 'rhs').state;
+    state = submitAnswer(state, 32).state;
+
+    expect(state.stage).toBe('solved');
+    expect(state.phase).toBe('solved');
+    expect(state.currentC).toBe(32);
   });
 });

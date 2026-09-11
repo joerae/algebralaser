@@ -237,13 +237,16 @@ export class EquationView {
       const rhsCanActivate = phase === 'awaiting_cleanup' && !balancedDisplay.rhsActivated && !balancedDisplay.rhsSolved;
       const rhsTargetId = rhsCanActivate ? 'id="mode-b-rhs-target"' : 'id="arithmetic-rhs"';
       const rhsTargetClass = rhsCanActivate ? 'mode-b-solve-target' : '';
-      const variableHtml = currentA > 1
-        ? `<span class="math-symbol">${currentA}${this.renderVarSpan()}</span>`
-        : this.renderVarSpan();
+      const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+      const variableHtml = isDivision && !isCoeff
+        ? `<span class="math-symbol">${this.renderVarSpan()}<span class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</span><span class="term-tile op-divide">${state.problem.d}</span></span>`
+        : (currentA > 1
+          ? `<span class="math-symbol">${currentA}${this.renderVarSpan()}</span>`
+          : this.renderVarSpan());
 
       let leftHtml: string;
       if (!lhsApplied) {
-        const isDivisionPre = Boolean(state.problem.d && state.problem.d > 1) && isCoeff;
+        const isDivisionPre = isDivision && isCoeff;
         const originalConstant = currentB === 0
           ? ''
           : `<span class="term-tile ${currentB < 0 ? 'op-minus' : 'op-plus'}">${currentB < 0 ? '&minus;' : '+'} ${Math.abs(currentB)}</span>`;
@@ -382,9 +385,12 @@ export class EquationView {
         const isNeg = currentB < 0;
         const origSign = isNeg ? '−' : '+';
         const forgeSign = isNeg ? '+' : '−';
-        const leftVar = currentA > 1
-          ? `${currentA} <span class="term-times">x</span> ${this.renderVar()}`
-          : this.renderVar();
+        const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+        const leftVar = isDivision
+          ? `${this.renderVar()} <span class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</span> <span class="term-tile op-divide">${state.problem.d}</span>`
+          : (currentA > 1
+            ? `${currentA} <span class="term-times">x</span> ${this.renderVar()}`
+            : this.renderVar());
 
         leftHtml = `
           <div class="math-symbol">${leftVar}</div>
@@ -413,9 +419,17 @@ export class EquationView {
 
     // 4. Question Phase (Unsimplified intermediate expression, ready to collapse)
     if (phase === 'question' && pendingArithmetic) {
+      const isCoeff = carriedTerm === 'coefficient' || stage === 'undo_coefficient';
+      const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+      const isResolvingVariable = isCoeff
+        || pendingArithmetic.operator === '÷'
+        || (isDivision && pendingArithmetic.operator === '×');
+
       let leftSide = '';
-      if (pendingArithmetic.operator === '÷' || (state.problem.d && state.problem.d > 1)) {
+      if (isResolvingVariable) {
         leftSide = this.renderVar();
+      } else if (isDivision) {
+        leftSide = `${this.renderVar()} <span class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</span> <span class="term-tile op-divide">${state.problem.d}</span>`;
       } else {
         leftSide = currentA > 1
           ? `${currentA} <span class="term-times">x</span> ${this.renderVar()}`
@@ -460,9 +474,11 @@ export class EquationView {
               </div>
             `;
           } else {
-            const leftVar = currentA > 1
-              ? `${currentA}${this.renderVarSpan()}`
-              : this.renderVarSpan();
+            const leftVar = isDivision
+              ? `${this.renderVarSpan()}<span class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</span><span class="term-tile op-divide">${state.problem.d}</span>`
+              : (currentA > 1
+                ? `${currentA}${this.renderVarSpan()}`
+                : this.renderVarSpan());
             lhsInner = `
               <div class="math-symbol">${leftVar}</div>
               <div id="arithmetic-lhs" class="collapsing-arithmetic-section">
@@ -482,7 +498,9 @@ export class EquationView {
           `;
         } else {
           const lhsDisplay = state.modeDState?.simplifiedLhs
-            ? (currentA > 1 ? `${currentA}${this.renderVarSpan()}` : this.renderVarSpan())
+            ? (isDivision
+              ? `${this.renderVarSpan()}<span class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</span><span class="term-tile op-divide">${state.problem.d}</span>`
+              : (currentA > 1 ? `${currentA}${this.renderVarSpan()}` : this.renderVarSpan()))
             : (state.modeDState?.lhsUnsimplified || leftSide);
           railContentHtml = `
             <div class="equation-side equation-lhs">
@@ -598,11 +616,14 @@ export class EquationView {
     // 5b. Mode C: Blasting RHS Phase (LHS popped, operand attached to laser, RHS awaiting blast)
     if (mode === 'mode_c' && phase === 'blasting_rhs') {
       const isCoeff = stage === 'undo_coefficient';
+      const isDivision = Boolean(state.problem.d && state.problem.d > 1);
       const leftVar = isCoeff
         ? this.renderVarDiv()
-        : (currentA > 1
-          ? `<div class="term-tile op-times">${currentA}</div><div class="math-symbol term-times op-times">x</div>${this.renderVarDiv()}`
-          : this.renderVarDiv());
+        : (isDivision
+          ? `${this.renderVarDiv()}<div class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</div><div class="term-tile op-divide">${state.problem.d}</div>`
+          : (currentA > 1
+            ? `<div class="term-tile op-times">${currentA}</div><div class="math-symbol term-times op-times">x</div>${this.renderVarDiv()}`
+            : this.renderVarDiv()));
 
       const operand = state.blasterState?.carriedOperand;
       const opSign = operand ? operand.operator : '+';
@@ -637,11 +658,14 @@ export class EquationView {
     // 5c. Mode C: Awaiting Simplify Phase (RHS balanced, awaiting Calculator blaster)
     if (mode === 'mode_c' && phase === 'awaiting_simplify') {
       const isCoeff = stage === 'undo_coefficient';
+      const isDivision = Boolean(state.problem.d && state.problem.d > 1);
       const leftVar = isCoeff
         ? this.renderVarDiv()
-        : (currentA > 1
-          ? `<div class="term-tile op-times">${currentA}</div><div class="math-symbol term-times op-times">x</div>${this.renderVarDiv()}`
-          : this.renderVarDiv());
+        : (isDivision
+          ? `${this.renderVarDiv()}<div class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</div><div class="term-tile op-divide">${state.problem.d}</div>`
+          : (currentA > 1
+            ? `<div class="term-tile op-times">${currentA}</div><div class="math-symbol term-times op-times">x</div>${this.renderVarDiv()}`
+            : this.renderVarDiv()));
 
       const unsimplified = state.blasterState?.rhsUnsimplified;
       let rhsDisplay = '';
@@ -693,6 +717,7 @@ export class EquationView {
       const op = modeD?.selectedInverse?.operator || '+';
       const val = modeD?.selectedInverse?.operand || 0;
       const isCoeff = stage === 'undo_coefficient';
+      const isDivision = Boolean(state.problem.d && state.problem.d > 1);
 
       // 1. Build Left Side HTML
       let lhsHtml = '';
@@ -700,9 +725,11 @@ export class EquationView {
         if (modeD?.simplifiedLhs) {
           lhsHtml = isCoeff
             ? this.renderVarDiv()
-            : (currentA > 1
-              ? `<div class="math-symbol">${currentA}${this.renderVarSpan()}</div>`
-              : this.renderVarDiv());
+            : (isDivision
+              ? `${this.renderVarDiv()}<div class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</div><div class="term-tile op-divide">${state.problem.d}</div>`
+              : (currentA > 1
+                ? `<div class="math-symbol">${currentA}${this.renderVarSpan()}</div>`
+                : this.renderVarDiv()));
         } else {
           if (isCoeff) {
             lhsHtml = `
@@ -715,7 +742,9 @@ export class EquationView {
               </div>
             `;
           } else {
-            const leftVar = currentA > 1 ? `${currentA}${this.renderVarSpan()}` : this.renderVarSpan();
+            const leftVar = isDivision
+              ? `${this.renderVarSpan()}<span class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</span><span class="term-tile op-divide">${state.problem.d}</span>`
+              : (currentA > 1 ? `${currentA}${this.renderVarSpan()}` : this.renderVarSpan());
             const origB = currentB < 0 ? `− ${Math.abs(currentB)}` : `+ ${currentB}`;
             lhsHtml = `
               <div id="simplify-target-lhs" class="pulsing-simplify-target ${isDestinationHovered ? 'active' : ''}" role="button" title="Click to simplify LHS">
@@ -734,16 +763,22 @@ export class EquationView {
             </div>
           `;
         } else {
-          const leftVar = currentA > 1 ? `${currentA}${this.renderVarSpan()}` : this.renderVarSpan();
+          const leftVar = isDivision
+            ? `${this.renderVarSpan()}<span class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</span><span class="term-tile op-divide">${state.problem.d}</span>`
+            : (currentA > 1 ? `${currentA}${this.renderVarSpan()}` : this.renderVarSpan());
           const origB = currentB < 0 ? `− ${Math.abs(currentB)}` : `+ ${currentB}`;
           lhsHtml = `<div class="math-symbol">${leftVar} ${origB} ${op} ${val}</div>`;
         }
       } else {
         lhsHtml = isCoeff
-          ? `<div class="mode-d-compact-product"><div class="term-tile op-times mode-d-compact-coefficient">${currentA}</div>${this.renderVarDiv()}</div>`
+          ? (isDivision
+            ? `${this.renderVarDiv()}<div class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</div><div class="term-tile op-divide">${state.problem.d}</div>`
+            : `<div class="mode-d-compact-product"><div class="term-tile op-times mode-d-compact-coefficient">${currentA}</div>${this.renderVarDiv()}</div>`)
           : (currentA > 1
             ? `<div class="mode-d-compact-product"><div class="term-tile op-times mode-d-compact-coefficient">${currentA}</div>${this.renderVarDiv()}</div><div class="term-tile ${currentB < 0 ? 'op-minus' : 'op-plus'}">${currentB < 0 ? '−' : '+'} ${Math.abs(currentB)}</div>`
-            : `${this.renderVarDiv()}<div class="term-tile ${currentB < 0 ? 'op-minus' : 'op-plus'}">${currentB < 0 ? '−' : '+'} ${Math.abs(currentB)}</div>`);
+            : (isDivision
+              ? `${this.renderVarDiv()}<div class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</div><div class="term-tile op-divide">${state.problem.d}</div><div class="term-tile ${currentB < 0 ? 'op-minus' : 'op-plus'}">${currentB < 0 ? '−' : '+'} ${Math.abs(currentB)}</div>`
+              : `${this.renderVarDiv()}<div class="term-tile ${currentB < 0 ? 'op-minus' : 'op-plus'}">${currentB < 0 ? '−' : '+'} ${Math.abs(currentB)}</div>`));
       }
 
       // 2. Equals Sign (dimmed when unbalanced)
@@ -871,9 +906,12 @@ export class EquationView {
       if (carriedTerm === 'constant') {
         const isNeg = currentB < 0;
         const absB = Math.abs(currentB);
-        const leftVar = currentA > 1
-          ? `${currentA} <span class="term-times op-times">x</span> ${this.renderVar()}`
-          : this.renderVar();
+        const isDivision = Boolean(state.problem.d && state.problem.d > 1);
+        const leftVar = isDivision
+          ? `${this.renderVar()} <span class="math-symbol op-divide" style="font-size: 32px; margin: 0 4px;">÷</span> <span class="term-tile op-divide">${state.problem.d}</span>`
+          : (currentA > 1
+            ? `${currentA} <span class="term-times op-times">x</span> ${this.renderVar()}`
+            : this.renderVar());
 
         this.container.innerHTML = `
           ${historyHtml}
