@@ -672,13 +672,13 @@
   color: #34d399;
   border-color: rgba(52, 211, 153, 0.75);
   background: rgba(52, 211, 153, 0.12);
-  box-shadow: 0 0 12px rgba(52, 211, 153, 0.45), inset 0 0 6px rgba(52, 211, 153, 0.2);
-  text-shadow: 0 0 6px rgba(52, 211, 153, 0.85);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.4), inset 0 0 4px rgba(52, 211, 153, 0.2);
+  text-shadow: 0 0 4px rgba(52, 211, 153, 0.75);
 }
 
 .term-tile.op-plus.interactive:hover {
   background: rgba(52, 211, 153, 0.22);
-  box-shadow: 0 0 16px rgba(52, 211, 153, 0.6), inset 0 0 8px rgba(52, 211, 153, 0.3);
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.55), inset 0 0 6px rgba(52, 211, 153, 0.25);
 }
 
 /* Minus (−): Radiant Ice White */
@@ -687,14 +687,14 @@
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.75);
   background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.4), inset 0 0 6px rgba(255, 255, 255, 0.2);
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.35), inset 0 0 4px rgba(255, 255, 255, 0.15);
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.75);
 }
 
 .term-tile.op-minus.interactive:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: #ffffff;
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.6), inset 0 0 8px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.55), inset 0 0 6px rgba(255, 255, 255, 0.25);
 }
 
 /* Multiplication (x): Solar Crimson Red */
@@ -703,18 +703,18 @@
   color: #f43f5e;
   border-color: rgba(244, 63, 94, 0.65);
   background: rgba(244, 63, 94, 0.12);
-  box-shadow: 0 0 12px rgba(244, 63, 94, 0.45), inset 0 0 6px rgba(244, 63, 94, 0.25);
-  text-shadow: 0 0 6px rgba(244, 63, 94, 0.8);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.4), inset 0 0 4px rgba(244, 63, 94, 0.2);
+  text-shadow: 0 0 4px rgba(244, 63, 94, 0.75);
 }
 
 .term-tile.op-times.interactive:hover {
   background: rgba(244, 63, 94, 0.22);
-  box-shadow: 0 0 16px rgba(244, 63, 94, 0.65), inset 0 0 8px rgba(244, 63, 94, 0.35);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.55), inset 0 0 6px rgba(244, 63, 94, 0.25);
 }
 
 .term-times.op-times {
   color: #f43f5e;
-  text-shadow: 0 0 6px rgba(244, 63, 94, 0.8);
+  text-shadow: 0 0 4px rgba(244, 63, 94, 0.75);
 }
 
 /* Hide × when it sits right before a magic item icon (reads "3 [icon]" not "3 × [icon]") */
@@ -730,11 +730,11 @@
   color: #c084fc;
   border-color: rgba(168, 85, 247, 0.65);
   background: rgba(168, 85, 247, 0.12);
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.45), inset 0 0 6px rgba(168, 85, 247, 0.25);
-  text-shadow: 0 0 6px rgba(168, 85, 247, 0.8);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.4), inset 0 0 4px rgba(168, 85, 247, 0.2);
+  text-shadow: 0 0 4px rgba(168, 85, 247, 0.75);
 }
 
 .fraction.op-divide .fraction-bar {
   background-color: #c084fc;
-  box-shadow: 0 0 8px rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 4px rgba(168, 85, 247, 0.6);
 }

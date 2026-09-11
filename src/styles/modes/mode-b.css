@@ -346,7 +346,10 @@
   position: fixed;
   z-index: 75;
   pointer-events: none;
-  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  will-change: transform, left, top;
+  isolation: isolate;
+  contain: layout style;
 }
 
 .split-clone.powerup-anchor {
@@ -354,7 +357,7 @@
 }
 
 .split-clone.queued-charge {
-  transform: translate(-50%, -50%) scale(0.84);
+  transform: translate3d(-50%, -50%, 0) scale(0.84);
   animation: modeBQueuedCharge 0.72s ease-in-out infinite alternate;
 }
 
@@ -365,62 +368,62 @@
 
 @keyframes modeBQueuedCharge {
   from {
-    transform: translate(-50%, -50%) translateY(0) scale(0.82);
+    transform: translate3d(-50%, -50%, 0) scale(0.82);
     opacity: 0.85;
   }
 
   to {
-    transform: translate(-50%, -50%) translateY(-5px) scale(0.92);
+    transform: translate3d(-50%, -50%, 0) scale(0.92);
     opacity: 1;
   }
 }
 
 .split-clone.moving-to-hold {
   animation: none;
-  transform: translate(-50%, -50%) scale(0.88);
-  transition: left 0.68s cubic-bezier(0.16, 1, 0.3, 1), top 0.58s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease;
+  transform: translate3d(-50%, -50%, 0) scale(0.88);
+  transition: left 0.55s cubic-bezier(0.16, 1, 0.3, 1), top 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease;
 }
 
 .split-clone.holding-charge {
   animation: modeBHoldingCharge 0.5s ease-in-out infinite alternate;
-  box-shadow: 0 0 18px rgba(251, 191, 36, 0.65), inset 0 0 8px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.5), inset 0 0 6px rgba(255, 255, 255, 0.2);
 }
 
 @keyframes modeBHoldingCharge {
   from {
-    transform: translate(-50%, -50%) translateY(0) scale(0.88);
+    transform: translate3d(-50%, -50%, 0) scale(0.88);
     opacity: 0.88;
   }
 
   to {
-    transform: translate(-50%, -50%) translateY(-5px) scale(0.96);
+    transform: translate3d(-50%, -50%, 0) scale(0.94);
     opacity: 1;
   }
 }
 
 @keyframes modeBPowerupCharge {
   from {
-    transform: translate(-50%, -50%) scale(0.96);
+    transform: translate3d(-50%, -50%, 0) scale(0.96);
     opacity: 0.9;
   }
 
   to {
-    transform: translate(-50%, -50%) scale(1.1);
+    transform: translate3d(-50%, -50%, 0) scale(1.06);
     opacity: 1;
   }
 }
 
 .forge-traveller.forge-outbound,
 .forge-traveller.forge-returning {
-  transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1), top 0.42s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease, box-shadow 0.3s ease;
+  transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1), top 0.42s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease;
 }
 
 .forge-traveller.forge-outbound {
-  transform: translate(-50%, -50%) scale(1.12);
+  transform: translate3d(-50%, -50%, 0) scale(1.1);
 }
 
 .forge-traveller.forge-returning {
-  transform: translate(-50%, -50%) scale(0.96);
+  transform: translate3d(-50%, -50%, 0) scale(0.96);
 }
 
 .forge-traveller.forge-flipping .bubble-term {
@@ -460,11 +463,12 @@
   border: 3px solid currentColor;
   border-radius: 9999px;
   transform: translateY(-50%) scale(0.9);
-  box-shadow: 0 0 14px currentColor;
+  box-shadow: 0 0 10px currentColor;
   background: rgba(15, 23, 42, 0.94);
   z-index: -1;
   will-change: transform;
   isolation: isolate;
+  contain: layout style;
 }
 
 .bubble-twin.op-plus {
@@ -488,7 +492,7 @@
   font-weight: 700;
   line-height: 1;
   color: inherit;
-  text-shadow: 0 0 6px currentColor;
+  text-shadow: 0 0 4px currentColor;
 }
 
 
@@ -511,45 +515,47 @@
   border: 2px dashed rgba(251, 191, 36, 0.65);
   cursor: pointer;
   background: rgba(245, 158, 11, 0.04);
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.22);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
   animation: pulseApplyingRail 1.8s infinite ease-in-out;
   transition: transform 0.2s ease, border-color 0.2s ease;
+  will-change: transform, border-color;
+  isolation: isolate;
 }
 
 .equation-rail.applying-target.active {
   animation: none;
   border: 2px solid var(--gold-bright);
   background: rgba(245, 158, 11, 0.2);
-  box-shadow: 0 0 22px rgba(245, 158, 11, 0.6), inset 0 0 10px rgba(251, 191, 36, 0.25);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.5), inset 0 0 8px rgba(251, 191, 36, 0.25);
   transform: scale(1.02);
 }
 
 .split-clone.hovering {
-  transition: all 0.42s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.75), inset 0 0 10px rgba(56, 189, 248, 0.5);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6), inset 0 0 6px rgba(56, 189, 248, 0.4);
   animation: cloneHoverBob 0.8s infinite alternate ease-in-out;
 }
 
 @keyframes cloneHoverBob {
   0% {
-    transform: translate(-50%, -50%) translateY(0px) scale(1.04);
+    transform: translate3d(-50%, -50%, 0) scale(1.04);
   }
 
   100% {
-    transform: translate(-50%, -50%) translateY(-5px) scale(1.1);
+    transform: translate3d(-50%, -50%, 0) scale(1.08);
   }
 }
 
 .split-clone.smashing {
-  transition: all 0.24s cubic-bezier(0.55, 0.055, 0.675, 0.19);
-  transform: translate(-50%, -50%) scale(1.22);
-  box-shadow: 0 0 24px rgba(245, 158, 11, 0.85);
+  transition: transform 0.24s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  transform: translate3d(-50%, -50%, 0) scale(1.18);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.7);
 }
 
 .split-clone.smashed {
-  transform: translate(-50%, -50%) scale(1.75);
+  transform: translate3d(-50%, -50%, 0) scale(1.4);
   opacity: 0;
-  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+  transition: transform 0.18s ease-out, opacity 0.18s ease-out;
 }
 
 .lhs-smash-flash {
@@ -616,17 +622,18 @@
   cursor: crosshair;
   border: 2px dashed rgba(251, 191, 36, 0.85);
   background: rgba(251, 191, 36, 0.16);
-  box-shadow: 0 0 16px rgba(251, 191, 36, 0.45);
-  animation: modeBCleanupPulse 1.05s ease-in-out infinite;
-  will-change: transform;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+  animation: modeBCleanupPulse 1.4s ease-in-out infinite;
+  will-change: opacity, border-color;
   isolation: isolate;
+  contain: layout style;
 }
 
 .mode-b-cleanup-target.active,
 .mode-b-cleanup-target:hover {
   border-style: solid;
-  transform: scale(1.06);
-  box-shadow: 0 0 20px rgba(251, 191, 36, 0.75);
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.65);
 }
 
 .mode-b-identity-fraction,
@@ -639,8 +646,8 @@
   cursor: pointer;
   border: 2px dashed rgba(56, 189, 248, 0.85);
   background: rgba(56, 189, 248, 0.16);
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
-  animation: modeBSolveTargetPulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+  animation: modeBSolveTargetPulse 1.4s ease-in-out infinite;
   min-height: 78px;
   min-width: 120px;
   padding: 8px 24px;
@@ -650,8 +657,9 @@
   justify-content: center;
   font-size: 48px;
   box-sizing: border-box;
-  will-change: transform;
+  will-change: opacity, border-color;
   isolation: isolate;
+  contain: layout style;
 }
 
 .mode-b-solve-target .math-symbol {
@@ -663,35 +671,33 @@
   border-style: solid;
   border-color: var(--cyan-bright);
   background: rgba(56, 189, 248, 0.28);
-  transform: scale(1.06);
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.75);
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.65);
 }
 
 @keyframes modeBSolveTargetPulse {
-
   0%,
   100% {
-    opacity: 0.92;
-    transform: scale(1);
+    opacity: 0.88;
+    border-color: rgba(56, 189, 248, 0.55);
   }
 
   50% {
     opacity: 1;
-    transform: scale(1.03);
+    border-color: rgba(56, 189, 248, 0.95);
   }
 }
 
 @keyframes modeBCleanupPulse {
-
   0%,
   100% {
-    transform: scale(1);
-    opacity: 0.92;
+    opacity: 0.88;
+    border-color: rgba(251, 191, 36, 0.55);
   }
 
   50% {
-    transform: scale(1.04);
     opacity: 1;
+    border-color: rgba(251, 191, 36, 0.95);
   }
 }
 
