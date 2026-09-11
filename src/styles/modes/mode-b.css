@@ -35,11 +35,27 @@
 
 /* Shake and Pulse Animations for NOT YET */
 @keyframes notYetShake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-7px) rotate(-2deg); }
-  40% { transform: translateX(7px) rotate(2deg); }
-  60% { transform: translateX(-5px) rotate(-1deg); }
-  80% { transform: translateX(5px) rotate(1deg); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-7px) rotate(-2deg);
+  }
+
+  40% {
+    transform: translateX(7px) rotate(2deg);
+  }
+
+  60% {
+    transform: translateX(-5px) rotate(-1deg);
+  }
+
+  80% {
+    transform: translateX(5px) rotate(1deg);
+  }
 }
 
 .shake-not-yet {
@@ -49,8 +65,19 @@
 }
 
 @keyframes pulseTarget {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
-  50% { transform: scale(1.14); box-shadow: 0 0 45px rgba(56, 189, 248, 0.95); border-color: #38bdf8; background: rgba(56, 189, 248, 0.25); }
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+  }
+
+  50% {
+    transform: scale(1.14);
+    box-shadow: 0 0 45px rgba(56, 189, 248, 0.95);
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.25);
+  }
 }
 
 .pulse-target {
@@ -96,10 +123,13 @@
 }
 
 @keyframes pulseEquals {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
     border-color: rgba(56, 189, 248, 0.45);
   }
+
   50% {
     box-shadow: 0 0 35px rgba(56, 189, 248, 0.65);
     border-color: rgba(56, 189, 248, 0.9);
@@ -240,17 +270,43 @@
 }
 
 @keyframes nahUhShake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-9px) rotate(-3deg); }
-  40% { transform: translateX(9px) rotate(3deg); }
-  60% { transform: translateX(-6px) rotate(-2deg); }
-  80% { transform: translateX(6px) rotate(2deg); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-9px) rotate(-3deg);
+  }
+
+  40% {
+    transform: translateX(9px) rotate(3deg);
+  }
+
+  60% {
+    transform: translateX(-6px) rotate(-2deg);
+  }
+
+  80% {
+    transform: translateX(6px) rotate(2deg);
+  }
 }
 
 @keyframes forgeSuccessPulse {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.2); box-shadow: 0 0 50px rgba(16, 185, 129, 0.95); border-color: #10b981; }
-  100% { transform: scale(1.06); }
+  0% {
+    transform: scale(1);
+  }
+
+  40% {
+    transform: scale(1.2);
+    box-shadow: 0 0 50px rgba(16, 185, 129, 0.95);
+    border-color: #10b981;
+  }
+
+  100% {
+    transform: scale(1.06);
+  }
 }
 
 .forge-card.forge-success {
@@ -274,8 +330,15 @@
 }
 
 @keyframes pulseGuide {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 /* ==========================================================================
@@ -303,29 +366,50 @@
 }
 
 @keyframes modeBQueuedCharge {
-  from { transform: translate(-50%, -50%) translateY(0) scale(0.82); filter: brightness(0.95); }
-  to { transform: translate(-50%, -50%) translateY(-5px) scale(0.92); filter: brightness(1.28); }
+  from {
+    transform: translate(-50%, -50%) translateY(0) scale(0.82);
+    filter: brightness(0.95);
+  }
+
+  to {
+    transform: translate(-50%, -50%) translateY(-5px) scale(0.92);
+    filter: brightness(1.28);
+  }
 }
 
 .split-clone.moving-to-hold {
   animation: none;
   transform: translate(-50%, -50%) scale(0.88);
-  transition: left 0.68s cubic-bezier(0.16, 1, 0.3, 1), top 0.68s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s ease;
+  transition: left 0.68s cubic-bezier(0.16, 1, 0.3, 1), top 0.58s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease;
 }
 
 .split-clone.holding-charge {
-  animation: modeBHoldingCharge 0.8s ease-in-out infinite alternate;
+  animation: modeBHoldingCharge 0.5s ease-in-out infinite alternate;
   box-shadow: 0 0 38px rgba(251, 191, 36, 0.72), inset 0 0 18px rgba(255, 255, 255, 0.28);
 }
 
 @keyframes modeBHoldingCharge {
-  from { transform: translate(-50%, -50%) translateY(0) scale(0.88); filter: brightness(1); }
-  to { transform: translate(-50%, -50%) translateY(-5px) scale(0.96); filter: brightness(1.25); }
+  from {
+    transform: translate(-50%, -50%) translateY(0) scale(0.88);
+    filter: brightness(1);
+  }
+
+  to {
+    transform: translate(-50%, -50%) translateY(-5px) scale(0.96);
+    filter: brightness(1.25);
+  }
 }
 
 @keyframes modeBPowerupCharge {
-  from { transform: translate(-50%, -50%) scale(0.96); filter: brightness(1); }
-  to { transform: translate(-50%, -50%) scale(1.1); filter: brightness(1.35); }
+  from {
+    transform: translate(-50%, -50%) scale(0.96);
+    filter: brightness(1);
+  }
+
+  to {
+    transform: translate(-50%, -50%) scale(1.1);
+    filter: brightness(1.35);
+  }
 }
 
 .forge-traveller.forge-outbound,
@@ -346,9 +430,19 @@
 }
 
 @keyframes modeBForgeFlip {
-  0% { transform: rotateY(0deg) scale(1); }
-  50% { transform: rotateY(90deg) scale(1.25); opacity: 0.25; }
-  100% { transform: rotateY(180deg) scale(1); opacity: 1; }
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotateY(90deg) scale(1.25);
+    opacity: 0.25;
+  }
+
+  100% {
+    transform: rotateY(180deg) scale(1);
+    opacity: 1;
+  }
 }
 
 .pickup-traveller.sucking-up {
@@ -400,11 +494,14 @@
 
 
 @keyframes pulseApplyingRail {
-  0%, 100% {
+
+  0%,
+  100% {
     border-color: rgba(251, 191, 36, 0.4);
     box-shadow: 0 0 18px rgba(245, 158, 11, 0.18), inset 0 0 10px rgba(245, 158, 11, 0.04);
     background: rgba(245, 158, 11, 0.03);
   }
+
   50% {
     border-color: rgba(251, 191, 36, 0.95);
     box-shadow: 0 0 45px rgba(245, 158, 11, 0.55), inset 0 0 24px rgba(245, 158, 11, 0.16);
@@ -434,8 +531,13 @@
 }
 
 @keyframes cloneHoverBob {
-  0% { transform: translate(-50%, -50%) translateY(0px) scale(1.04); }
-  100% { transform: translate(-50%, -50%) translateY(-5px) scale(1.1); }
+  0% {
+    transform: translate(-50%, -50%) translateY(0px) scale(1.04);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) translateY(-5px) scale(1.1);
+  }
 }
 
 .split-clone.smashing {
@@ -562,13 +664,29 @@
 }
 
 @keyframes modeBSolveTargetPulse {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.24); }
+
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.24);
+  }
 }
 
 @keyframes modeBCleanupPulse {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.05); filter: brightness(1.28); }
+
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.28);
+  }
 }
 
 .mode-b-cleanup-target.mode-b-cleanup-exploding {
@@ -592,18 +710,43 @@
 }
 
 @keyframes modeBCleanupVanish {
-  0% { opacity: 1; transform: scale(1); filter: blur(0); }
-  28% { opacity: 1; transform: scale(1.14); filter: brightness(2); }
-  100% { opacity: 0; transform: scale(0.42); filter: blur(9px); }
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+
+  28% {
+    opacity: 1;
+    transform: scale(1.14);
+    filter: brightness(2);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.42);
+    filter: blur(9px);
+  }
 }
 
 @keyframes modeBSmokeWhiff {
-  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--puff-angle)) translateX(0) scale(0.35); }
-  20% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--puff-angle)) translateX(var(--puff-distance)) scale(1.8); }
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--puff-angle)) translateX(0) scale(0.35);
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--puff-angle)) translateX(var(--puff-distance)) scale(1.8);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .mode-b-cleanup-target,
   .mode-b-cleanup-target.mode-b-cleanup-exploding,
   .mode-b-smoke-puff {
@@ -613,7 +756,18 @@
 }
 
 @keyframes smashImpactFlash {
-  0% { transform: scale(1.15); filter: brightness(2.2) drop-shadow(0 0 20px #f43f5e); }
-  50% { transform: scale(1.05); filter: brightness(1.5) drop-shadow(0 0 10px #f43f5e); }
-  100% { transform: scale(0.2); opacity: 0; }
+  0% {
+    transform: scale(1.15);
+    filter: brightness(2.2) drop-shadow(0 0 20px #f43f5e);
+  }
+
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.5) drop-shadow(0 0 10px #f43f5e);
+  }
+
+  100% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
 }

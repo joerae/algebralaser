@@ -39,14 +39,14 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
     reducedMotion = false
   } = params;
 
-  const symbol = forgedOp 
-    ? `${forgedOp.forgedOperator === '-' ? '−' : forgedOp.forgedOperator}${forgedOp.forgedOperand}` 
+  const symbol = forgedOp
+    ? `${forgedOp.forgedOperator === '-' ? '−' : forgedOp.forgedOperator}${forgedOp.forgedOperand}`
     : '';
-  const opClass = forgedOp?.forgedOperator === '+' 
-    ? 'op-plus' 
-    : (forgedOp?.forgedOperator === '-' 
-        ? 'op-minus' 
-        : (forgedOp?.forgedOperator === '×' ? 'op-times' : 'op-divide'));
+  const opClass = forgedOp?.forgedOperator === '+'
+    ? 'op-plus'
+    : (forgedOp?.forgedOperator === '-'
+      ? 'op-minus'
+      : (forgedOp?.forgedOperator === '×' ? 'op-times' : 'op-divide'));
 
   [splitLeftEl, splitRightEl].forEach((el, index) => {
     el.className = `carried-bubble split-clone ${opClass}`;
@@ -106,8 +106,8 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
           projectile.style.display = 'none';
           done();
         }, 240);
-      }, 320);
-    }, 300);
+      }, 280);
+    }, 100);
   };
 
   window.requestAnimationFrame(() => {
