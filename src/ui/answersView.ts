@@ -93,10 +93,11 @@ export class AnswersView {
   public updateDwell(activeTargetId: string | null, dwellProgress: number) {
     for (const [cardId, { cardEl, fillCircle }] of this.cardElements) {
       const isHovered = activeTargetId === cardId;
+      const progress = isHovered ? Math.max(0, Math.min(1, dwellProgress)) : 0;
       cardEl.classList.toggle('hovered', isHovered);
+      cardEl.classList.toggle('dwell-active', isHovered && progress > 0);
 
       if (fillCircle) {
-        const progress = isHovered ? Math.max(0, Math.min(1, dwellProgress)) : 0;
         const offset = this.circumference * (1 - progress);
         fillCircle.style.strokeDashoffset = `${offset}`;
       }

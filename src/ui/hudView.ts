@@ -36,7 +36,7 @@ export class HudView {
   private showDebug: boolean = false;
   private handsOnly: boolean = false;
   private reducedMotion: boolean = false;
-  private dwellMs: number = 450;
+  private dwellMs: number = 600;
   private isModalOpen: boolean = false;
   private storyModeEnabled: boolean = true;
   private skipTutorial: boolean = false;
@@ -70,6 +70,23 @@ export class HudView {
     } catch {}
     this.renderHeader();
     this.renderFooter('Get Y on its own.');
+
+    // Close modal by tapping or clicking outside the settings/content box
+    let pointerDownOutside = false;
+    this.modalEl.addEventListener('pointerdown', (e) => {
+      pointerDownOutside = !(e.target as HTMLElement).closest('.modal-content');
+    });
+    this.modalEl.addEventListener('click', (e) => {
+      const isOutside = !(e.target as HTMLElement).closest('.modal-content');
+      if (isOutside && pointerDownOutside) {
+        if (this.isModalOpen) {
+          this.toggleSettingsModal();
+        } else {
+          this.modalEl.style.display = 'none';
+        }
+      }
+      pointerDownOutside = false;
+    });
 
     window.addEventListener('keydown', (e) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;

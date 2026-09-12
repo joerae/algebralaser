@@ -34,7 +34,7 @@ export class InteractionController {
     openPalmProgress: 0
   };
 
-  public dwellDurationMs: number = 450;
+  public dwellDurationMs: number = 600;
   public forgeDwellDurationMs: number = 1000;
   public onDropRequested?: () => void;
   public onNotYetRequested?: (term: 'coefficient') => void;

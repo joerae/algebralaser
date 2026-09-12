@@ -1,4 +1,9 @@
-[  ] being able to extend you hand outside the camera is quite nice. Lots of players seem to want to "point" to things. See "extending hand.png", and note that the skeleton hand comes out beyond the camera bounds. So could we make the camera view on screen a little smaller than what we totally see, so we can allow the hand extending out like this a bit? That would be cool! Especially since my daughter seems to want to actually "point" to the numbers to the left of her. 
+
+[x] In settings there is something called "Answer Dwell Hold Duration", the default value is "450ms", I want to change that to 600ms for default
+
+[x] Make the animation of holding on an answer and it fills up a circle bigger and more obvious
+
+ [x] I want to be able to close "settings" by tapping outside of the settings box (as well as the X in the top corner), so I don't have to scroll back up to the top to hit the X
 
 
 Below are more complex. Leave for later
