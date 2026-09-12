@@ -167,7 +167,7 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
       splitLeftEl,
       sourcePoints[0],
       targets.left.hover,
-      duration(550),
+      300,
       0.84,
       0.9,
       'cubic-bezier(0.16, 1, 0.3, 1)'
@@ -176,7 +176,7 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
       splitRightEl,
       sourcePoints[1],
       targets.right.hover,
-      duration(550),
+      300,
       0.84,
       0.9,
       'cubic-bezier(0.16, 1, 0.3, 1)'
@@ -197,8 +197,8 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
           });
         }, duration(520));
       });
-    }, duration(312));
-  }, duration(700));
+    }, 180);
+  }, 300);
 }
 
 export interface ForgeRoundTripParams {
