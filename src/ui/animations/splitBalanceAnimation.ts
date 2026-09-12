@@ -195,9 +195,9 @@ export function runSplitBalanceAnimation(params: SplitAnimationParams): void {
           launchAt(splitRightEl, targets.right.hover, targets.right.smash, onRhsImpact, () => soundManager.playSnap(), () => {
             window.setTimeout(onComplete, duration(420));
           });
-        }, duration(520));
+        }, 300);
       });
-    }, 180);
+    }, 300);
   }, 300);
 }
 

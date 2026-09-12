@@ -350,7 +350,7 @@
 }
 
 .split-clone.holding-charge {
-  animation: modeBHoldingCharge 0.18s ease-in-out infinite alternate;
+  animation: modeBHoldingCharge 0.3s ease-in-out infinite alternate;
   box-shadow: 0 0 12px rgba(251, 191, 36, 0.5), inset 0 0 6px rgba(255, 255, 255, 0.2);
 }
 
